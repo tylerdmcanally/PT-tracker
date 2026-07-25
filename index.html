@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#18251b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AFT Log">
+  <meta name="description" content="Offline-first four-day Army fitness workout tracker.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>AFT Workout Tracker</title>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">NOVEMBER ACCESSION</p>
+      <h1>AFT Training Log</h1>
+      <p class="subtitle">Four-day strength and conditioning tracker</p>
+    </div>
+    <button id="installButton" class="secondary compact hidden" type="button">Install</button>
+  </header>
+
+  <main>
+    <nav class="tabs" aria-label="App sections">
+      <button class="tab active" data-tab="workout" type="button">Workout</button>
+      <button class="tab" data-tab="history" type="button">History</button>
+      <button class="tab" data-tab="progress" type="button">Progress</button>
+      <button class="tab" data-tab="export" type="button">Export</button>
+    </nav>
+
+    <section id="workoutTab" class="tab-panel active">
+      <div class="card controls-card">
+        <label>Workout day<select id="daySelect"></select></label>
+        <label>Session date<input id="sessionDate" type="date"></label>
+      </div>
+      <div id="workoutSummary" class="workout-summary"></div>
+      <form id="workoutForm">
+        <div id="exerciseList"></div>
+        <section class="card">
+          <h2>Session details</h2>
+          <div class="form-grid">
+            <label>Duration (minutes)<input id="duration" type="number" min="0" step="1" inputmode="numeric"></label>
+            <label>Session RPE (1–10)<input id="sessionRpe" type="number" min="1" max="10" step="1" inputmode="numeric"></label>
+            <label>Body weight (lb)<input id="bodyWeight" type="number" min="0" step="0.1" inputmode="decimal"></label>
+            <label>Pain / discomfort (0–10)<input id="painScore" type="number" min="0" max="10" step="1" inputmode="numeric"></label>
+          </div>
+          <label>Session notes<textarea id="sessionNotes" rows="4" placeholder="Energy, technique, pain, what felt easy or hard..."></textarea></label>
+        </section>
+        <div class="sticky-actions">
+          <button class="primary" type="submit">Save workout</button>
+          <button id="clearFormButton" class="secondary" type="button">Clear</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="historyTab" class="tab-panel">
+      <div class="section-heading">
+        <div><p class="eyebrow">TRAINING MEMORY</p><h2>Workout history</h2></div>
+        <button id="deleteAllButton" class="danger subtle" type="button">Delete all</button>
+      </div>
+      <div id="historyList"></div>
+    </section>
+
+    <section id="progressTab" class="tab-panel">
+      <div class="section-heading"><div><p class="eyebrow">AT A GLANCE</p><h2>Progress</h2></div></div>
+      <div id="progressCards" class="metric-grid"></div>
+      <section class="card"><h2>Recent sessions</h2><div id="recentProgress"></div></section>
+    </section>
+
+    <section id="exportTab" class="tab-panel">
+      <section class="card">
+        <p class="eyebrow">MASTER CHAT UPDATE</p>
+        <h2>Generate a clean training report</h2>
+        <div class="form-grid">
+          <label>From<input id="exportFrom" type="date"></label>
+          <label>Through<input id="exportTo" type="date"></label>
+        </div>
+        <div class="button-row">
+          <button id="copyMarkdownButton" class="primary" type="button">Copy chat update</button>
+          <button id="downloadMarkdownButton" class="secondary" type="button">Download .md</button>
+        </div>
+        <textarea id="markdownPreview" class="export-preview" rows="18" readonly></textarea>
+      </section>
+
+      <section class="card">
+        <p class="eyebrow">BACKUP / TRANSFER</p>
+        <h2>Data tools</h2>
+        <p class="muted">Workouts are stored only in this browser on this device. Export a JSON backup before clearing browser data or moving phones.</p>
+        <div class="button-row">
+          <button id="downloadJsonButton" class="secondary" type="button">Export JSON backup</button>
+          <button id="downloadCsvButton" class="secondary" type="button">Export CSV</button>
+          <label class="file-button">Import JSON<input id="importJsonInput" type="file" accept="application/json,.json"></label>
+        </div>
+      </section>
+
+      <section class="card install-help">
+        <p class="eyebrow">IPHONE</p>
+        <h2>Add to Home Screen</h2>
+        <ol>
+          <li>Open the deployed app in Safari.</li>
+          <li>Tap the Share button.</li>
+          <li>Choose <strong>Add to Home Screen</strong>.</li>
+          <li>Open it from the new AFT Log icon.</li>
+        </ol>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -38,6 +38,22 @@
         <label>Session date<input id="sessionDate" type="date"></label>
       </div>
       <div id="workoutSummary" class="workout-summary"></div>
+      <section id="runProgressCard" class="card run-progress hidden">
+        <div class="run-progress-heading">
+          <div>
+            <p id="runStageBadge" class="eyebrow"></p>
+            <h2 id="runStageTitle"></h2>
+          </div>
+          <span class="run-progress-pill">Run progression</span>
+        </div>
+        <p id="runStageTarget" class="run-target"></p>
+        <p id="runStageStatus" class="muted"></p>
+        <div class="button-row">
+          <button id="runStageBackButton" class="secondary" type="button">Previous stage</button>
+          <button id="runStageRepeatButton" class="secondary" type="button">Repeat stage</button>
+          <button id="runStageAdvanceButton" class="primary" type="button">Advance stage</button>
+        </div>
+      </section>
       <form id="workoutForm">
         <div id="exerciseList"></div>
         <section class="card">

@@ -36,6 +36,8 @@ Days 1 and 3 end with an optional two-exercise arm superset: dumbbell curls and 
 
 Blank workouts automatically select the day after the most recent saved workout using session date and then `updatedAt`. They use a device-local `YYYY-MM-DD` date assembled from local date components. **New Workout** and the post-save reset apply these defaults; editing and tab switching preserve the active workout’s day and date.
 
+The PWA uses versioned CSS/JavaScript URLs and network-first same-origin fetching with offline cache fallback. When a newly activated service worker takes control of an already-open app, a persistent **Reload update** banner appears rather than interrupting a workout draft.
+
 ## Deployment tasks
 
 1. Run the app through a local HTTP server.

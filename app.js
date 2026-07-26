@@ -135,7 +135,7 @@ function init(){
  renderHistory();
  renderProgress();
  updatePreview();
- if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+ registerServiceWorker();
 }
 
 function bind(){
@@ -143,6 +143,7 @@ function bind(){
  document.querySelectorAll('.tab').forEach(button=>button.onclick=()=>tab(button.dataset.tab));
  $('workoutForm').onsubmit=saveWorkout;
  $('newWorkoutButton').onclick=()=>newWorkout();
+ $('reloadUpdateButton').onclick=()=>location.reload();
  $('deleteAllButton').onclick=deleteAll;
  $('runStageBackButton').onclick=()=>changeRunStage(-1);
  $('runStageRepeatButton').onclick=repeatRunStage;
@@ -157,6 +158,18 @@ function bind(){
  window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;$('installButton').classList.remove('hidden')});
  $('installButton').onclick=async()=>{if(!installPrompt)return;installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$('installButton').classList.add('hidden')};
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&runTimerState?.running)requestRunTimerWakeLock()});
+}
+
+function registerServiceWorker(){
+ if(!('serviceWorker' in navigator))return;
+ const hadController=Boolean(navigator.serviceWorker.controller);
+ const showUpdate=()=>$('updateBanner').classList.remove('hidden');
+ navigator.serviceWorker.addEventListener('controllerchange',()=>{if(hadController)showUpdate()});
+ navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(registration=>{
+  registration.update().catch(()=>{});
+  window.addEventListener('pageshow',()=>registration.update().catch(()=>{}));
+  if(registration.waiting&&hadController)showUpdate();
+ }).catch(()=>{});
 }
 
 function tab(name){

@@ -6,7 +6,8 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 
 - Four selectable workout-day cards
 - Guided run/walk progression through continuous running and a two-mile development phase
-- A built-in run/walk timer with live phase, round, next-segment, sound/vibration cues, pause, skip, and reset controls
+- A built-in walk-first interval timer with live phase, round, next-segment, sound/vibration cues, pause, skip, and reset controls
+- Numbered exercise order and a day-specific active warm-up shown before Exercise 1
 - Exercise and equipment variants for normal commercial-gym substitutions
 - Plate-only entry with live total-weight calculation for barbell, trap-bar, and Smith-machine variations
 - Mobile-friendly set and per-set rep selectors prefilled from each prescription
@@ -62,5 +63,7 @@ Day 1 deadlifts can be logged separately with a trap/hex bar, conventional barbe
 New workouts use the device-local calendar date and default to the day following the most recent saved session. The **New Workout** action returns to that suggested day without affecting saved history. Exercise records use stable IDs so older workouts remain editable as templates gain new accessories.
 
 Every saved run marked **Done** counts toward the current stage’s two-completion target. Session RPE and pain remain visible coaching signals, but they no longer silently prevent a completed run from appearing in progression. The timer automatically logs completed rounds, fills the planned elapsed time on completion, and marks the run done.
+
+The full Day 1 walk/run interval block remains after the primary strength work because it is conditioning, not the warm-up. Every workout displays a separate 5–10 minute active warm-up. Day 4 starts with its primary run after that warm-up, and every walk/run timer begins with the walk segment before progressing to the run segment.
 
 Bar-based movements default to logging the combined plate weight plus an editable bar or machine starting weight. The app shows the calculated total live and uses that total in history, progress, Markdown, JSON, and CSV output. Older records remain interpreted as the total load originally entered unless they are edited and switched to **Plates only + bar**.

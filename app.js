@@ -2,14 +2,14 @@ const KEY='aftWorkoutEntries.v1';
 const RUN_STAGE_KEY='aftRunStage.v1';
 
 const RUN_STAGES=[
- {id:1,label:'1:00 run / 1:00 walk × 10',runMinutes:'1',walkMinutes:'1',rounds:'10'},
- {id:2,label:'1:30 run / 1:00 walk × 8',runMinutes:'1.5',walkMinutes:'1',rounds:'8'},
- {id:3,label:'2:00 run / 1:00 walk × 7',runMinutes:'2',walkMinutes:'1',rounds:'7'},
- {id:4,label:'3:00 run / 1:00 walk × 6',runMinutes:'3',walkMinutes:'1',rounds:'6'},
- {id:5,label:'4:00 run / 1:00 walk × 5',runMinutes:'4',walkMinutes:'1',rounds:'5'},
- {id:6,label:'5:00 run / 1:00 walk × 5',runMinutes:'5',walkMinutes:'1',rounds:'5'},
- {id:7,label:'8:00 run / 1:00 walk × 3',runMinutes:'8',walkMinutes:'1',rounds:'3'},
- {id:8,label:'10:00 run / 1:00 walk × 3',runMinutes:'10',walkMinutes:'1',rounds:'3'},
+ {id:1,label:'1:00 walk / 1:00 run × 10',runMinutes:'1',walkMinutes:'1',rounds:'10'},
+ {id:2,label:'1:00 walk / 1:30 run × 8',runMinutes:'1.5',walkMinutes:'1',rounds:'8'},
+ {id:3,label:'1:00 walk / 2:00 run × 7',runMinutes:'2',walkMinutes:'1',rounds:'7'},
+ {id:4,label:'1:00 walk / 3:00 run × 6',runMinutes:'3',walkMinutes:'1',rounds:'6'},
+ {id:5,label:'1:00 walk / 4:00 run × 5',runMinutes:'4',walkMinutes:'1',rounds:'5'},
+ {id:6,label:'1:00 walk / 5:00 run × 5',runMinutes:'5',walkMinutes:'1',rounds:'5'},
+ {id:7,label:'1:00 walk / 8:00 run × 3',runMinutes:'8',walkMinutes:'1',rounds:'3'},
+ {id:8,label:'1:00 walk / 10:00 run × 3',runMinutes:'10',walkMinutes:'1',rounds:'3'},
  {id:9,label:'Continuous easy run — 20 minutes',continuousMinutes:'20'},
  {id:10,label:'Continuous easy run — 25 minutes',continuousMinutes:'25'},
  {id:11,label:'Continuous easy run — 30 minutes',continuousMinutes:'30'},
@@ -35,7 +35,7 @@ const EXERCISE_GROUPS={
 };
 
 const days={
- day1:{label:'Day 1 — Deadlift + Intervals',focus:'Primary strength day plus progressive run/walk conditioning.',ex:[
+ day1:{label:'Day 1 — Deadlift + Intervals',focus:'Primary strength day plus progressive walk/run conditioning.',warmup:'5–8 minutes of easy cardio, dynamic hip and ankle prep, then 2–4 progressive deadlift warm-up sets.',ex:[
   ['Deadlift','3 × 5','weighted','lb',{id:'deadlift',variations:['Trap / hex bar','Conventional barbell','Sumo barbell','Dumbbells'],defaultVariation:'Trap / hex bar',barWeights:{'Trap / hex bar':45,'Conventional barbell':45,'Sumo barbell':45},progression:'Track each bar type separately. When 3 × 5 is clean around RPE 7 or lower, add 5–10 lb next time; otherwise repeat the load.'}],
   ['Squat or leg press','3 × 8–10','weighted','lb',{id:'squatOrLegPress',variations:['Goblet squat','Leg press'],defaultVariation:'Goblet squat'}],
   ['Horizontal press','3 × 8–10','weighted','lb per hand',{id:'horizontalPress',variations:['Dumbbell bench press','Chest-press machine','Barbell bench press'],defaultVariation:'Dumbbell bench press',barWeights:{'Barbell bench press':45}}],
@@ -46,17 +46,17 @@ const days={
   ['Dumbbell curls','2–3 sets × 10–12 reps','weighted','lb per hand',{id:'dumbbellCurl',group:'armSuperset',sets:{default:2,max:3},progression:'When every set reaches 12 clean reps at a controlled effort, add the smallest available dumbbell increase.'}],
   ['Cable triceps pressdowns','2–3 sets × 10–15 reps','weighted','lb total',{id:'tricepsPressdown',group:'armSuperset',sets:{default:2,max:3},progression:'When every set reaches 15 clean reps at a controlled effort, add the smallest available cable-stack increase.'}]
  ]},
- day2:{label:'Day 2 — Upper + Easy Cardio',focus:'Upper-body muscular endurance and low-impact aerobic development.',ex:[
+ day2:{label:'Day 2 — Upper + Easy Cardio',focus:'Upper-body muscular endurance and low-impact aerobic development.',warmup:'5–8 minutes of easy cardio, shoulder and upper-back movement prep, then 1–2 easy push-up and pull ramp-up sets.',ex:[
   ['Hand-release push-ups','5 submaximal sets','body',null,{id:'handReleasePushups'}],
   ['Vertical pull','3 × 8–12','weighted','lb',{id:'verticalPull',variations:['Lat pulldown','Assisted pull-up','Band-assisted pull-up'],defaultVariation:'Lat pulldown'}],
   ['Overhead press','3 × 8–10','weighted','lb per hand',{id:'overheadPress',variations:['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],defaultVariation:'Seated dumbbell press'}],
-  ['Dumbbell lateral raises','2–3 sets × 12–15 reps','weighted','lb per hand',{id:'lateralRaise',sets:{default:2,max:3},progression:'When every set reaches 15 clean reps without swinging, add the smallest available dumbbell increase.'}],
   ['Chest-supported row','3 × 10','weighted','lb',{id:'chestSupportedRow',variations:['Dumbbell row','Machine row','T-bar row'],defaultVariation:'Dumbbell row'}],
   ['Lunge pattern','3 × 8 each leg','weighted','lb total',{id:'lungePattern',variations:['Walking lunge','Reverse lunge','Stationary split squat'],defaultVariation:'Walking lunge'}],
+  ['Dumbbell lateral raises','2–3 sets × 12–15 reps','weighted','lb per hand',{id:'lateralRaise',sets:{default:2,max:3},progression:'When every set reaches 15 clean reps without swinging, add the smallest available dumbbell increase.'}],
   ['Trunk stability','3 × 10 each side','body',null,{id:'trunkStability',variations:['Dead bug','Pallof press'],defaultVariation:'Dead bug'}],
   ['Easy cardio','25–35 min conversational effort','cardio',null,{id:'easyCardio'}]
  ]},
- day3:{label:'Day 3 — Lower Strength + Gym Conditioning',focus:'Build lower-body strength, grip, lateral stability, and repeat-effort conditioning with standard commercial-gym equipment.',ex:[
+ day3:{label:'Day 3 — Lower Strength + Gym Conditioning',focus:'Build lower-body strength, grip, lateral stability, and repeat-effort conditioning with standard commercial-gym equipment.',warmup:'5–8 minutes of easy cardio, dynamic hip and ankle prep, then 2–4 progressive squat warm-up sets.',ex:[
   ['Squat pattern','3 × 6–8','weighted','lb',{id:'squatPattern',variations:['Goblet squat','Front squat','Hack squat','Leg press'],defaultVariation:'Goblet squat',barWeights:{'Front squat':45}}],
   ['Romanian deadlift','3 × 8','weighted','lb',{id:'romanianDeadlift',variations:['Barbell','Dumbbells','Smith machine'],defaultVariation:'Barbell',barWeights:{'Barbell':45,'Smith machine':20}}],
   ['Incline press','3 × 8–10','weighted','lb per hand',{id:'inclinePress',variations:['Incline dumbbell press','Incline chest-press machine'],defaultVariation:'Incline dumbbell press'}],
@@ -67,11 +67,11 @@ const days={
   ['Dumbbell curls','2–3 sets × 10–12 reps','weighted','lb per hand',{id:'dumbbellCurl',group:'armSuperset',sets:{default:2,max:3},progression:'When every set reaches 12 clean reps at a controlled effort, add the smallest available dumbbell increase.'}],
   ['Cable triceps pressdowns','2–3 sets × 10–15 reps','weighted','lb total',{id:'tricepsPressdown',group:'armSuperset',sets:{default:2,max:3},progression:'When every set reaches 15 clean reps at a controlled effort, add the smallest available cable-stack increase.'}]
  ]},
- day4:{label:'Day 4 — Run + Calisthenics',focus:'Build continuous running capacity, then finish with test-relevant calisthenics.',ex:[
+ day4:{label:'Day 4 — Run + Calisthenics',focus:'Build continuous running capacity, then finish with test-relevant calisthenics.',warmup:'5–10 minutes of brisk walking plus marches and leg swings. Then begin the primary run; walk/run stages always start with walking.',ex:[
   ['Primary run','Follow the current run/walk, continuous-run, or two-mile-development stage','run',null,{id:'primaryRun'}],
   ['Hand-release push-ups','4 easy-to-moderate sets','body',null,{id:'handReleasePushups'}],
-  ['Plank','3 working sets','timed',null,{id:'plank'}],
   ['Air squats','2 × 15','body',null,{id:'airSquats'}],
+  ['Plank','3 working sets','timed',null,{id:'plank'}],
   ['Mobility','5–10 min','timed',null,{id:'mobility'}]
  ]}
 };
@@ -187,7 +187,7 @@ function renderWorkout(saved=null,{preserveSession=false}={}){
  const day=days[key];
  $('daySelect').value=key;
  const parts=day.label.split('—');
- $('workoutSummary').innerHTML=`<p class="eyebrow">${esc(parts[0].trim())}</p><h2>${esc(parts.slice(1).join('—').trim())}</h2><p>${esc(day.focus)}</p>`;
+ $('workoutSummary').innerHTML=`<p class="eyebrow">${esc(parts[0].trim())}</p><h2>${esc(parts.slice(1).join('—').trim())}</h2><p>${esc(day.focus)}</p><p class="workout-warmup"><strong>Warm-up before Exercise 1:</strong> ${esc(day.warmup)}</p>`;
  renderRunProgress(key);
  clearRunTimer();
  $('exerciseList').innerHTML=renderExerciseList(day,key,saved);
@@ -271,7 +271,7 @@ function exerciseCard(exercise,index,state){
  const setPlan=getSetPlan(prescription,meta);
  return `<section class="card exercise-card ${state.completed?'completed':''}" data-i="${index}" data-exercise-id="${attr(meta.id||name)}">
   <div class="exercise-heading">
-   <div><h2>${esc(name)}</h2><p>${esc(prescription)}</p></div>
+   <div><p class="exercise-order">Exercise ${index+1}</p><h2>${esc(name)}</h2><p>${esc(prescription)}</p></div>
    <label class="check-label"><input class="exercise-complete" type="checkbox" ${state.completed?'checked':''}>Done</label>
   </div>
   ${variation}${fields(type,unit,state,setPlan,meta)}
@@ -553,8 +553,8 @@ function buildRunTimerPlan(card){
  const plan=[];
  if(runSeconds>0&&rounds>0){
   for(let round=1;round<=rounds;round++){
-   plan.push({kind:'run',label:'Run',round,seconds:runSeconds});
    if(walkSeconds>0)plan.push({kind:'walk',label:'Walk',round,seconds:walkSeconds});
+   plan.push({kind:'run',label:'Run',round,seconds:runSeconds});
   }
  }else if(continuousSeconds>0){
   plan.push({kind:'run',label:'Continuous run',round:null,seconds:continuousSeconds});
@@ -667,7 +667,7 @@ function completeRunTimerSegment(){
  const segment=state.plan[state.index];
  state.completedSegments=Math.min(state.plan.length,state.completedSegments+1);
  const next=state.plan[state.index+1];
- const completedRound=segment.round&&(segment.kind==='walk'||!next||next.round!==segment.round);
+ const completedRound=segment.round&&(!next||next.round!==segment.round);
  if(completedRound){
   const input=state.card.querySelector('[data-field="completedRounds"]');
   if(input)input.value=String(segment.round);
@@ -723,10 +723,14 @@ function updateRunTimer(){
   ?'All planned segments completed'
   :next?`Next: ${next.label}${next.round?` · Round ${next.round}`:''}`:`Planned time: ${formatTimerSeconds(state.plan.reduce((sum,item)=>sum+item.seconds,0))}`;
  const progress=timer.querySelector('[data-timer-progress]');
- progress.max=Math.max(1,state.plan.length);
- progress.value=state.complete?state.plan.length:state.completedSegments;
+ const roundCount=runTimerRoundCount(state.plan);
+ const completedRounds=runTimerCompletedRoundCount(state);
+ progress.max=Math.max(1,roundCount||state.plan.length);
+ progress.value=state.complete?(roundCount||state.plan.length):(roundCount?completedRounds:state.completedSegments);
  timer.querySelector('[data-timer-segments]').textContent=state.plan.length
-  ?`${state.completedSegments} of ${state.plan.length} segments complete`
+  ?roundCount
+   ?`${completedRounds} of ${roundCount} rounds complete · ${state.completedSegments} of ${state.plan.length} segments`
+   :`${state.completedSegments} of ${state.plan.length} segments complete`
   :'Set the interval duration and rounds above.';
  const start=timer.querySelector('[data-timer-action="start"]');
  start.textContent=state.started&&!state.complete?'Resume timer':'Start timer';
@@ -737,6 +741,13 @@ function updateRunTimer(){
 
 function runTimerRoundCount(plan){
  return plan.reduce((max,segment)=>Math.max(max,segment.round||0),0);
+}
+
+function runTimerCompletedRoundCount(state){
+ return state.plan.slice(0,state.completedSegments).reduce((count,segment,index)=>{
+  const next=state.plan[index+1];
+  return count+(segment.round&&(!next||next.round!==segment.round)?1:0);
+ },0);
 }
 
 function formatTimerSeconds(seconds){
@@ -1113,7 +1124,7 @@ function summary(exercise){
  if(exercise.sets)parts.push(`${exercise.sets} sets`);
  if(exercise.reps)parts.push(`reps ${exercise.reps}`);
  if(exercise.times)parts.push(`times ${exercise.times}`);
- if(exercise.runMinutes||exercise.walkMinutes)parts.push(`${exercise.runMinutes||0} min run / ${exercise.walkMinutes||0} min walk`);
+ if(exercise.runMinutes||exercise.walkMinutes)parts.push(`${exercise.walkMinutes||0} min walk / ${exercise.runMinutes||0} min run`);
  if(exercise.continuousMinutes)parts.push(`${exercise.continuousMinutes} min continuous`);
  if(exercise.completedRounds)parts.push(`${exercise.completedRounds}${exercise.rounds?`/${exercise.rounds}`:''} rounds completed`);
  else if(exercise.rounds)parts.push(`${exercise.rounds} rounds planned`);

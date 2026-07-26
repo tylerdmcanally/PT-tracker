@@ -24,7 +24,7 @@ Legacy `sledLoad` data is still included in the summary function so older saved 
 
 Run training uses 12 persisted stages: eight run/walk stages, three continuous-run stages, and a two-mile development phase. Day 1 and Day 4 share the current stage but receive separate session targets. Every saved run exercise marked **Done** counts toward the two-completion target for its logged stage; session and run-specific effort/pain remain visible coaching signals without silently excluding a completion. The stage controls remain manually adjustable.
 
-Run/walk and continuous-run cards include an offline timer with a large current-phase countdown, round and segment tracking, next-segment preview, pause/resume, skip, reset, sound/vibration transitions, and Screen Wake Lock support when the browser provides it. Completing the timer fills completed rounds and planned elapsed time and marks the run exercise done.
+Run/walk and continuous-run cards include an offline timer with a large current-phase countdown, round and segment tracking, next-segment preview, pause/resume, skip, reset, sound/vibration transitions, and Screen Wake Lock support when the browser provides it. Every interval round starts with walking and then changes to running. Completing the timer fills completed rounds and planned elapsed time and marks the run exercise done.
 
 Strength and conditioning exercises include collapsible progression guidance. Equipment-dependent movements expose practical alternatives. Deadlift entries distinguish trap/hex bar, conventional barbell, sumo barbell, and dumbbells, with separate best-load summaries for hex-bar and straight-bar work. Older `Trap-bar deadlift` records are normalized into the hex-bar category.
 
@@ -33,6 +33,8 @@ Bar-based variations use a **Plates only + bar** entry mode by default. The user
 Set-based strength and calisthenics exercises use mobile-friendly selectors. The prescribed set count is selected by default, the user can reduce or increase it within the available range, and each visible set has its own reps selector plus an `Other…` numeric fallback. Existing comma-separated `reps` values remain compatible when older workouts are edited or exported.
 
 Days 1 and 3 end with an optional two-exercise arm superset: dumbbell curls and cable triceps pressdowns. Day 2 adds dumbbell lateral raises. These exercises have stable IDs, independent completion and logging controls, export normally, and add secondary progress metrics only after data exists.
+
+Every day displays a specific active warm-up before Exercise 1, and exercise cards are numbered in intended completion order. Day 1 keeps its full walk/run block after the strength work because it is conditioning rather than the warm-up. Day 4 begins with the primary run after its separate walking and dynamic warm-up. Multi-joint work precedes isolation work on Day 2, and Day 4 air squats precede the plank and cooldown mobility.
 
 Blank workouts automatically select the day after the most recent saved workout using session date and then `updatedAt`. They use a device-local `YYYY-MM-DD` date assembled from local date components. **New Workout** and the post-save reset apply these defaults; editing and tab switching preserve the active workout’s day and date.
 

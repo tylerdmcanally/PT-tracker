@@ -27,44 +27,100 @@ const PROGRESSION={
  circuit:'First complete every round cleanly. Then shorten recovery or add a small amount of load—change one variable at a time.'
 };
 
+const EXERCISE_GROUPS={
+ armSuperset:{
+  label:'Arm Superset — 2–3 rounds',
+  instruction:'Perform curls and pressdowns back-to-back, then rest 60–90 seconds.'
+ }
+};
+
 const days={
  day1:{label:'Day 1 — Deadlift + Intervals',focus:'Primary strength day plus progressive run/walk conditioning.',ex:[
-  ['Deadlift','3 × 5','weighted','lb',{variations:['Trap / hex bar','Conventional barbell','Sumo barbell','Dumbbells'],defaultVariation:'Trap / hex bar',progression:'Track each bar type separately. When 3 × 5 is clean around RPE 7 or lower, add 5–10 lb next time; otherwise repeat the load.'}],
-  ['Squat or leg press','3 × 8–10','weighted','lb',{variations:['Goblet squat','Leg press'],defaultVariation:'Goblet squat'}],
-  ['Horizontal press','3 × 8–10','weighted','lb per hand',{variations:['Dumbbell bench press','Chest-press machine','Barbell bench press'],defaultVariation:'Dumbbell bench press'}],
-  ['Seated row','3 × 10','weighted','lb',{variations:['Seated cable row','Chest-supported machine row'],defaultVariation:'Seated cable row'}],
-  ['Loaded carry or hold','4 × 30–40 yd or 30–45 sec','carry','lb per hand',{variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry'}],
-  ['Plank','3 × 30–60 sec','timed'],
-  ['Run / walk intervals','Follow the current run progression stage','interval']
+  ['Deadlift','3 × 5','weighted','lb',{id:'deadlift',variations:['Trap / hex bar','Conventional barbell','Sumo barbell','Dumbbells'],defaultVariation:'Trap / hex bar',barWeights:{'Trap / hex bar':45,'Conventional barbell':45,'Sumo barbell':45},progression:'Track each bar type separately. When 3 × 5 is clean around RPE 7 or lower, add 5–10 lb next time; otherwise repeat the load.'}],
+  ['Squat or leg press','3 × 8–10','weighted','lb',{id:'squatOrLegPress',variations:['Goblet squat','Leg press'],defaultVariation:'Goblet squat'}],
+  ['Horizontal press','3 × 8–10','weighted','lb per hand',{id:'horizontalPress',variations:['Dumbbell bench press','Chest-press machine','Barbell bench press'],defaultVariation:'Dumbbell bench press',barWeights:{'Barbell bench press':45}}],
+  ['Seated row','3 × 10','weighted','lb',{id:'seatedRow',variations:['Seated cable row','Chest-supported machine row'],defaultVariation:'Seated cable row'}],
+  ['Loaded carry or hold','4 × 30–40 yd or 30–45 sec','carry','lb per hand',{id:'loadedCarry',variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry'}],
+  ['Plank','3 × 30–60 sec','timed',null,{id:'plank'}],
+  ['Run / walk intervals','Follow the current run progression stage','interval',null,{id:'runWalkIntervals'}],
+  ['Dumbbell curls','2–3 sets × 10–12 reps','weighted','lb per hand',{id:'dumbbellCurl',group:'armSuperset',sets:{default:2,max:3},progression:'When every set reaches 12 clean reps at a controlled effort, add the smallest available dumbbell increase.'}],
+  ['Cable triceps pressdowns','2–3 sets × 10–15 reps','weighted','lb total',{id:'tricepsPressdown',group:'armSuperset',sets:{default:2,max:3},progression:'When every set reaches 15 clean reps at a controlled effort, add the smallest available cable-stack increase.'}]
  ]},
  day2:{label:'Day 2 — Upper + Easy Cardio',focus:'Upper-body muscular endurance and low-impact aerobic development.',ex:[
-  ['Hand-release push-ups','5 submaximal sets','body'],
-  ['Vertical pull','3 × 8–12','weighted','lb',{variations:['Lat pulldown','Assisted pull-up','Band-assisted pull-up'],defaultVariation:'Lat pulldown'}],
-  ['Overhead press','3 × 8–10','weighted','lb per hand',{variations:['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],defaultVariation:'Seated dumbbell press'}],
-  ['Chest-supported row','3 × 10','weighted','lb',{variations:['Dumbbell row','Machine row','T-bar row'],defaultVariation:'Dumbbell row'}],
-  ['Lunge pattern','3 × 8 each leg','weighted','lb total',{variations:['Walking lunge','Reverse lunge','Stationary split squat'],defaultVariation:'Walking lunge'}],
-  ['Trunk stability','3 × 10 each side','body',{variations:['Dead bug','Pallof press'],defaultVariation:'Dead bug'}],
-  ['Easy cardio','25–35 min conversational effort','cardio']
+  ['Hand-release push-ups','5 submaximal sets','body',null,{id:'handReleasePushups'}],
+  ['Vertical pull','3 × 8–12','weighted','lb',{id:'verticalPull',variations:['Lat pulldown','Assisted pull-up','Band-assisted pull-up'],defaultVariation:'Lat pulldown'}],
+  ['Overhead press','3 × 8–10','weighted','lb per hand',{id:'overheadPress',variations:['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],defaultVariation:'Seated dumbbell press'}],
+  ['Dumbbell lateral raises','2–3 sets × 12–15 reps','weighted','lb per hand',{id:'lateralRaise',sets:{default:2,max:3},progression:'When every set reaches 15 clean reps without swinging, add the smallest available dumbbell increase.'}],
+  ['Chest-supported row','3 × 10','weighted','lb',{id:'chestSupportedRow',variations:['Dumbbell row','Machine row','T-bar row'],defaultVariation:'Dumbbell row'}],
+  ['Lunge pattern','3 × 8 each leg','weighted','lb total',{id:'lungePattern',variations:['Walking lunge','Reverse lunge','Stationary split squat'],defaultVariation:'Walking lunge'}],
+  ['Trunk stability','3 × 10 each side','body',null,{id:'trunkStability',variations:['Dead bug','Pallof press'],defaultVariation:'Dead bug'}],
+  ['Easy cardio','25–35 min conversational effort','cardio',null,{id:'easyCardio'}]
  ]},
  day3:{label:'Day 3 — Lower Strength + Gym Conditioning',focus:'Build lower-body strength, grip, lateral stability, and repeat-effort conditioning with standard commercial-gym equipment.',ex:[
-  ['Squat pattern','3 × 6–8','weighted','lb',{variations:['Goblet squat','Front squat','Hack squat','Leg press'],defaultVariation:'Goblet squat'}],
-  ['Romanian deadlift','3 × 8','weighted','lb',{variations:['Barbell','Dumbbells','Smith machine'],defaultVariation:'Barbell'}],
-  ['Incline press','3 × 8–10','weighted','lb per hand',{variations:['Incline dumbbell press','Incline chest-press machine'],defaultVariation:'Incline dumbbell press'}],
-  ['One-arm row','3 × 10 each side','weighted','lb',{variations:['One-arm dumbbell row','One-arm cable row'],defaultVariation:'One-arm dumbbell row'}],
-  ['Single-leg strength','3 × 8 each leg','weighted','lb total',{variations:['Split squat','Forward step-up','Lateral step-up'],defaultVariation:'Split squat'}],
-  ['Side plank','3 × 20–45 sec each side','timed'],
-  ['Gym conditioning circuit','3 rounds: reverse lunges, carry or hold, lateral step-ups, 45–60 sec hard cardio, then 2–3 min rest','circuit']
+  ['Squat pattern','3 × 6–8','weighted','lb',{id:'squatPattern',variations:['Goblet squat','Front squat','Hack squat','Leg press'],defaultVariation:'Goblet squat',barWeights:{'Front squat':45}}],
+  ['Romanian deadlift','3 × 8','weighted','lb',{id:'romanianDeadlift',variations:['Barbell','Dumbbells','Smith machine'],defaultVariation:'Barbell',barWeights:{'Barbell':45,'Smith machine':20}}],
+  ['Incline press','3 × 8–10','weighted','lb per hand',{id:'inclinePress',variations:['Incline dumbbell press','Incline chest-press machine'],defaultVariation:'Incline dumbbell press'}],
+  ['One-arm row','3 × 10 each side','weighted','lb',{id:'oneArmRow',variations:['One-arm dumbbell row','One-arm cable row'],defaultVariation:'One-arm dumbbell row'}],
+  ['Single-leg strength','3 × 8 each leg','weighted','lb total',{id:'singleLegStrength',variations:['Split squat','Forward step-up','Lateral step-up'],defaultVariation:'Split squat'}],
+  ['Side plank','3 × 20–45 sec each side','timed',null,{id:'sidePlank'}],
+  ['Gym conditioning circuit','3 rounds: reverse lunges, carry or hold, lateral step-ups, 45–60 sec hard cardio, then 2–3 min rest','circuit',null,{id:'gymConditioningCircuit'}],
+  ['Dumbbell curls','2–3 sets × 10–12 reps','weighted','lb per hand',{id:'dumbbellCurl',group:'armSuperset',sets:{default:2,max:3},progression:'When every set reaches 12 clean reps at a controlled effort, add the smallest available dumbbell increase.'}],
+  ['Cable triceps pressdowns','2–3 sets × 10–15 reps','weighted','lb total',{id:'tricepsPressdown',group:'armSuperset',sets:{default:2,max:3},progression:'When every set reaches 15 clean reps at a controlled effort, add the smallest available cable-stack increase.'}]
  ]},
  day4:{label:'Day 4 — Run + Calisthenics',focus:'Build continuous running capacity, then finish with test-relevant calisthenics.',ex:[
-  ['Primary run','Follow the current run/walk, continuous-run, or two-mile-development stage','run'],
-  ['Hand-release push-ups','4 easy-to-moderate sets','body'],
-  ['Plank','3 working sets','timed'],
-  ['Air squats','2 × 15','body'],
-  ['Mobility','5–10 min','timed']
+  ['Primary run','Follow the current run/walk, continuous-run, or two-mile-development stage','run',null,{id:'primaryRun'}],
+  ['Hand-release push-ups','4 easy-to-moderate sets','body',null,{id:'handReleasePushups'}],
+  ['Plank','3 working sets','timed',null,{id:'plank'}],
+  ['Air squats','2 × 15','body',null,{id:'airSquats'}],
+  ['Mobility','5–10 min','timed',null,{id:'mobility'}]
  ]}
 };
 
+const EXERCISE_NAME_IDS={
+ 'Deadlift':'deadlift',
+ 'Trap-bar deadlift':'deadlift',
+ 'Squat or leg press':'squatOrLegPress',
+ 'Goblet squat or leg press':'squatOrLegPress',
+ 'Horizontal press':'horizontalPress',
+ 'Dumbbell bench press':'horizontalPress',
+ 'Seated row':'seatedRow',
+ 'Seated cable row':'seatedRow',
+ 'Loaded carry or hold':'loadedCarry',
+ 'Farmer carry':'loadedCarry',
+ 'Plank':'plank',
+ 'Run / walk intervals':'runWalkIntervals',
+ 'Dumbbell curls':'dumbbellCurl',
+ 'Cable triceps pressdowns':'tricepsPressdown',
+ 'Hand-release push-ups':'handReleasePushups',
+ 'Vertical pull':'verticalPull',
+ 'Lat pulldown or assisted pull-up':'verticalPull',
+ 'Overhead press':'overheadPress',
+ 'Dumbbell overhead press':'overheadPress',
+ 'Dumbbell lateral raises':'lateralRaise',
+ 'Chest-supported row':'chestSupportedRow',
+ 'Lunge pattern':'lungePattern',
+ 'Walking lunges':'lungePattern',
+ 'Trunk stability':'trunkStability',
+ 'Dead bug or Pallof press':'trunkStability',
+ 'Easy cardio':'easyCardio',
+ 'Squat pattern':'squatPattern',
+ 'Goblet squat, front squat, hack squat, or leg press':'squatPattern',
+ 'Romanian deadlift':'romanianDeadlift',
+ 'Incline press':'inclinePress',
+ 'Incline dumbbell press':'inclinePress',
+ 'One-arm row':'oneArmRow',
+ 'One-arm dumbbell row':'oneArmRow',
+ 'Single-leg strength':'singleLegStrength',
+ 'Split squat or step-up':'singleLegStrength',
+ 'Side plank':'sidePlank',
+ 'Gym conditioning circuit':'gymConditioningCircuit',
+ 'Primary run':'primaryRun',
+ 'Air squats':'airSquats',
+ 'Mobility':'mobility'
+};
+
 let entries=load(),editing=null,installPrompt=null,runStage=loadRunStage();
+let runTimerState=null,runTimerTick=null,runTimerWakeLock=null,runTimerAudioContext=null;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const attr=s=>esc(s).replaceAll('\n',' ');
@@ -73,10 +129,9 @@ document.addEventListener('DOMContentLoaded',init);
 
 function init(){
  Object.entries(days).forEach(([key,day])=>$('daySelect').insertAdjacentHTML('beforeend',`<option value="${key}">${esc(day.label)}</option>`));
- $('sessionDate').value=today();
  setExportDates();
  bind();
- renderWorkout();
+ newWorkout(false);
  renderHistory();
  renderProgress();
  updatePreview();
@@ -84,10 +139,10 @@ function init(){
 }
 
 function bind(){
- $('daySelect').onchange=()=>{editing=null;renderWorkout()};
+ $('daySelect').onchange=()=>{editing=null;renderWorkout(null,{preserveSession:true})};
  document.querySelectorAll('.tab').forEach(button=>button.onclick=()=>tab(button.dataset.tab));
  $('workoutForm').onsubmit=saveWorkout;
- $('clearFormButton').onclick=clearForm;
+ $('newWorkoutButton').onclick=()=>newWorkout();
  $('deleteAllButton').onclick=deleteAll;
  $('runStageBackButton').onclick=()=>changeRunStage(-1);
  $('runStageRepeatButton').onclick=repeatRunStage;
@@ -101,6 +156,7 @@ function bind(){
  $('exportTo').onchange=updatePreview;
  window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;$('installButton').classList.remove('hidden')});
  $('installButton').onclick=async()=>{if(!installPrompt)return;installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$('installButton').classList.add('hidden')};
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&runTimerState?.running)requestRunTimerWakeLock()});
 }
 
 function tab(name){
@@ -113,29 +169,79 @@ function tab(name){
  scrollTo({top:0,behavior:'smooth'});
 }
 
-function renderWorkout(saved=null){
+function renderWorkout(saved=null,{preserveSession=false}={}){
  const key=saved?.dayKey||$('daySelect').value||'day1';
  const day=days[key];
  $('daySelect').value=key;
  const parts=day.label.split('—');
  $('workoutSummary').innerHTML=`<p class="eyebrow">${esc(parts[0].trim())}</p><h2>${esc(parts.slice(1).join('—').trim())}</h2><p>${esc(day.focus)}</p>`;
  renderRunProgress(key);
- $('exerciseList').innerHTML=day.ex.map((exercise,index)=>{
-  const state=saved?.exercises?.[index]||defaultExerciseState(exercise,key);
-  return exerciseCard(exercise,index,state);
- }).join('');
+ clearRunTimer();
+ $('exerciseList').innerHTML=renderExerciseList(day,key,saved);
  document.querySelectorAll('.exercise-complete').forEach(input=>input.onchange=()=>input.closest('.exercise-card').classList.toggle('completed',input.checked));
  bindSetControls();
+ bindWeightedLoadControls();
  document.querySelectorAll('[data-field="runStage"]').forEach(selectInput=>selectInput.onchange=()=>{
+  const card=selectInput.closest('.exercise-card');
   const stage=Number(selectInput.value);
-  if(stage)applyRunStageDefaults(selectInput.closest('.exercise-card'),stage,key);
+  if(stage)applyRunStageDefaults(card,stage,key);
+  prepareRunTimer(card,{clearCompletedRounds:true});
  });
- $('sessionDate').value=saved?.date||$('sessionDate').value||today();
- $('duration').value=saved?.duration||'';
- $('sessionRpe').value=saved?.sessionRpe||'';
- $('bodyWeight').value=saved?.bodyWeight||'';
- $('painScore').value=saved?.painScore??'';
- $('sessionNotes').value=saved?.notes||'';
+ bindRunTimers();
+ if(saved){
+  $('sessionDate').value=saved.date;
+  $('duration').value=saved.duration||'';
+  $('sessionRpe').value=saved.sessionRpe||'';
+  $('bodyWeight').value=saved.bodyWeight||'';
+  $('painScore').value=saved.painScore??'';
+  $('sessionNotes').value=saved.notes||'';
+ }else{
+  if(!$('sessionDate').value)$('sessionDate').value=today();
+  if(!preserveSession){
+   $('duration').value='';
+   $('sessionRpe').value='';
+   $('bodyWeight').value='';
+   $('painScore').value='';
+   $('sessionNotes').value='';
+  }
+ }
+}
+
+function renderExerciseList(day,key,saved){
+ const savedExercises=Array.isArray(saved?.exercises)?saved.exercises:[];
+ let html='',openGroup=null;
+ day.ex.forEach((exercise,index)=>{
+  const meta=exercise[4]||{},groupKey=meta.group||null;
+  if(groupKey!==openGroup){
+   if(openGroup)html+='</div></section>';
+   openGroup=groupKey;
+   if(groupKey){
+    const group=EXERCISE_GROUPS[groupKey];
+    html+=`<section class="exercise-group" aria-label="${attr(group.label)}">
+     <div class="exercise-group-heading"><p class="eyebrow">OPTIONAL ACCESSORY</p><h2>${esc(group.label)}</h2><p>${esc(group.instruction)}</p></div>
+     <div class="exercise-group-cards">`;
+   }
+  }
+  const state=findSavedExercise(exercise,savedExercises)||defaultExerciseState(exercise,key);
+  html+=exerciseCard(exercise,index,state);
+ });
+ if(openGroup)html+='</div></section>';
+ return html;
+}
+
+function findSavedExercise(definition,savedExercises){
+ const definitionId=exerciseDefinitionId(definition);
+ return savedExercises.find(exercise=>exerciseIdentity(exercise)===definitionId)
+  ||savedExercises.find(exercise=>exercise.name===definition[0])
+  ||null;
+}
+
+function exerciseDefinitionId(definition){
+ return definition[4]?.id||EXERCISE_NAME_IDS[definition[0]]||definition[0];
+}
+
+function exerciseIdentity(exercise){
+ return exercise?.exerciseId||exercise?.templateId||EXERCISE_NAME_IDS[exercise?.name]||exercise?.name||'';
 }
 
 function defaultExerciseState(exercise,key){
@@ -150,19 +256,19 @@ function exerciseCard(exercise,index,state){
  const variation=meta.variations?grid(select('variation','Variation / equipment',state.variation||meta.defaultVariation||'',meta.variations)):'';
  const guidance=meta.progression||PROGRESSION[type]||'Progress gradually while keeping technique consistent.';
  const setPlan=getSetPlan(prescription,meta);
- return `<section class="card exercise-card ${state.completed?'completed':''}" data-i="${index}">
+ return `<section class="card exercise-card ${state.completed?'completed':''}" data-i="${index}" data-exercise-id="${attr(meta.id||name)}">
   <div class="exercise-heading">
    <div><h2>${esc(name)}</h2><p>${esc(prescription)}</p></div>
    <label class="check-label"><input class="exercise-complete" type="checkbox" ${state.completed?'checked':''}>Done</label>
   </div>
-  ${variation}${fields(type,unit,state,setPlan)}
+  ${variation}${fields(type,unit,state,setPlan,meta)}
   <label>Exercise notes<input data-field="notes" value="${attr(state.notes)}" placeholder="Technique, pain, substitutions..."></label>
   <details class="progression-help"><summary>Progression guidance</summary><p>${esc(guidance)}</p></details>
  </section>`;
 }
 
-function fields(type,unit,state,setPlan){
- if(type==='weighted')return grid(num('load',`Load (${unit})`,state.load),setCountSelect(state.sets,setPlan),num('rpe','Exercise RPE',state.rpe,1,10))+setRepLogger(state,setPlan,type);
+function fields(type,unit,state,setPlan,meta={}){
+ if(type==='weighted')return weightedFields(unit,state,setPlan,meta);
  if(type==='body')return grid(setCountSelect(state.sets,setPlan),num('rpe','Exercise RPE',state.rpe,1,10))+setRepLogger(state,setPlan,type);
  if(type==='timed')return setPlan
   ?grid(setCountSelect(state.sets,setPlan),text('times','Times by set',state.times,'0:45, 0:40, 0:35'),num('rpe','Exercise RPE',state.rpe,1,10))
@@ -183,6 +289,106 @@ function fields(type,unit,state,setPlan){
   num('rpe','Circuit RPE',state.rpe,1,10)
  );
  return '';
+}
+
+function weightedFields(unit,state,setPlan,meta){
+ const variation=state.variation||meta.defaultVariation||'';
+ const barWeights=meta.barWeights||{};
+ const usesBar=Object.prototype.hasOwnProperty.call(barWeights,variation);
+ const savedMode=['plates','total'].includes(state.loadMode)?state.loadMode:'';
+ const mode=usesBar?(savedMode||(state.load?'total':'plates')):'';
+ const barWeight=usesBar
+  ?(state.barWeight!==''&&state.barWeight!=null?state.barWeight:barWeights[variation])
+  :'';
+ const loadLabel=usesBar&&mode==='plates'?'Plate load (lb, both sides combined)':usesBar?'Total load (lb)':`Load (${unit})`;
+ return `<div class="weighted-load" data-unit="${attr(unit)}" data-bar-weights="${attr(JSON.stringify(barWeights))}" data-active-bar-variation="${attr(usesBar?variation:'')}">
+  <div class="form-grid">
+   <label><span data-load-label>${esc(loadLabel)}</span><input data-field="load" type="number" value="${attr(state.load)}" min="0" step=".5" inputmode="decimal"></label>
+   <label data-load-mode-wrap class="${usesBar?'':'hidden'}">Weight entered as
+    <select data-field="loadMode">
+     <option value="plates" ${mode==='plates'?'selected':''}>Plates only + bar</option>
+     <option value="total" ${mode==='total'?'selected':''}>Total weight</option>
+    </select>
+   </label>
+   <label data-bar-weight-wrap class="${usesBar&&mode==='plates'?'':'hidden'}">Bar / starting resistance (lb)
+    <input data-field="barWeight" type="number" value="${attr(barWeight)}" min="0" step=".5" inputmode="decimal">
+   </label>
+   ${setCountSelect(state.sets,setPlan)}
+   ${num('rpe','Exercise RPE',state.rpe,1,10)}
+  </div>
+  <div class="calculated-load ${usesBar?'':'hidden'}" data-calculated-load>
+   <span>Total training load</span>
+   <strong data-total-load>—</strong>
+   <small data-load-breakdown>Plate load plus bar weight</small>
+  </div>
+ </div>${setRepLogger(state,setPlan,'weighted')}`;
+}
+
+function bindWeightedLoadControls(){
+ document.querySelectorAll('.weighted-load').forEach(panel=>{
+  const card=panel.closest('.exercise-card');
+  const variation=card.querySelector('[data-field="variation"]');
+  const refresh=variationChanged=>updateWeightedLoad(panel,variation?.value||'',variationChanged);
+  panel.querySelector('[data-field="load"]').addEventListener('input',()=>refresh(false));
+  panel.querySelector('[data-field="barWeight"]').addEventListener('input',()=>refresh(false));
+  panel.querySelector('[data-field="loadMode"]').addEventListener('change',()=>refresh(false));
+  variation?.addEventListener('change',()=>refresh(true));
+  refresh(false);
+ });
+}
+
+function updateWeightedLoad(panel,variation,variationChanged){
+ let barWeights={};
+ try{barWeights=JSON.parse(panel.dataset.barWeights||'{}')}catch{}
+ const usesBar=Object.prototype.hasOwnProperty.call(barWeights,variation);
+ const load=panel.querySelector('[data-field="load"]');
+ const mode=panel.querySelector('[data-field="loadMode"]');
+ const barWeight=panel.querySelector('[data-field="barWeight"]');
+ const modeWrap=panel.querySelector('[data-load-mode-wrap]');
+ const barWrap=panel.querySelector('[data-bar-weight-wrap]');
+ const calculated=panel.querySelector('[data-calculated-load]');
+ const label=panel.querySelector('[data-load-label]');
+ if(!usesBar){
+  mode.value='';
+  barWeight.value='';
+  modeWrap.classList.add('hidden');
+  barWrap.classList.add('hidden');
+  calculated.classList.add('hidden');
+  label.textContent=`Load (${panel.dataset.unit})`;
+  panel.dataset.activeBarVariation='';
+  return;
+ }
+ const newlySelected=variationChanged&&panel.dataset.activeBarVariation!==variation;
+ if(!['plates','total'].includes(mode.value)||newlySelected)mode.value='plates';
+ if((newlySelected||barWeight.value==='')&&mode.value==='plates')barWeight.value=String(barWeights[variation]??'');
+ modeWrap.classList.remove('hidden');
+ barWrap.classList.toggle('hidden',mode.value!=='plates');
+ calculated.classList.remove('hidden');
+ label.textContent=mode.value==='plates'?'Plate load (lb, both sides combined)':'Total load (lb)';
+ const entered=numberOrNull(load.value);
+ const bar=numberOrNull(barWeight.value)||0;
+ const total=entered==null?null:mode.value==='plates'?entered+bar:entered;
+ panel.querySelector('[data-total-load]').textContent=total==null?'—':`${formatLoad(total)} lb`;
+ panel.querySelector('[data-load-breakdown]').textContent=entered==null
+  ?'Enter the combined plate weight; adjust the bar weight if needed.'
+  :mode.value==='plates'?`${formatLoad(entered)} lb plates + ${formatLoad(bar)} lb bar`:'Entered as total weight';
+ panel.dataset.activeBarVariation=variation;
+}
+
+function numberOrNull(value){
+ if(value===''||value==null)return null;
+ const number=Number(value);
+ return Number.isFinite(number)?number:null;
+}
+
+function formatLoad(value){
+ return Number(value).toFixed(2).replace(/\.?0+$/,'');
+}
+
+function totalLoadValue(exercise){
+ const entered=numberOrNull(exercise?.load);
+ if(entered==null)return null;
+ return exercise.loadMode==='plates'?entered+(numberOrNull(exercise.barWeight)||0):entered;
 }
 
 function getSetPlan(prescription,meta={}){
@@ -276,13 +482,290 @@ function runFields(type,state){
   runStageSelect(state.runStage),
   num('runMinutes','Run interval (min)',state.runMinutes,0,null,.25),
   num('walkMinutes','Walk / easy interval (min)',state.walkMinutes,0,null,.25),
-  num('rounds','Rounds',state.rounds),
+  num('rounds','Planned run/walk rounds',state.rounds),
+  num('completedRounds','Run/walk rounds completed',state.completedRounds),
   num('continuousMinutes','Continuous run (min)',state.continuousMinutes),
   num('distance','Total distance (mi)',state.distance,0,null,.01),
-  text('totalTime','Total time',state.totalTime,'28:45')
+  text('totalTime','Total time',state.totalTime,'28:45'),
+  num('rpe','Run effort (RPE)',state.rpe,1,10),
+  num('runPain','Run discomfort (0–10)',state.runPain,0,10)
  ];
  if(type==='run')common.push(num('avgHr','Average HR',state.avgHr),num('maxHr','Max HR',state.maxHr));
- return grid(...common)+`<label>Run structure / splits<input data-field="structure" value="${attr(state.structure)}" placeholder="Use the stage target or enter a manual structure"></label>`;
+ return grid(...common)+runTimerMarkup()+`<label>Run structure / splits<input data-field="structure" value="${attr(state.structure)}" placeholder="Use the stage target or enter a manual structure"></label>`;
+}
+
+function runTimerMarkup(){
+ return `<section class="run-timer" data-phase="ready" aria-label="Run timer">
+  <div class="run-timer-heading">
+   <div><p class="eyebrow">RUN TIMER</p><h3 data-timer-current aria-live="polite">Ready</h3></div>
+   <span class="run-timer-phase" data-timer-phase>READY</span>
+  </div>
+  <div class="run-timer-clock" data-timer-clock aria-label="Time remaining">0:00</div>
+  <p class="run-timer-next" data-timer-next></p>
+  <progress data-timer-progress value="0" max="1" aria-label="Interval segments completed"></progress>
+  <p class="run-timer-segments muted" data-timer-segments></p>
+  <div class="run-timer-actions">
+   <button class="primary" data-timer-action="start" type="button">Start timer</button>
+   <button class="secondary" data-timer-action="pause" type="button" disabled>Pause</button>
+   <button class="secondary" data-timer-action="next" type="button" disabled>Next segment</button>
+   <button class="secondary" data-timer-action="reset" type="button">Reset</button>
+  </div>
+ </section>`;
+}
+
+function bindRunTimers(){
+ document.querySelectorAll('.run-timer').forEach(timer=>{
+  const card=timer.closest('.exercise-card');
+  timer.querySelector('[data-timer-action="start"]').onclick=()=>startRunTimer(card);
+  timer.querySelector('[data-timer-action="pause"]').onclick=pauseRunTimer;
+  timer.querySelector('[data-timer-action="next"]').onclick=()=>nextRunTimerSegment(true);
+  timer.querySelector('[data-timer-action="reset"]').onclick=()=>prepareRunTimer(card,{clearCompletedRounds:true});
+  ['runMinutes','walkMinutes','rounds','continuousMinutes'].forEach(field=>{
+   card.querySelector(`[data-field="${field}"]`)?.addEventListener('change',()=>{
+    const wasRunning=Boolean(runTimerState?.running);
+    prepareRunTimer(card,{clearCompletedRounds:false});
+    if(wasRunning)toast('Timer reset after the interval plan changed');
+   });
+  });
+  prepareRunTimer(card);
+ });
+}
+
+function buildRunTimerPlan(card){
+ const value=field=>Number(card.querySelector(`[data-field="${field}"]`)?.value||0);
+ const runSeconds=Math.round(value('runMinutes')*60);
+ const walkSeconds=Math.round(value('walkMinutes')*60);
+ const rounds=Math.max(0,Math.floor(value('rounds')));
+ const continuousSeconds=Math.round(value('continuousMinutes')*60);
+ const plan=[];
+ if(runSeconds>0&&rounds>0){
+  for(let round=1;round<=rounds;round++){
+   plan.push({kind:'run',label:'Run',round,seconds:runSeconds});
+   if(walkSeconds>0)plan.push({kind:'walk',label:'Walk',round,seconds:walkSeconds});
+  }
+ }else if(continuousSeconds>0){
+  plan.push({kind:'run',label:'Continuous run',round:null,seconds:continuousSeconds});
+ }
+ return plan;
+}
+
+function prepareRunTimer(card,{clearCompletedRounds=false}={}){
+ clearRunTimer();
+ const plan=buildRunTimerPlan(card);
+ runTimerState={
+  card,
+  plan,
+  index:0,
+  remainingMs:(plan[0]?.seconds||0)*1000,
+  running:false,
+  started:false,
+  complete:false,
+  completedSegments:0,
+  deadline:0
+ };
+ if(clearCompletedRounds){
+  const completedRounds=card.querySelector('[data-field="completedRounds"]');
+  if(completedRounds)completedRounds.value='';
+  const checkbox=card.querySelector('.exercise-complete');
+  if(checkbox)checkbox.checked=false;
+  card.classList.remove('completed');
+ }
+ updateRunTimer();
+}
+
+function startRunTimer(card){
+ if(runTimerState?.card!==card||!runTimerState?.started)prepareRunTimer(card);
+ const state=runTimerState;
+ if(!state?.plan.length){
+  toast('Enter a run duration and rounds before starting the timer');
+  return;
+ }
+ if(state.complete||state.running)return;
+ if(!state.started){
+  const completedRounds=card.querySelector('[data-field="completedRounds"]');
+  if(completedRounds)completedRounds.value='';
+  state.started=true;
+ }
+ state.running=true;
+ state.deadline=Date.now()+state.remainingMs;
+ clearInterval(runTimerTick);
+ runTimerTick=setInterval(tickRunTimer,250);
+ requestRunTimerWakeLock();
+ signalRunTimer();
+ updateRunTimer();
+}
+
+function pauseRunTimer(){
+ if(!runTimerState?.running)return;
+ runTimerState.remainingMs=Math.max(0,runTimerState.deadline-Date.now());
+ runTimerState.running=false;
+ clearInterval(runTimerTick);
+ runTimerTick=null;
+ releaseRunTimerWakeLock();
+ updateRunTimer();
+}
+
+function nextRunTimerSegment(manual=false){
+ const state=runTimerState;
+ if(!state?.started||state.complete)return;
+ completeRunTimerSegment();
+ if(!state.complete){
+  state.remainingMs=state.plan[state.index].seconds*1000;
+  if(state.running)state.deadline=Date.now()+state.remainingMs;
+  signalRunTimer();
+  updateRunTimer();
+ }else if(manual){
+  finishRunTimer();
+ }
+}
+
+function tickRunTimer(){
+ const state=runTimerState;
+ if(!state?.running)return;
+ let remaining=state.deadline-Date.now();
+ if(remaining>0){
+  state.remainingMs=remaining;
+  updateRunTimer();
+  return;
+ }
+ let overshoot=Math.abs(remaining);
+ do{
+  completeRunTimerSegment();
+  if(state.complete){
+   finishRunTimer();
+   return;
+  }
+  const duration=state.plan[state.index].seconds*1000;
+  if(overshoot<duration){
+   state.remainingMs=duration-overshoot;
+   state.deadline=Date.now()+state.remainingMs;
+   signalRunTimer();
+   updateRunTimer();
+   return;
+  }
+  overshoot-=duration;
+ }while(!state.complete);
+ finishRunTimer();
+}
+
+function completeRunTimerSegment(){
+ const state=runTimerState;
+ if(!state||state.complete)return;
+ const segment=state.plan[state.index];
+ state.completedSegments=Math.min(state.plan.length,state.completedSegments+1);
+ const next=state.plan[state.index+1];
+ const completedRound=segment.round&&(segment.kind==='walk'||!next||next.round!==segment.round);
+ if(completedRound){
+  const input=state.card.querySelector('[data-field="completedRounds"]');
+  if(input)input.value=String(segment.round);
+ }
+ if(state.index>=state.plan.length-1){
+  state.complete=true;
+  state.remainingMs=0;
+ }else state.index+=1;
+}
+
+function finishRunTimer(){
+ const state=runTimerState;
+ if(!state)return;
+ state.complete=true;
+ state.running=false;
+ state.remainingMs=0;
+ state.completedSegments=state.plan.length;
+ clearInterval(runTimerTick);
+ runTimerTick=null;
+ releaseRunTimerWakeLock();
+ const checkbox=state.card.querySelector('.exercise-complete');
+ if(checkbox)checkbox.checked=true;
+ state.card.classList.add('completed');
+ const totalTime=state.card.querySelector('[data-field="totalTime"]');
+ if(totalTime&&!totalTime.value)totalTime.value=formatTimerSeconds(state.plan.reduce((sum,segment)=>sum+segment.seconds,0));
+ signalRunTimer(true);
+ updateRunTimer();
+ toast('Run timer complete · workout marked done');
+}
+
+function clearRunTimer(){
+ clearInterval(runTimerTick);
+ runTimerTick=null;
+ if(runTimerState)runTimerState.running=false;
+ runTimerState=null;
+ releaseRunTimerWakeLock();
+}
+
+function updateRunTimer(){
+ const state=runTimerState;
+ const timer=state?.card?.querySelector('.run-timer');
+ if(!state||!timer)return;
+ const segment=state.plan[state.index];
+ const phase=state.complete?'complete':state.running?segment?.kind:state.started?'paused':'ready';
+ timer.dataset.phase=phase||'ready';
+ timer.querySelector('[data-timer-phase]').textContent=state.complete?'COMPLETE':state.running?`${segment.label.toUpperCase()} NOW`:state.started?'PAUSED':'READY';
+ timer.querySelector('[data-timer-current]').textContent=state.complete
+  ?'Workout complete'
+  :segment?`${segment.label}${segment.round?` · Round ${segment.round} of ${runTimerRoundCount(state.plan)}`:''}`:'Enter an interval plan';
+ timer.querySelector('[data-timer-clock]').textContent=formatTimerSeconds(Math.ceil(state.remainingMs/1000));
+ const next=state.plan[state.index+1];
+ timer.querySelector('[data-timer-next]').textContent=state.complete
+  ?'All planned segments completed'
+  :next?`Next: ${next.label}${next.round?` · Round ${next.round}`:''}`:`Planned time: ${formatTimerSeconds(state.plan.reduce((sum,item)=>sum+item.seconds,0))}`;
+ const progress=timer.querySelector('[data-timer-progress]');
+ progress.max=Math.max(1,state.plan.length);
+ progress.value=state.complete?state.plan.length:state.completedSegments;
+ timer.querySelector('[data-timer-segments]').textContent=state.plan.length
+  ?`${state.completedSegments} of ${state.plan.length} segments complete`
+  :'Set the interval duration and rounds above.';
+ const start=timer.querySelector('[data-timer-action="start"]');
+ start.textContent=state.started&&!state.complete?'Resume timer':'Start timer';
+ start.disabled=state.running||state.complete||!state.plan.length;
+ timer.querySelector('[data-timer-action="pause"]').disabled=!state.running;
+ timer.querySelector('[data-timer-action="next"]').disabled=!state.started||state.complete;
+}
+
+function runTimerRoundCount(plan){
+ return plan.reduce((max,segment)=>Math.max(max,segment.round||0),0);
+}
+
+function formatTimerSeconds(seconds){
+ const safe=Math.max(0,Math.ceil(Number(seconds)||0));
+ const hours=Math.floor(safe/3600);
+ const minutes=Math.floor((safe%3600)/60);
+ const remainder=String(safe%60).padStart(2,'0');
+ return hours?`${hours}:${String(minutes).padStart(2,'0')}:${remainder}`:`${minutes}:${remainder}`;
+}
+
+async function requestRunTimerWakeLock(){
+ if(!('wakeLock' in navigator)||runTimerWakeLock)return;
+ try{runTimerWakeLock=await navigator.wakeLock.request('screen')}catch{}
+}
+
+async function releaseRunTimerWakeLock(){
+ if(!runTimerWakeLock)return;
+ try{await runTimerWakeLock.release()}catch{}
+ runTimerWakeLock=null;
+}
+
+function signalRunTimer(finished=false){
+ try{navigator.vibrate?.(finished?[180,80,180]:120)}catch{}
+ try{
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass)return;
+  if(!runTimerAudioContext)runTimerAudioContext=new AudioContextClass();
+  if(runTimerAudioContext.state==='suspended')runTimerAudioContext.resume();
+  const tones=finished?[660,880]:[880];
+  tones.forEach((frequency,index)=>{
+   const oscillator=runTimerAudioContext.createOscillator();
+   const gain=runTimerAudioContext.createGain();
+   const start=runTimerAudioContext.currentTime+index*.18;
+   oscillator.frequency.value=frequency;
+   gain.gain.setValueAtTime(.0001,start);
+   gain.gain.exponentialRampToValueAtTime(.18,start+.01);
+   gain.gain.exponentialRampToValueAtTime(.0001,start+.14);
+   oscillator.connect(gain).connect(runTimerAudioContext.destination);
+   oscillator.start(start);
+   oscillator.stop(start+.15);
+  });
+ }catch{}
 }
 
 const grid=(...items)=>`<div class="form-grid">${items.join('')}</div>`;
@@ -322,10 +805,10 @@ function renderRunProgress(key){
  if(stage.id===12){
   $('runStageStatus').textContent='The continuous-running base is complete. Keep Day 4 easy and use controlled Day 1 repeats while two-mile pace develops.';
  }else{
-  const successes=runStageSuccessCount(stage.id);
-  $('runStageStatus').textContent=successes>=2
-   ?'Two controlled completions are logged. Advance when recovery and form still feel good.'
-   :`${successes} of 2 controlled completions logged. Repeat this stage before advancing.`;
+  const completions=runStageCompletionCount(stage.id);
+  $('runStageStatus').textContent=completions>=2
+   ?'Two stage completions are logged. Advance when recovery, discomfort, and form still feel good.'
+   :`${completions} of 2 stage completions logged. A saved run marked Done counts here.`;
  }
  $('runStageBackButton').disabled=stage.id===1;
  $('runStageAdvanceButton').disabled=stage.id===12;
@@ -354,7 +837,9 @@ function repeatRunStage(){
 function applyRunStageToVisibleCards(key){
  document.querySelectorAll('[data-field="runStage"]').forEach(selectInput=>{
   selectInput.value=String(runStage);
-  applyRunStageDefaults(selectInput.closest('.exercise-card'),runStage,key);
+  const card=selectInput.closest('.exercise-card');
+  applyRunStageDefaults(card,runStage,key);
+  prepareRunTimer(card,{clearCompletedRounds:true});
  });
 }
 
@@ -399,12 +884,16 @@ function saveWorkout(event){
  const key=$('daySelect').value,day=days[key];
  const exercises=[...document.querySelectorAll('.exercise-card')].map((card,index)=>{
   const definition=day.ex[index];
-  const exercise={name:definition[0],prescription:definition[1],type:definition[2],completed:card.querySelector('.exercise-complete').checked};
+  const exercise={exerciseId:exerciseDefinitionId(definition),name:definition[0],prescription:definition[1],type:definition[2],completed:card.querySelector('.exercise-complete').checked};
   card.querySelectorAll('[data-field]').forEach(input=>exercise[input.dataset.field]=input.value.trim());
   if(card.querySelector('.set-rep-grid')){
    const reps=readRepValues(card);
    while(reps.at(-1)==='')reps.pop();
    exercise.reps=reps.join(', ');
+  }
+  if(exercise.type==='weighted'){
+   const total=totalLoadValue(exercise);
+   exercise.totalLoad=total==null?'':String(total);
   }
   if(['interval','run'].includes(exercise.type)&&Number(exercise.runStage))exercise.runTarget=runTarget(Number(exercise.runStage),key);
   return exercise;
@@ -423,34 +912,54 @@ function saveWorkout(event){
   updatedAt:new Date().toISOString()
  };
  const index=entries.findIndex(entry=>entry.id===item.id);
+ const wasEditing=index>=0;
  index>=0?entries[index]=item:entries.push(item);
- entries.sort((a,b)=>b.date.localeCompare(a.date)||b.updatedAt.localeCompare(a.updatedAt));
+ entries.sort(compareEntries);
  persist();
  editing=null;
- renderWorkout();
+ const runExercise=exercises.find(exercise=>exercise.completed&&['interval','run'].includes(exercise.type)&&Number(exercise.runStage));
+ let suffix='';
+ if(runExercise&&Number(runExercise.runStage)===runStage&&runStage<12){
+  const completions=runStageCompletionCount(runStage);
+  suffix=completions>=2?' · run stage ready to advance':` · ${completions}/2 run-stage completions`;
+ }
+ newWorkout(false);
  renderHistory();
  renderProgress();
  updatePreview();
- const runExercise=exercises.find(exercise=>exercise.completed&&['interval','run'].includes(exercise.type)&&Number(exercise.runStage));
- if(runExercise&&Number(runExercise.runStage)===runStage&&runStage<12){
-  const successes=runStageSuccessCount(runStage);
-  const suffix=successes>=2?'run stage ready to advance':`${successes}/2 controlled run completions`;
-  toast(`${index>=0?'Workout updated':'Workout saved'} · ${suffix}`);
- }else toast(index>=0?'Workout updated':'Workout saved');
+ toast(`${wasEditing?'Workout updated':'Workout saved'}${suffix} · next workout ready`);
 }
 
-function clearForm(){
+function newWorkout(notify=true){
  editing=null;
+ $('daySelect').value=nextWorkoutDay();
  $('sessionDate').value=today();
  renderWorkout();
- toast('Form cleared');
+ tab('workout');
+ if(notify)toast('New workout ready');
+}
+
+function nextWorkoutDay(){
+ const recent=mostRecentEntry();
+ if(!recent||!days[recent.dayKey])return 'day1';
+ const rotation=Object.keys(days);
+ return rotation[(rotation.indexOf(recent.dayKey)+1)%rotation.length];
+}
+
+function mostRecentEntry(){
+ return entries.slice().sort(compareEntries)[0]||null;
+}
+
+function compareEntries(a,b){
+ return String(b.date||'').localeCompare(String(a.date||''))
+  ||String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));
 }
 
 function renderHistory(){
  const container=$('historyList');
  if(!entries.length){container.innerHTML='<div class="empty-state">No workouts saved yet.</div>';return}
  container.innerHTML=entries.map(entry=>{
-  const done=entry.exercises.filter(exercise=>exercise.completed).slice(0,4).map(exercise=>`<li><strong>${esc(exercise.name)}:</strong> ${esc(summary(exercise))}</li>`).join('');
+  const done=entry.exercises.filter(exercise=>exercise.completed).map(exercise=>`<li><strong>${esc(exercise.name)}:</strong> ${esc(summary(exercise))}</li>`).join('');
   return `<article class="history-item">
    <div class="history-top">
     <div><h3>${esc(entry.dayLabel)}</h3><p>${dateFmt(entry.date)}${entry.duration?` · ${esc(entry.duration)} min`:''}${entry.sessionRpe?` · RPE ${esc(entry.sessionRpe)}`:''}</p></div>
@@ -499,30 +1008,35 @@ function renderProgress(){
  const averageRpe=rpes.length?(rpes.reduce((a,b)=>a+b,0)/rpes.length).toFixed(1):'—';
  const weight=entries.find(entry=>Number(entry.bodyWeight))?.bodyWeight||'—';
  const stage=getRunStage(runStage);
- const stageProgress=stage.id===12?'Base complete':`${Math.min(runStageSuccessCount(stage.id),2)}/2`;
- const cards=[
+ const stageProgress=stage.id===12?'Base complete':`${Math.min(runStageCompletionCount(stage.id),2)}/2`;
+ const primaryCards=[
   ['Sessions',entries.length],
   ['Training time',minutes?`${minutes} min`:'—'],
+  ['Best hex-bar deadlift',bestDeadlift(['Trap / hex bar'])],
+  ['Best straight-bar deadlift',bestDeadlift(['Conventional barbell','Sumo barbell'])],
+  ['Best push-up set',bestRep('Hand-release push-ups')],
+  ['Longest plank',bestTime('Plank')],
+  ['Longest logged run',bestNum(['Primary run','Run / walk intervals'],'distance',' mi')],
   ['Latest weight',weight==='—'?'—':`${weight} lb`],
   ['Avg. session RPE',averageRpe],
   ['Current run stage',stage.id===12?'Two-mile phase':`Stage ${stage.id}`],
-  ['Run-stage progress',stageProgress],
-  ['Best hex-bar deadlift',bestDeadlift(['Trap / hex bar'])],
-  ['Best straight-bar deadlift',bestDeadlift(['Conventional barbell','Sumo barbell'])],
-  ['Longest logged run',bestNum(['Primary run','Run / walk intervals'],'distance',' mi')],
-  ['Best push-up set',bestRep('Hand-release push-ups')],
-  ['Longest plank',bestTime('Plank')]
+  ['Run-stage completions',stageProgress]
  ];
+ const armSessions=armSupersetSessionCount();
+ const accessoryCards=[
+  ['Highest dumbbell-curl weight',bestExerciseLoad('dumbbellCurl')],
+  ['Highest triceps-pressdown weight',bestExerciseLoad('tricepsPressdown')],
+  ['Highest lateral-raise weight',bestExerciseLoad('lateralRaise')],
+  ['Arm-superset sessions',armSessions?String(armSessions):'—']
+ ].filter(([,value])=>value!=='—');
+ const cards=[...primaryCards,...accessoryCards];
  $('progressCards').innerHTML=cards.map(([label,value])=>`<article class="metric"><div class="label">${esc(label)}</div><div class="value">${esc(value||'—')}</div></article>`).join('');
  const recent=entries.slice(0,8);
  $('recentProgress').innerHTML=recent.length?recent.map(entry=>`<p><strong>${dateFmt(entry.date)}</strong> — ${esc(entry.dayLabel)}${entry.sessionRpe?`, RPE ${esc(entry.sessionRpe)}`:''}${entry.painScore!==''&&entry.painScore!=null?`, pain ${esc(entry.painScore)}/10`:''}</p>`).join(''):'<div class="empty-state">Progress will appear after the first saved workout.</div>';
 }
 
-function runStageSuccessCount(stageId){
+function runStageCompletionCount(stageId){
  return entries.filter(entry=>{
-  if(entry.sessionRpe===''||entry.painScore==='')return false;
-  const rpe=Number(entry.sessionRpe),pain=Number(entry.painScore);
-  if(!Number.isFinite(rpe)||!Number.isFinite(pain)||rpe>6||pain>2)return false;
   return entry.exercises.some(exercise=>exercise.completed&&Number(exercise.runStage)===Number(stageId)&&['interval','run'].includes(exercise.type));
  }).length;
 }
@@ -530,11 +1044,24 @@ function runStageSuccessCount(stageId){
 function bestDeadlift(variations){
  const values=entries.flatMap(entry=>entry.exercises)
   .filter(exercise=>['Deadlift','Trap-bar deadlift'].includes(exercise.name)&&variations.includes(exercise.variation))
-  .map(exercise=>exercise.load)
-  .filter(value=>value!==''&&value!=null)
-  .map(Number)
+  .map(totalLoadValue)
   .filter(value=>Number.isFinite(value)&&value>0);
  return values.length?`${Math.max(...values)} lb`:'—';
+}
+
+function bestExerciseLoad(exerciseId){
+ const values=entries.flatMap(entry=>entry.exercises)
+  .filter(exercise=>exerciseIdentity(exercise)===exerciseId)
+  .map(exercise=>Number(exercise.load))
+  .filter(value=>Number.isFinite(value)&&value>0);
+ return values.length?`${Math.max(...values)} lb`:'—';
+}
+
+function armSupersetSessionCount(){
+ return entries.filter(entry=>{
+  const completedIds=new Set(entry.exercises.filter(exercise=>exercise.completed).map(exerciseIdentity));
+  return completedIds.has('dumbbellCurl')&&completedIds.has('tricepsPressdown');
+ }).length;
 }
 
 function bestNum(names,field,suffix){
@@ -562,13 +1089,21 @@ function summary(exercise){
  const parts=[];
  if(exercise.variation)parts.push(exercise.variation);
  if(exercise.runStage&&exercise.runStage!=='manual')parts.push(Number(exercise.runStage)===12?'two-mile phase':`run stage ${exercise.runStage}`);
- if(exercise.load)parts.push(`${exercise.load}${exercise.type==='carry'?' lb/hand':' lb'}`);
+ if(exercise.load){
+  const total=totalLoadValue(exercise);
+  if(exercise.type==='weighted'&&exercise.loadMode==='plates'){
+   parts.push(`${formatLoad(total)} lb total (${formatLoad(exercise.load)} lb plates + ${formatLoad(numberOrNull(exercise.barWeight)||0)} lb bar)`);
+  }else if(exercise.type==='weighted'&&exercise.loadMode==='total'){
+   parts.push(`${formatLoad(total)} lb total`);
+  }else parts.push(`${exercise.load}${exercise.type==='carry'?' lb/hand':' lb'}`);
+ }
  if(exercise.sets)parts.push(`${exercise.sets} sets`);
  if(exercise.reps)parts.push(`reps ${exercise.reps}`);
  if(exercise.times)parts.push(`times ${exercise.times}`);
  if(exercise.runMinutes||exercise.walkMinutes)parts.push(`${exercise.runMinutes||0} min run / ${exercise.walkMinutes||0} min walk`);
  if(exercise.continuousMinutes)parts.push(`${exercise.continuousMinutes} min continuous`);
- if(exercise.rounds)parts.push(`${exercise.rounds} rounds`);
+ if(exercise.completedRounds)parts.push(`${exercise.completedRounds}${exercise.rounds?`/${exercise.rounds}`:''} rounds completed`);
+ else if(exercise.rounds)parts.push(`${exercise.rounds} rounds planned`);
  if(exercise.distance){
   const unit=['run','interval'].includes(exercise.type)?'mi':exercise.type==='carry'?'yd':exercise.outputUnit||'';
   parts.push(`${exercise.distance}${unit?` ${unit}`:''}`);
@@ -583,6 +1118,7 @@ function summary(exercise){
  if(exercise.intervalSeconds)parts.push(`${exercise.intervalSeconds} sec hard interval`);
  if(exercise.avgHr)parts.push(`avg HR ${exercise.avgHr}`);
  if(exercise.maxHr)parts.push(`max HR ${exercise.maxHr}`);
+ if(exercise.runPain!==''&&exercise.runPain!=null)parts.push(`run discomfort ${exercise.runPain}/10`);
  if(exercise.sledLoad)parts.push(`legacy sled ${exercise.sledLoad} lb`);
  if(exercise.totalTime)parts.push(`time ${exercise.totalTime}`);
  if(exercise.structure)parts.push(exercise.structure);
@@ -629,12 +1165,12 @@ async function copyMd(){
 }
 
 function exportJson(){
- download(JSON.stringify({app:'AFT Workout Tracker',version:2,exportedAt:new Date().toISOString(),runStage,entries},null,2),`aft-workout-backup-${today()}.json`,'application/json');
+ download(JSON.stringify({app:'AFT Workout Tracker',version:5,exportedAt:new Date().toISOString(),runStage,entries},null,2),`aft-workout-backup-${today()}.json`,'application/json');
 }
 
 function exportCsv(){
- const rows=[['date','day','duration_minutes','session_rpe','body_weight_lb','pain_score','exercise','variation','run_stage','completed','details','exercise_notes','session_notes']];
- entries.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(entry=>entry.exercises.forEach(exercise=>rows.push([entry.date,entry.dayLabel,entry.duration,entry.sessionRpe,entry.bodyWeight,entry.painScore,exercise.name,exercise.variation||'',exercise.runStage||'',exercise.completed?'yes':'no',summary(exercise),exercise.notes||'',entry.notes||''])));
+ const rows=[['date','day','duration_minutes','session_rpe','body_weight_lb','pain_score','exercise_id','exercise','variation','entered_load','load_entry_mode','bar_weight','total_load','run_stage','run_rpe','run_discomfort','run_walk_rounds_planned','run_walk_rounds_completed','completed','details','exercise_notes','session_notes']];
+ entries.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(entry=>entry.exercises.forEach(exercise=>rows.push([entry.date,entry.dayLabel,entry.duration,entry.sessionRpe,entry.bodyWeight,entry.painScore,exerciseIdentity(exercise),exercise.name,exercise.variation||'',exercise.load||'',exercise.loadMode||'',exercise.barWeight||'',totalLoadValue(exercise)??'',exercise.runStage||'',['run','interval'].includes(exercise.type)?exercise.rpe||'':'',['run','interval'].includes(exercise.type)?exercise.runPain||'':'',['run','interval'].includes(exercise.type)?exercise.rounds||'':'',['run','interval'].includes(exercise.type)?exercise.completedRounds||'':'',exercise.completed?'yes':'no',summary(exercise),exercise.notes||'',entry.notes||''])));
  download(rows.map(row=>row.map(value=>`"${String(value??'').replaceAll('"','""')}"`).join(',')).join('\n'),`aft-workouts-${today()}.csv`,'text/csv');
 }
 
@@ -649,13 +1185,13 @@ async function importJson(event){
   if(!confirm(`Import ${clean.length} workouts? Matching IDs will be replaced.`))return;
   const merged=new Map(entries.map(entry=>[entry.id,entry]));
   clean.forEach(entry=>merged.set(entry.id,entry));
-  entries=[...merged.values()].sort((a,b)=>b.date.localeCompare(a.date));
+  entries=[...merged.values()].sort(compareEntries);
   if(!Array.isArray(parsed)&&RUN_STAGES.some(stage=>stage.id===Number(parsed.runStage))){
    runStage=Number(parsed.runStage);
    persistRunStage();
   }
   persist();
-  renderWorkout();
+  renderRunProgress($('daySelect').value);
   renderHistory();
   renderProgress();
   updatePreview();
@@ -702,7 +1238,7 @@ function normalizeEntry(entry){
 function load(){
  try{
   const parsed=JSON.parse(localStorage.getItem(KEY)||'[]');
-  return Array.isArray(parsed)?parsed.map(normalizeEntry).filter(Boolean):[];
+  return Array.isArray(parsed)?parsed.map(normalizeEntry).filter(Boolean).sort(compareEntries):[];
  }catch{return[]}
 }
 
@@ -718,9 +1254,9 @@ function persistRunStage(){localStorage.setItem(RUN_STAGE_KEY,String(runStage))}
 
 function hasData(exercise){
  if(['run','interval'].includes(exercise.type)&&!exercise.completed){
-  return ['distance','totalTime','avgHr','maxHr','notes'].some(field=>exercise[field]);
+  return ['completedRounds','distance','totalTime','avgHr','maxHr','rpe','runPain','notes'].some(field=>exercise[field]);
  }
- const ignored=['name','prescription','type','completed','variation','runStage','runTarget'];
+ const ignored=['exerciseId','templateId','name','prescription','type','completed','variation','loadMode','barWeight','totalLoad','runStage','runTarget'];
  if(['weighted','body','timed','carry'].includes(exercise.type))ignored.push('sets');
  return Object.entries(exercise).some(([key,value])=>!ignored.includes(key)&&value);
 }
@@ -733,7 +1269,12 @@ function setExportDates(){
 }
 
 function today(){return iso(new Date())}
-function iso(date){return new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+function iso(date){
+ const year=date.getFullYear();
+ const month=String(date.getMonth()+1).padStart(2,'0');
+ const day=String(date.getDate()).padStart(2,'0');
+ return `${year}-${month}-${day}`;
+}
 function dateFmt(value){return new Date(`${value}T12:00:00`).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}
 function parseTime(value){const parts=value.split(':').map(Number);return parts.length===2?parts[0]*60+parts[1]:Number(value)}
 function fmtSec(seconds){return `${Math.floor(seconds/60)}:${Math.round(seconds%60).toString().padStart(2,'0')}`}

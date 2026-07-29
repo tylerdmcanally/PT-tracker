@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=13">
+  <link rel="stylesheet" href="styles.css?v=14">
   <title>AFT Workout Tracker</title>
 </head>
 <body>
@@ -48,23 +48,47 @@
         </div>
         <p id="runStageTarget" class="run-target"></p>
         <p id="runStageStatus" class="muted"></p>
-        <div class="button-row">
-          <button id="runStageBackButton" class="secondary" type="button">Previous stage</button>
-          <button id="runStageRepeatButton" class="secondary" type="button">Repeat stage</button>
-          <button id="runStageAdvanceButton" class="primary" type="button">Advance stage</button>
-        </div>
       </section>
       <form id="workoutForm">
         <div id="exerciseList"></div>
+        <section class="card session-timer-card">
+          <div class="session-timer-heading">
+            <div>
+              <p class="eyebrow">OPTIONAL SESSION TIMER</p>
+              <h2>Track total workout time</h2>
+              <p id="sessionTimerStatus" class="muted">Not started. Manual duration entry is always available.</p>
+            </div>
+            <div id="sessionTimerClock" class="session-timer-clock" aria-live="polite">0:00</div>
+          </div>
+          <div class="button-row">
+            <button id="startSessionTimerButton" class="primary" type="button">Start session</button>
+            <button id="pauseSessionTimerButton" class="secondary" type="button" disabled>Pause</button>
+            <button id="finishSessionTimerButton" class="secondary" type="button" disabled>Finish &amp; save</button>
+          </div>
+        </section>
         <section class="card">
           <h2>Session details</h2>
           <div class="form-grid">
             <label>Duration (minutes)<input id="duration" type="number" min="0" step="1" inputmode="numeric"></label>
             <label>Session RPE (1–10)<input id="sessionRpe" type="number" min="1" max="10" step="1" inputmode="numeric"></label>
             <label>Body weight (lb)<input id="bodyWeight" type="number" min="0" step="0.1" inputmode="decimal"></label>
-            <label>Pain / discomfort (0–10)<input id="painScore" type="number" min="0" max="10" step="1" inputmode="numeric"></label>
+            <label>Pre-session muscle soreness (0–10)<input id="preSoreness" type="number" min="0" max="10" step="1" inputmode="numeric"></label>
+            <label>Pre-session readiness
+              <select id="readiness">
+                <option value="">Not recorded</option>
+                <option value="1">1 — Very poor</option>
+                <option value="2">2 — Below average</option>
+                <option value="3">3 — Normal</option>
+                <option value="4">4 — Good</option>
+                <option value="5">5 — Excellent</option>
+              </select>
+            </label>
+            <label>Pain during session (0–10)<input id="painDuring" type="number" min="0" max="10" step="1" inputmode="numeric"></label>
+            <label id="painLocationWrap" class="hidden">Pain location / description<input id="painLocation" type="text" placeholder="Where and what did it feel like?"></label>
+            <label id="postSorenessWrap" class="hidden">Post-session muscle soreness (0–10)<input id="postSoreness" type="number" min="0" max="10" step="1" inputmode="numeric"></label>
+            <label id="legacyPainWrap" class="hidden">Legacy pain / discomfort (0–10)<input id="legacyPainScore" type="number" min="0" max="10" step="1" inputmode="numeric"></label>
           </div>
-          <label>Session notes<textarea id="sessionNotes" rows="4" placeholder="Energy, technique, pain, what felt easy or hard..."></textarea></label>
+          <label>Post-session notes<textarea id="sessionNotes" rows="4" placeholder="Energy, technique, soreness, what felt easy or hard..."></textarea></label>
         </section>
         <div class="sticky-actions">
           <button class="primary" type="submit">Save workout</button>
@@ -84,6 +108,7 @@
     <section id="progressTab" class="tab-panel">
       <div class="section-heading"><div><p class="eyebrow">AT A GLANCE</p><h2>Progress</h2></div></div>
       <div id="progressCards" class="metric-grid"></div>
+      <section class="card"><h2>Weekly test-event work</h2><div id="weeklyTestProgress"></div></section>
       <section class="card"><h2>Recent sessions</h2><div id="recentProgress"></div></section>
     </section>
 
@@ -105,11 +130,20 @@
       <section class="card">
         <p class="eyebrow">BACKUP / TRANSFER</p>
         <h2>Data tools</h2>
-        <p class="muted">Workouts are stored only in this browser on this device. Export a JSON backup before clearing browser data or moving phones.</p>
+        <p class="muted">Workouts stay on this device. The app autosaves an active draft and keeps a small rolling set of local restore points. A downloaded JSON backup is still the only copy that survives lost devices or cleared browser data.</p>
+        <div id="backupReminder" class="backup-reminder hidden"></div>
         <div class="button-row">
           <button id="downloadJsonButton" class="secondary" type="button">Export JSON backup</button>
           <button id="downloadCsvButton" class="secondary" type="button">Export CSV</button>
           <label class="file-button">Import JSON<input id="importJsonInput" type="file" accept="application/json,.json"></label>
+        </div>
+        <div class="storage-tools">
+          <p id="backupStatus" class="muted"></p>
+          <p id="storageStatus" class="muted"></p>
+          <div class="button-row">
+            <button id="protectStorageButton" class="secondary subtle" type="button">Protect device storage</button>
+            <button id="restoreSnapshotButton" class="secondary subtle" type="button">Restore previous data</button>
+          </div>
         </div>
       </section>
 
@@ -131,6 +165,7 @@
     <button id="reloadUpdateButton" class="primary subtle" type="button">Reload update</button>
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=13"></script>
+  <script src="program-config.js?v=14"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>

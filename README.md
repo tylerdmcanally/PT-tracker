@@ -4,17 +4,24 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 
 ## Included
 
-- Four selectable workout-day cards
-- Guided run/walk progression through continuous running and a two-mile development phase
+- Four primary workout days plus an optional recovery session
+- Coach-controlled, versioned workout prescriptions in `program-config.js`
+- Saved prescription snapshots so later program changes do not rewrite old workouts
+- A read-only current run stage with per-session logging of the stage actually completed
 - A built-in walk-first interval timer with live phase, round, next-segment, sound/vibration cues, pause, skip, and reset controls
+- An optional total-session timer with pause/resume, reload recovery, automatic duration, and manual override
 - Numbered exercise order and a day-specific active warm-up shown before Exercise 1
 - Exercise and equipment variants for normal commercial-gym substitutions
-- Plate-only entry with live total-weight calculation for barbell, trap-bar, and Smith-machine variations
+- Trap-bar plate-per-side logging with 45/55/60/custom bar weights and a live total
+- Combined-plate and direct-total modes for other barbell and machine variations
 - Mobile-friendly set and per-set rep selectors prefilled from each prescription
-- Automatic next-workout selection in the Day 1 → Day 4 rotation
-- Optional arm supersets on Days 1 and 3 plus lateral raises on Day 2
+- Automatic Day 1 → Day 4 rotation that ignores recovery sessions
+- Most-recent matching exercise results shown as a reference on new workouts
 - Strength, running, standard-gym conditioning, and calisthenics logging
-- Persistent on-device workout history
+- Separate readiness, muscle-soreness, pain, and pain-location tracking
+- Weekly push-up and front-plank progress totals
+- Autosaved workout drafts and durable on-device workout history
+- Five rolling local restore points, protected-storage status, and backup reminders
 - Edit/delete saved sessions
 - Progress summary
 - Markdown export designed to paste into the master ChatGPT training thread
@@ -23,7 +30,9 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 
 ## Data storage
 
-Workout data stays in the browser on the device where it was entered. It is not synced to a server. Export a JSON backup periodically and before clearing Safari data, replacing the phone, or changing the deployed site address.
+Workout data stays in the browser on the device where it was entered. It is not synced to a server.
+
+The app requests protected browser storage when the user chooses **Protect device storage**, autosaves the active workout and session timer, and keeps up to five rolling restore points before important writes, imports, and deletions. Those measures protect against accidental in-app changes and reduce browser-eviction risk, but they cannot survive a lost device, device wipe, cleared Safari data, or a changed site address. Export a JSON backup periodically for that protection.
 
 ## Deployment: GitHub Pages
 
@@ -52,18 +61,24 @@ python3 -m http.server 8080
 
 Then open `http://localhost:8080`. Full iPhone installation should use the deployed HTTPS URL.
 
+Run the data-model checks with:
+
+```bash
+node tests/app-model.test.cjs
+```
+
 ## Equipment assumptions
 
 The default program is designed for a normal commercial gym. It uses free weights, dumbbells, common resistance machines, cardio machines, and open floor space when available. It does not require a weighted sled, turf lane, or dedicated Army testing equipment.
 
-Day 3 develops lower-body strength, grip, lateral stability, and repeat-effort conditioning with reverse lunges, farmer carries or static holds, lateral step-ups, and hard intervals on a bike, rower, elliptical, or treadmill.
+Day 3 uses a coach-capped two-round conditioning circuit: a 45 lb-per-hand farmer carry, lateral step-ups, 45 seconds of hard bike/rower/elliptical work, and 2:30 rest.
 
-Day 1 deadlifts can be logged separately with a trap/hex bar, conventional barbell, sumo barbell, or dumbbells. Exercises with realistic commercial-gym substitutions include an explicit variation selector, and every exercise includes progression guidance.
+Day 1 deadlifts can be logged separately with a trap/hex bar, conventional barbell, sumo barbell, or dumbbells. Exercises with realistic commercial-gym substitutions include an explicit variation selector, and coach notes come directly from the current program configuration.
 
-New workouts use the device-local calendar date and default to the day following the most recent saved session. The **New Workout** action returns to that suggested day without affecting saved history. Exercise records use stable IDs so older workouts remain editable as templates gain new accessories.
+New workouts use the device-local calendar date and default to the day following the most recent saved primary session. Optional recovery sessions appear in history and exports but do not advance that rotation. The **New Workout** action returns to the suggested primary day without affecting saved history.
 
-Every saved run marked **Done** counts toward the current stage’s two-completion target. Session RPE and pain remain visible coaching signals, but they no longer silently prevent a completed run from appearing in progression. The timer automatically logs completed rounds, fills the planned elapsed time on completion, and marks the run done.
+Run progression is coach-directed rather than automatically advanced. The current program stage is shown as a prescription, while the run card records the stage actually completed. The timer starts every interval round with walking, automatically logs completed rounds, fills the planned elapsed time, and marks the run exercise done.
 
 The full Day 1 walk/run interval block remains after the primary strength work because it is conditioning, not the warm-up. Every workout displays a separate 5–10 minute active warm-up. Day 4 starts with its primary run after that warm-up, and every walk/run timer begins with the walk segment before progressing to the run segment.
 
-Bar-based movements default to logging the combined plate weight plus an editable bar or machine starting weight. The app shows the calculated total live and uses that total in history, progress, Markdown, JSON, and CSV output. Older records remain interpreted as the total load originally entered unless they are edited and switched to **Plates only + bar**.
+Trap-bar deadlifts default to plate weight per side plus an explicit 45, 55, 60, or custom bar weight. Other bar-based movements support combined plate weight plus bar weight or a directly entered total. The app uses calculated total weight in history, progress, Markdown, JSON, and CSV output. Older records without a load mode remain interpreted as the single total originally entered; the app never guesses a bar weight for them.

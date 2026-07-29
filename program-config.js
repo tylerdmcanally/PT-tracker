@@ -1,0 +1,120 @@
+window.AFT_PROGRAM_CONFIG={
+ id:'aft-foundation-block-1',
+ name:'AFT Foundation Block 1',
+ version:'1.2',
+ effectiveDate:'2026-07-29',
+ currentRunStage:1,
+ rotation:['day1','day2','day3','day4'],
+ runStages:[
+  {id:1,label:'1:00 walk / 1:00 run × 10',runMinutes:'1',walkMinutes:'1',rounds:'10'},
+  {id:2,label:'1:00 walk / 1:30 run × 8',runMinutes:'1.5',walkMinutes:'1',rounds:'8'},
+  {id:3,label:'1:00 walk / 2:00 run × 7',runMinutes:'2',walkMinutes:'1',rounds:'7'},
+  {id:4,label:'1:00 walk / 3:00 run × 6',runMinutes:'3',walkMinutes:'1',rounds:'6'},
+  {id:5,label:'1:00 walk / 4:00 run × 5',runMinutes:'4',walkMinutes:'1',rounds:'5'},
+  {id:6,label:'1:00 walk / 5:00 run × 5',runMinutes:'5',walkMinutes:'1',rounds:'5'},
+  {id:7,label:'1:00 walk / 8:00 run × 3',runMinutes:'8',walkMinutes:'1',rounds:'3'},
+  {id:8,label:'1:00 walk / 10:00 run × 3',runMinutes:'10',walkMinutes:'1',rounds:'3'},
+  {id:9,label:'Continuous easy run — 20 minutes',continuousMinutes:'20'},
+  {id:10,label:'Continuous easy run — 25 minutes',continuousMinutes:'25'},
+  {id:11,label:'Continuous easy run — 30 minutes',continuousMinutes:'30'},
+  {id:12,label:'Two-mile development phase',performance:true}
+ ],
+ groups:{
+  testSkillPractice:{
+   eyebrow:'OPTIONAL LOW-FATIGUE WORK',
+   label:'Test Skill Practice',
+   instruction:'These sets should remain easy and technically clean. They are not maximal attempts.'
+  },
+  armSuperset:{
+   eyebrow:'OPTIONAL ACCESSORY',
+   label:'Arm Superset',
+   instruction:'Perform curls and pressdowns back-to-back, then rest 60–90 seconds.'
+  }
+ },
+ sessions:{
+  day1:{
+   key:'day1',
+   sessionType:'primary',
+   label:'Day 1 — Deadlift and Intervals',
+   focus:'Primary strength work followed by the current coach-prescribed walk/run stage.',
+   targetSessionRpe:'6–8',
+   warmup:'5–8 minutes of easy cardio, dynamic hip and ankle prep, then 2–4 progressive deadlift warm-up sets.',
+   exercises:[
+    {id:'deadlift',name:'Trap-bar deadlift',prescription:'3 × 5',type:'weighted',unit:'lb',sets:3,variations:['Trap / hex bar','Conventional barbell','Sumo barbell','Dumbbells'],defaultVariation:'Trap / hex bar',barWeights:{'Trap / hex bar':45,'Conventional barbell':45,'Sumo barbell':45},perSideVariations:['Trap / hex bar'],barWeightOptions:[45,55,60],coachingNotes:'Use the trap/hex bar when available. Record the actual bar weight and plate weight per side; use another listed variation when equipment requires it.'},
+    {id:'squatOrLegPress',name:'Leg press',prescription:'3 × 8',type:'weighted',unit:'lb',sets:3,variations:['Leg press'],defaultVariation:'Leg press',targetRpe:'7',coachingNotes:'Keep all three sets controlled at approximately RPE 7.'},
+    {id:'horizontalPress',name:'Horizontal press',prescription:'3 × 8–10',type:'weighted',unit:'lb per hand',sets:3,variations:['Dumbbell bench press','Chest-press machine','Barbell bench press'],defaultVariation:'Dumbbell bench press',barWeights:{'Barbell bench press':45}},
+    {id:'seatedRow',name:'Seated cable row',prescription:'3 × 10',type:'weighted',unit:'lb',sets:3,variations:['Seated cable row','Chest-supported machine row'],defaultVariation:'Seated cable row'},
+    {id:'loadedCarry',name:'Farmer carry',prescription:'4 trips of approximately 30–40 yd',type:'carry',unit:'lb per hand',sets:4,variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry'},
+    {id:'plank',name:'Front plank',prescription:'3 × 25–30 sec',type:'timed',sets:3},
+    {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 1 — 1:00 walk / 1:00 run × 10',type:'interval',runStage:1,coachingNotes:'Begin every round with the walk segment. The coach will prescribe any future stage change.'},
+    {id:'dumbbellCurl',name:'Dumbbell curls',prescription:'2 × 10–12',type:'weighted',unit:'lb per hand',sets:2,group:'armSuperset'},
+    {id:'tricepsPressdown',name:'Cable triceps pressdowns',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,group:'armSuperset'}
+   ]
+  },
+  day2:{
+   key:'day2',
+   sessionType:'primary',
+   label:'Day 2 — Upper Body and Easy Cardio',
+   focus:'Repeatable upper-body work followed by low-intensity aerobic training.',
+   targetSessionRpe:'6–7',
+   warmup:'5–8 minutes of easy cardio, shoulder and upper-back movement prep, then 1–2 easy push-up and pull ramp-up sets.',
+   exercises:[
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'5 × 6',type:'body',sets:5,coachingNotes:'Use equal, repeatable sets. Do not take the early sets to failure.'},
+    {id:'verticalPull',name:'Lat pulldown',prescription:'3 × 8–10',type:'weighted',unit:'lb',sets:3,variations:['Lat pulldown','Assisted pull-up','Band-assisted pull-up'],defaultVariation:'Lat pulldown'},
+    {id:'overheadPress',name:'Seated dumbbell overhead press',prescription:'3 × 8–10',type:'weighted',unit:'lb per hand',sets:3,variations:['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],defaultVariation:'Seated dumbbell press'},
+    {id:'chestSupportedRow',name:'Chest-supported or machine row',prescription:'3 × 10–12',type:'weighted',unit:'lb',sets:3,variations:['Dumbbell row','Machine row','T-bar row'],defaultVariation:'Machine row'},
+    {id:'lateralRaise',name:'Dumbbell lateral raises',prescription:'2 × 12–15',type:'weighted',unit:'lb per hand',sets:2},
+    {id:'trunkStability',name:'Dead bug or Pallof press',prescription:'3 × 10 each side',type:'body',sets:3,variations:['Dead bug','Pallof press'],defaultVariation:'Dead bug'},
+    {id:'easyCardio',name:'Easy cardio',prescription:'25–30 minutes',type:'cardio',modalities:['Bike','Elliptical','Rower','Incline walk','Other'],targetRpe:'4–5',coachingNotes:'Use conversational effort throughout.'}
+   ]
+  },
+  day3:{
+   key:'day3',
+   sessionType:'primary',
+   label:'Day 3 — Lower Strength and Gym Conditioning',
+   focus:'Reduced lower-body volume and a capped two-round conditioning circuit.',
+   targetSessionRpe:'7–8',
+   warmup:'5–8 minutes of easy cardio, dynamic hip and ankle prep, then 2–4 progressive goblet-squat warm-up sets.',
+   exercises:[
+    {id:'squatPattern',name:'Goblet squat',prescription:'3 × 8',type:'weighted',unit:'lb',sets:3,variations:['Goblet squat','Front squat','Hack squat','Leg press'],defaultVariation:'Goblet squat',barWeights:{'Front squat':45}},
+    {id:'romanianDeadlift',name:'Romanian deadlift',prescription:'2 × 8',type:'weighted',unit:'lb',sets:2,variations:['Barbell','Dumbbells','Smith machine'],defaultVariation:'Barbell',barWeights:{'Barbell':45,'Smith machine':20}},
+    {id:'inclinePress',name:'Incline dumbbell press',prescription:'3 × 8–10',type:'weighted',unit:'lb per hand',sets:3,variations:['Incline dumbbell press','Incline chest-press machine'],defaultVariation:'Incline dumbbell press'},
+    {id:'oneArmRow',name:'One-arm dumbbell row',prescription:'3 × 10 each side',type:'weighted',unit:'lb',sets:3,variations:['One-arm dumbbell row','One-arm cable row'],defaultVariation:'One-arm dumbbell row'},
+    {id:'singleLegStrength',name:'Split squat',prescription:'2 × 8 each leg using body weight or a light load',type:'weighted',unit:'lb total',sets:2,variations:['Body-weight split squat','Light dumbbell split squat','Forward step-up','Lateral step-up'],defaultVariation:'Body-weight split squat',coachingNotes:'Keep the load light and the repetitions controlled.'},
+    {id:'sidePlank',name:'Side plank',prescription:'3 × 25 sec each side',type:'timed',sets:3},
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'3 × 4',type:'body',sets:3,group:'testSkillPractice'},
+    {id:'plank',name:'Front plank',prescription:'2 × 20–25 sec',type:'timed',sets:2,group:'testSkillPractice'},
+    {id:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, 45-sec hard cardio, then 2:30 rest',type:'circuit',circuitVersion:'foundation-1.2',defaults:{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'45',restSeconds:'150'},coachingNotes:'Current block limit: two rounds. Do not extend the hard interval beyond 45 seconds.'},
+    {id:'dumbbellCurl',name:'Dumbbell curls',prescription:'2 × 10–12',type:'weighted',unit:'lb per hand',sets:2,group:'armSuperset'},
+    {id:'tricepsPressdown',name:'Cable triceps pressdowns',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,group:'armSuperset'}
+   ]
+  },
+  day4:{
+   key:'day4',
+   sessionType:'primary',
+   label:'Day 4 — Run and Calisthenics',
+   focus:'Complete the current coach-prescribed walk/run stage, then controlled test-relevant calisthenics.',
+   targetSessionRpe:'6–7',
+   warmup:'5–10 minutes of brisk walking plus marches and leg swings. The interval timer then begins with its walk segment.',
+   exercises:[
+    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 1 — 1:00 walk / 1:00 run × 10',type:'run',runStage:1,coachingNotes:'Begin every round with the walk segment. The coach will prescribe any future stage change.'},
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 5',type:'body',sets:4,coachingNotes:'Use controlled, repeatable sets rather than maximal efforts.'},
+    {id:'plank',name:'Front plank',prescription:'3 × 25 sec',type:'timed',sets:3},
+    {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed'}
+   ]
+  },
+  recovery:{
+   key:'recovery',
+   sessionType:'recovery',
+   optional:true,
+   label:'Recovery Session',
+   focus:'Optional low-intensity recovery work that does not advance the four-day rotation.',
+   targetSessionRpe:'2–3',
+   warmup:'Begin at a very easy pace and stay within a comfortable range of motion.',
+   exercises:[
+    {id:'recoveryCardio',name:'Easy stationary bike or walk',prescription:'20–30 minutes',type:'cardio',modalities:['Stationary bike','Walk'],targetRpe:'2–3'},
+    {id:'recoveryMobility',name:'Gentle mobility',prescription:'Optional · 5–10 minutes',type:'timed',optional:true}
+   ]
+  }
+ }
+};

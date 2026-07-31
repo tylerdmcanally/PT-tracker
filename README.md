@@ -9,6 +9,8 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 - Saved prescription snapshots so later program changes do not rewrite old workouts
 - A read-only current run stage with per-session logging of the stage actually completed
 - A built-in walk-first interval timer with live phase, round, next-segment, sound/vibration cues, pause, skip, and reset controls
+- Separate programmed interval time, total elapsed time, calculated pace, and device-reported pace
+- Indoor/outdoor, treadmill incline, speed, warm-up/cooldown, heart-rate, and run-discomfort logging
 - An optional total-session timer with pause/resume, reload recovery, automatic duration, and manual override
 - Numbered exercise order and a day-specific active warm-up shown before Exercise 1
 - Exercise and equipment variants for normal commercial-gym substitutions
@@ -20,11 +22,12 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 - Strength, running, standard-gym conditioning, and calisthenics logging
 - Separate readiness, muscle-soreness, pain, and pain-location tracking
 - Weekly push-up and front-plank progress totals
+- Weekly run distance/time, pain-free run counts, recent pace, and stage-specific best-pace metrics
 - Autosaved workout drafts and durable on-device workout history
 - Five rolling local restore points, protected-storage status, and backup reminders
 - Edit/delete saved sessions
 - Progress summary
-- Markdown export designed to paste into the master ChatGPT training thread
+- Detailed Markdown export for the coach chat, including planned versus completed work and full exercise/session notes
 - JSON backup/import and CSV export
 - PWA manifest, offline service worker, and iPhone home-screen icon
 
@@ -77,7 +80,9 @@ Day 1 deadlifts can be logged separately with a trap/hex bar, conventional barbe
 
 New workouts use the device-local calendar date and default to the day following the most recent saved primary session. Optional recovery sessions appear in history and exports but do not advance that rotation. The **New Workout** action returns to the suggested primary day without affecting saved history.
 
-Run progression is coach-directed rather than automatically advanced. The current program stage is shown as a prescription, while the run card records the stage actually completed. The timer starts every interval round with walking, automatically logs completed rounds, fills the planned elapsed time, and marks the run exercise done.
+Run progression is coach-directed rather than automatically advanced. Program v1.3 uses Stage 2—one minute walking followed by 1:30 running for eight rounds—on Days 1 and 4. The timer starts every interval round with walking, automatically logs completed rounds and programmed interval time, and marks the run exercise done. Total elapsed time remains a separate user-entered value.
+
+Calculated pace uses total elapsed time divided by distance. When elapsed time is blank, the app can use programmed interval time and labels that basis explicitly. Device-reported pace remains independently editable; a material difference produces an informational warning without blocking the save.
 
 The full Day 1 walk/run interval block remains after the primary strength work because it is conditioning, not the warm-up. Every workout displays a separate 5–10 minute active warm-up. Day 4 starts with its primary run after that warm-up, and every walk/run timer begins with the walk segment before progressing to the run segment.
 

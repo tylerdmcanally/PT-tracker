@@ -1,9 +1,9 @@
 window.AFT_PROGRAM_CONFIG={
  id:'aft-foundation-block-1',
  name:'AFT Foundation Block 1',
- version:'1.2',
- effectiveDate:'2026-07-29',
- currentRunStage:1,
+ version:'1.3',
+ effectiveDate:'2026-08-01',
+ currentRunStage:2,
  rotation:['day1','day2','day3','day4'],
  runStages:[
   {id:1,label:'1:00 walk / 1:00 run × 10',runMinutes:'1',walkMinutes:'1',rounds:'10'},
@@ -46,7 +46,7 @@ window.AFT_PROGRAM_CONFIG={
     {id:'seatedRow',name:'Seated cable row',prescription:'3 × 10',type:'weighted',unit:'lb',sets:3,variations:['Seated cable row','Chest-supported machine row'],defaultVariation:'Seated cable row'},
     {id:'loadedCarry',name:'Farmer carry',prescription:'4 trips of approximately 30–40 yd',type:'carry',unit:'lb per hand',sets:4,variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry'},
     {id:'plank',name:'Front plank',prescription:'3 × 25–30 sec',type:'timed',sets:3},
-    {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 1 — 1:00 walk / 1:00 run × 10',type:'interval',runStage:1,coachingNotes:'Begin every round with the walk segment. The coach will prescribe any future stage change.'},
+    {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 2 — 1:00 walk / 1:30 run × 8',type:'interval',runStage:2,coachingNotes:'Begin each round with the one-minute walk. Keep the running pace relaxed and similar to Stage 1. The goal is to extend continuous running time, not increase speed.'},
     {id:'dumbbellCurl',name:'Dumbbell curls',prescription:'2 × 10–12',type:'weighted',unit:'lb per hand',sets:2,group:'armSuperset'},
     {id:'tricepsPressdown',name:'Cable triceps pressdowns',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,group:'armSuperset'}
    ]
@@ -97,9 +97,9 @@ window.AFT_PROGRAM_CONFIG={
    targetSessionRpe:'6–7',
    warmup:'5–10 minutes of brisk walking plus marches and leg swings. The interval timer then begins with its walk segment.',
    exercises:[
-    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 1 — 1:00 walk / 1:00 run × 10',type:'run',runStage:1,coachingNotes:'Begin every round with the walk segment. The coach will prescribe any future stage change.'},
-    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 5',type:'body',sets:4,coachingNotes:'Use controlled, repeatable sets rather than maximal efforts.'},
-    {id:'plank',name:'Front plank',prescription:'3 × 25 sec',type:'timed',sets:3},
+    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 2 — 1:00 walk / 1:30 run × 8',type:'run',runStage:2,coachingNotes:'Begin each round with the one-minute walk. Keep the running pace relaxed and similar to Stage 1. The goal is to extend continuous running time, not increase speed.'},
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 6',type:'body',sets:4,coachingNotes:'Use four equal, technically clean sets. Stop before failure.'},
+    {id:'plank',name:'Front plank',prescription:'Set 1: 30 sec · Set 2: 30 sec · Set 3: 25 sec',type:'timed',sets:3,prescribedTimes:['0:30','0:30','0:25']},
     {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed'}
    ]
   },

@@ -19,21 +19,23 @@ The current block also includes a low-fatigue Test Skill Practice group. Legacy 
 
 ## Current program model
 
-`program-config.js` is the single source of truth for program metadata, daily prescriptions, stable exercise IDs, target RPEs, coaching notes, run stage, and recovery work. The active program is **AFT Foundation Block 1**, version **1.2**, effective **2026-07-29**.
+`program-config.js` is the single source of truth for program metadata, daily prescriptions, stable exercise IDs, target RPEs, coaching notes, run stage, and recovery work. The active program is **AFT Foundation Block 1**, version **1.3**, effective **2026-08-01**.
 
 Do not add an automatic coaching or load-progression algorithm. ChatGPT is the coach; Codex updates `program-config.js` after the user reviews recommendations.
 
 Every saved workout stores program metadata and a complete `prescriptionSnapshot`. Editing an old workout renders that snapshot—or its own legacy saved exercise list—not the current program. This is required so a later coach update never changes historical prescriptions.
 
-Run training defines 12 possible stages, but the current stage is read-only and coach-directed. Day 1 and Day 4 currently use Stage 1. A user can still record a different actual stage inside a session. Completion counts are informational and never advance the program.
+Run training defines 12 possible stages, but the current stage is read-only and coach-directed. Day 1 and Day 4 use Stage 2: 1:00 walk / 1:30 run × 8. A user can still record a different actual stage inside a session. Completion counts are informational and never advance the program.
 
-Run/walk and continuous-run cards include an offline timer with a large current-phase countdown, round and segment tracking, next-segment preview, pause/resume, skip, reset, sound/vibration transitions, and Screen Wake Lock support when the browser provides it. Every interval round starts with walking and then changes to running. Completing the timer fills completed rounds and planned elapsed time and marks the run exercise done.
+Run/walk and continuous-run cards include an offline timer with a large current-phase countdown, round and segment tracking, next-segment preview, pause/resume, skip, reset, sound/vibration transitions, and Screen Wake Lock support when the browser provides it. Every interval round starts with walking and then changes to running. Completing the timer fills completed rounds and programmed interval time; it does not overwrite total elapsed time.
+
+Run results separately store programmed interval time, total elapsed time, distance, calculated pace and its time basis, device-reported pace, warm-up/cooldown duration, walking/running speed, treadmill/outdoor setting, incline, heart rate, discomfort, RPE, structure, and notes. Calculated pace prefers elapsed time and falls back to programmed time only when elapsed time is blank. Device/calculated discrepancies are informational and never block saving.
 
 New exercise cards show the most recent result for the same stable ID as a reference. Completion status, exercise RPE, pain, and notes are never copied forward.
 
 Trap-bar deadlifts default to **Plates per side + bar**, with 45, 55, 60, and custom bar choices. The calculation is `bar + (plate weight per side × 2)`. Other bar-based variations can use combined plates plus bar or total weight. Legacy records without a mode remain direct totals; never infer a bar weight for them.
 
-Set-based strength and calisthenics exercises use mobile-friendly selectors. The prescribed set count is selected by default, the user can reduce or increase it within the available range, and each visible set has its own reps selector plus an `Other…` numeric fallback. Existing comma-separated `reps` values remain compatible when older workouts are edited or exported.
+Set-based strength and calisthenics exercises use mobile-friendly selectors. The prescribed set count is selected by default, the user can reduce or increase it within the available range, and each visible set has its own reps selector plus an `Other…` numeric fallback. Timed sets support per-set targets without prefilling completed values; Day 4 currently displays 30, 30, and 25 seconds. Existing comma-separated `reps` and `times` values remain compatible.
 
 An optional Recovery Session logs modality, duration, RPE, pre/post soreness, and notes. It appears in history and exports but is ignored by next-day rotation and primary-workout counts.
 
@@ -45,7 +47,9 @@ Session tracking separates pre-session soreness, readiness, pain during training
 
 The optional session timer persists across reloads, supports pause/resume, fills duration only when manual duration is blank, and does not mark exercises complete. The walk/run timer remains separate.
 
-Progress and exports include Monday–Sunday hand-release push-up volume and front-plank time. Side-plank time is excluded from front-plank totals. Markdown exports show planned versus completed results and end with the exact coaching request in `app.js`.
+Progress and exports include Monday–Sunday hand-release push-up volume, front-plank time, running distance, and running time. Side-plank time is excluded from front-plank totals. Running progress includes pain-free session count, most-recent distance and pace, longest distance, and best calculated pace grouped by stage.
+
+The coaching Markdown export includes every planned exercise, completion status, detailed result fields, coach instructions, exercise RPE, run metrics, full multiline exercise notes, and full post-session notes. CSV and JSON carry the same underlying run values without conflating device and calculated pace.
 
 The PWA uses versioned CSS/JavaScript/config URLs and network-first same-origin fetching with offline cache fallback. When a newly activated service worker takes control, a persistent **Reload update** banner appears. Reloading first autosaves the active draft.
 
@@ -70,5 +74,7 @@ The canonical workout array stays under the existing `aftWorkoutEntries.v1` loca
 - `aftWorkoutSnapshots.v1` — up to five local restore points
 - `aftBackupMeta.v1` — last downloaded JSON backup metadata
 - `aftDataVersion.v1` — app data migration marker
+
+Data schema version 7 adds optional run-result fields and an entry-level `activeRunStage`. No existing workout is rewritten; missing fields remain blank or are derived for display when the legacy interval structure provides enough information. A safety snapshot is created before the version marker advances.
 
 The app requests persistent browser storage on demand. This reduces eviction risk but does not sync across devices. JSON backup/import remains the only portable, device-loss-safe copy.

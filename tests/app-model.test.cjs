@@ -42,11 +42,18 @@ vm.runInContext(fs.readFileSync(path.join(root,'app.js'),'utf8'),context,{filena
 const evaluate=source=>vm.runInContext(source,context);
 
 assert.equal(evaluate('PROGRAM.name'),'AFT Foundation Block 1');
-assert.equal(evaluate('PROGRAM.version'),'1.2');
-assert.equal(evaluate('PROGRAM.currentRunStage'),1);
+assert.equal(evaluate('PROGRAM.version'),'1.3');
+assert.equal(evaluate('PROGRAM.effectiveDate'),'2026-08-01');
+assert.equal(evaluate('PROGRAM.currentRunStage'),2);
 assert.equal(evaluate('SESSIONS.day3.exercises.find(exercise=>exercise.id==="gymConditioningCircuit").prescription.includes("Exactly 2 rounds")'),true);
 assert.equal(evaluate('SESSIONS.day3.targetSessionRpe'),'7–8');
 assert.equal(evaluate('SESSIONS.recovery.sessionType'),'recovery');
+assert.equal(evaluate('SESSIONS.day1.exercises.find(exercise=>exercise.id==="runWalkIntervals").runStage'),2);
+assert.equal(evaluate('SESSIONS.day4.exercises.find(exercise=>exercise.id==="primaryRun").runStage'),2);
+assert.equal(evaluate('SESSIONS.day4.exercises.find(exercise=>exercise.id==="handReleasePushups").prescription'),'4 × 6');
+assert.equal(evaluate('JSON.stringify(SESSIONS.day4.exercises.find(exercise=>exercise.id==="plank").prescribedTimes)'),'["0:30","0:30","0:25"]');
+assert.equal(evaluate('programmedRunSeconds(runDefaults(2))'),1200,'Stage 2 must total 20 programmed minutes');
+assert.equal(evaluate('currentProgramMeta().runStage'),2);
 
 const rotation=evaluate(`nextWorkoutDay([
  {id:'primary',dayKey:'day1',sessionType:'primary',date:'2026-07-28',updatedAt:'2026-07-28T12:00:00Z'},
@@ -76,6 +83,29 @@ assert.equal(plan.length,4);
 assert.equal(plan[0].kind,'walk','each interval round must begin with walking');
 assert.equal(plan[1].kind,'run');
 assert.equal(plan[2].round,2);
+
+const pace=evaluate(`calculatedPaceDetails({
+ totalTime:'24:00',distance:'1.86',programmedIntervalTime:'20:00'
+})`);
+assert.equal(pace.value,'12:54');
+assert.equal(pace.basis,'totalElapsedTime','elapsed time must take priority over programmed time');
+const fallbackPace=evaluate(`calculatedPaceDetails({
+ totalTime:'',distance:'1.86',programmedIntervalTime:'20:00'
+})`);
+assert.equal(fallbackPace.value,'10:45');
+assert.equal(fallbackPace.basis,'programmedIntervalTime');
+assert.equal(evaluate(`paceDifferenceIsMaterial(parsePace('12:54'),parsePace('14:16'))`),true);
+assert.equal(evaluate(`paceDifferenceIsMaterial(parsePace('12:54'),parsePace('13:00'))`),false);
+const runProgress=evaluate(`runRecords([{
+ id:'run-entry',date:'2026-07-31',updatedAt:'2026-07-31T12:00:00Z',dayKey:'day4',sessionType:'primary',
+ exercises:[{exerciseId:'primaryRun',type:'run',completed:true,runStage:'1',distance:'1.86',totalTime:'24:00',runPain:'0'}]
+}])`);
+context.runProgress=runProgress;
+const runWeek=evaluate(`weeklyRunMetrics(runProgress,'2026-07-27')`);
+assert.equal(runWeek.distance,1.86);
+assert.equal(runWeek.seconds,1440);
+assert.equal(evaluate('painFreeRunCount(runProgress)'),1);
+assert.equal(evaluate('bestPaceByStage(runProgress)[0].pace'),'12:54');
 
 const weeks=evaluate(`weeklyMetrics([{
  date:'2026-07-29',
@@ -126,8 +156,9 @@ evaluate(`entries=[{
  sessionType:'primary',
  programId:PROGRAM.id,
  programName:PROGRAM.name,
- programVersion:PROGRAM.version,
- programEffectiveDate:PROGRAM.effectiveDate,
+ programVersion:'1.2',
+ programEffectiveDate:'2026-07-29',
+ activeRunStage:1,
  duration:'30',
  sessionRpe:'6',
  preSoreness:'2',
@@ -135,18 +166,41 @@ evaluate(`entries=[{
  painDuring:'0',
  painLocation:'',
  postSoreness:'',
- painScore:'',
- notes:'Good session.',
- prescriptionSnapshot:snapshotSession(SESSIONS.day4),
+ notes:'Good session.\\nEnergy stayed steady.',
+ prescriptionSnapshot:{sessionKey:'day4',sessionType:'primary',label:'Day 4 — Run and Calisthenics',targetSessionRpe:'6–7',exercises:[
+  {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 1 — 1:00 walk / 1:00 run × 10',type:'run',runStage:1}
+ ]},
  exercises:[
-  {exerciseId:'primaryRun',name:'Walk / run intervals',prescription:'Stage 1',type:'run',runStage:'1',walkMinutes:'1',runMinutes:'1',rounds:'10',completedRounds:'10',completed:true,rpe:'5'}
+  {exerciseId:'primaryRun',name:'Walk / run intervals',prescription:'Stage 1',type:'run',runStage:'1',walkMinutes:'1',runMinutes:'1',rounds:'10',completedRounds:'10',programmedIntervalTime:'20:00',totalTime:'24:00',distance:'1.86',deviceReportedPace:'14:16',runPain:'0',completed:true,rpe:'5',notes:'Relaxed pace.\\nNo pain.'}
  ]
 }]`);
 const markdown=evaluate('buildMd()');
-assert.match(markdown,/AFT Foundation Block 1 · version 1\.2/);
+assert.match(markdown,/AFT Foundation Block 1 · version 1\.3/);
+assert.match(markdown,/Program: AFT Foundation Block 1 · version 1\.2/,'historical entry version must remain visible');
 assert.match(markdown,/Planned:/);
-assert.match(markdown,/Completed:/);
+assert.match(markdown,/Status: Completed/);
+assert.match(markdown,/Programmed interval time: 20:00/);
+assert.match(markdown,/Total elapsed time: 24:00/);
+assert.match(markdown,/Calculated average pace: 12:54\/mi \(based on total elapsed time\)/);
+assert.match(markdown,/Device-reported pace: 14:16\/mi/);
+assert.doesNotMatch(markdown,/undefined\/10/,'missing legacy pain must stay out of the report');
+assert.match(markdown,/Exercise notes:[\s\S]*Relaxed pace\.[\s\S]*No pain\./);
+assert.match(markdown,/Post-session notes:[\s\S]*Good session\.[\s\S]*Energy stayed steady\./);
 assert.ok(markdown.endsWith('Review this training block, compare the completed results with the prescribed targets, identify recovery or injury concerns, and provide the next coach-directed program update while keeping the November Army Fitness Test goal in mind.\n'));
+const csv=evaluate('buildCsv()');
+assert.match(csv,/"programmed_interval_time"/);
+assert.match(csv,/"total_elapsed_time"/);
+assert.match(csv,/"calculated_average_pace"/);
+assert.match(csv,/"device_reported_pace"/);
+assert.match(csv,/"20:00"/);
+assert.match(csv,/"12:54"/);
+assert.match(csv,/"14:16"/);
+assert.match(csv,/"Relaxed pace\.\nNo pain\."/);
+const jsonBackup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
+assert.equal(jsonBackup.version,7);
+assert.equal(jsonBackup.currentProgram.version,'1.3');
+assert.equal(jsonBackup.currentProgram.runStage,2);
+assert.equal(jsonBackup.entries[0].exercises[0].deviceReportedPace,'14:16');
 
 const normalized=evaluate(`normalizeEntry({
  id:'old',date:'2026-07-01',dayKey:'day1',painScore:'4',
@@ -155,6 +209,7 @@ const normalized=evaluate(`normalizeEntry({
 assert.equal(normalized.painScore,'4');
 assert.equal(normalized.painDuring,'','legacy pain is not reinterpreted as new pain');
 assert.equal(normalized.exercises[0].loadMode,undefined,'legacy weight mode must not be guessed');
+assert.equal(evaluate(`calculatedPaceDetails({type:'run',distance:'',totalTime:''}).value`),'','older runs without new pace fields remain valid');
 
 storage.set('aftWorkoutEntries.v1',JSON.stringify([{id:'before'}]));
 evaluate(`entries=[{
@@ -170,9 +225,10 @@ assert.equal(JSON.parse(storage.get('aftWorkoutEntries.v1'))[0].id,'after');
 const indexHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const appSource=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
-assert.ok(indexHtml.indexOf('program-config.js?v=14')<indexHtml.indexOf('app.js?v=14'));
-assert.match(serviceWorker,/aft-workout-tracker-v14/);
-assert.match(serviceWorker,/program-config\.js\?v=14/);
+assert.match(appSource,/Exercise notes<textarea[^>]+data-field="notes"/,'exercise notes must support detailed multiline comments');
+assert.ok(indexHtml.indexOf('program-config.js?v=16')<indexHtml.indexOf('app.js?v=16'));
+assert.match(serviceWorker,/aft-workout-tracker-v16/);
+assert.match(serviceWorker,/program-config\.js\?v=16/);
 const htmlIds=[...indexHtml.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]);
 assert.equal(new Set(htmlIds).size,htmlIds.length,'HTML IDs must be unique');
 const referencedIds=[...appSource.matchAll(/\$\('([^']+)'\)/g)].map(match=>match[1]);

@@ -9,7 +9,7 @@ const SNAPSHOT_KEY='aftWorkoutSnapshots.v1';
 const TIMER_KEY='aftSessionTimer.v1';
 const BACKUP_META_KEY='aftBackupMeta.v1';
 const DATA_VERSION_KEY='aftDataVersion.v1';
-const DATA_VERSION=8;
+const DATA_VERSION=9;
 const MAX_SNAPSHOTS=5;
 
 const EXERCISE_NAME_IDS={
@@ -24,7 +24,7 @@ const EXERCISE_NAME_IDS={
  'Hand-release push-ups':'handReleasePushups',
  'Vertical pull':'verticalPull','Lat pulldown or assisted pull-up':'verticalPull','Lat pulldown':'verticalPull',
  'Overhead press':'overheadPress','Dumbbell overhead press':'overheadPress','Seated dumbbell overhead press':'overheadPress',
- 'Dumbbell lateral raises':'lateralRaise',
+ 'Dumbbell lateral raises':'lateralRaise','Lateral raises':'lateralRaise',
  'Chest-supported row':'chestSupportedRow','Chest-supported or machine row':'chestSupportedRow',
  'Lunge pattern':'lungePattern','Walking lunges':'lungePattern',
  'Trunk stability':'trunkStability','Dead bug or Pallof press':'trunkStability',
@@ -52,7 +52,9 @@ const VARIATION_ID_BY_LABEL={
  'Lat pulldown':'latPulldown','Assisted pull-up':'assistedPullup','Band-assisted pull-up':'assistedPullup',
  'Seated cable row':'seatedCableRow','Chest-supported machine row':'machineRow','Chest-supported dumbbell row':'chestSupportedDumbbellRow',
  'Dumbbell row':'chestSupportedDumbbellRow','Machine row':'machineRow','T-bar row':'tBarRow',
- 'Farmer carry':'farmerCarry','Heavy static hold':'heavyStaticHold','Suitcase carry':'suitcaseCarry'
+ 'Farmer carry':'farmerCarry','Heavy static hold':'heavyStaticHold','Suitcase carry':'suitcaseCarry',
+ 'Dumbbell lateral raise':'dumbbellLateralRaise','Machine lateral raise':'machineLateralRaise',
+ 'Cable lateral raise':'cableLateralRaise','Cuffed-cable lateral raise':'cuffedCableLateralRaise'
 };
 
 let entries=[];
@@ -60,6 +62,7 @@ let editing=null;
 let activeSessionDefinition=null;
 let activeProgramContext=null;
 let activeSavedExercises=[];
+let activeWorkoutDate='';
 let installPrompt=null;
 let runTimerState=null;
 let runTimerTick=null;
@@ -120,9 +123,13 @@ function bind(){
  $('workoutForm').onsubmit=saveWorkout;
  $('workoutForm').oninput=event=>{
   if(event.target.id==='painDuring')updatePainVisibility();
+  refreshAdherenceForEvent(event.target);
   scheduleDraft();
  };
- $('workoutForm').onchange=()=>scheduleDraft();
+ $('workoutForm').onchange=event=>{
+  refreshAdherenceForEvent(event.target);
+  scheduleDraft();
+ };
  $('sessionDate').onchange=()=>scheduleDraft();
  $('newWorkoutButton').onclick=()=>newWorkout();
  $('reloadUpdateButton').onclick=()=>{
@@ -288,6 +295,9 @@ function mergeCurrentLoggingOptions(saved,current){
    ...(Array.isArray(current.barWeightOptions)?current.barWeightOptions:[])
   ])];
  }
+ if(current.variationUnits||saved.variationUnits){
+  merged.variationUnits={...(current.variationUnits||{}),...(saved.variationUnits||{})};
+ }
  return merged;
 }
 
@@ -303,6 +313,7 @@ function renderWorkout(saved=null,{preserveSession=false}={}){
   runStage:saved.activeRunStage??saved.prescriptionSnapshot?.exercises?.find(exercise=>['interval','run'].includes(exercise.type))?.runStage??''
  }:currentProgramMeta();
  activeSavedExercises=Array.isArray(saved?.exercises)?clone(saved.exercises):[];
+ activeWorkoutDate=saved?.date||$('sessionDate').value||today();
  $('daySelect').value=key;
  const session=activeSessionDefinition;
  const parts=session.label.split('—');
@@ -326,6 +337,7 @@ function renderWorkout(saved=null,{preserveSession=false}={}){
   $('bodyWeight').value=saved.bodyWeight||'';
   $('preSoreness').value=saved.preSoreness??'';
   $('readiness').value=saved.readiness??'';
+  $('sleepQuality').value=saved.sleepQuality??'';
   $('painDuring').value=saved.painDuring??'';
   $('painLocation').value=saved.painLocation||'';
   $('postSoreness').value=saved.postSoreness??'';
@@ -345,7 +357,7 @@ function renderWorkout(saved=null,{preserveSession=false}={}){
 }
 
 function clearSessionFields(){
- ['duration','sessionRpe','bodyWeight','preSoreness','readiness','painDuring','painLocation','postSoreness','legacyPainScore','sessionNotes']
+ ['duration','sessionRpe','bodyWeight','preSoreness','readiness','sleepQuality','painDuring','painLocation','postSoreness','legacyPainScore','sessionNotes']
   .forEach(id=>$(id).value='');
 }
 
@@ -403,6 +415,7 @@ function exerciseIdentity(exercise){
 function exerciseVariationLabel(exercise){
  if(exercise?.variation)return exercise.variation;
  if(exercise?.name==='Trap-bar deadlift')return 'Trap / hex bar';
+ if(exerciseIdentity(exercise)==='lateralRaise')return 'Dumbbell lateral raise';
  return '';
 }
 
@@ -414,6 +427,143 @@ function variationIdFor(value){
 
 function exerciseVariationId(exercise){
  return exercise?.variationId||variationIdFor(exerciseVariationLabel(exercise));
+}
+
+function activeCoachOverlay(programVersion,workoutDayId,exerciseId,date=''){
+ return (PROGRAM.coachNoteOverlays||[]).find(overlay=>
+  overlay.status==='active'
+  &&String(overlay.programVersion)===String(programVersion||'')
+  &&overlay.workoutDayId===workoutDayId
+  &&canonicalExerciseId(overlay.exerciseId)===canonicalExerciseId(exerciseId)
+  &&(!date||!overlay.effectiveDate||overlay.effectiveDate<=date)
+ )||null;
+}
+
+function coachOverlayMarkup(definition){
+ const overlay=activeCoachOverlay(
+  activeProgramContext?.version||PROGRAM.version,
+  activeSessionDefinition?.key,
+  definition.id,
+  activeWorkoutDate
+ );
+ if(!overlay)return '';
+ return `<aside class="coach-overlay" data-coach-overlay="${attr(overlay.id)}">
+  <p class="eyebrow">ACTIVE COACH NOTE</p>
+  <p>${esc(overlay.text)}</p>
+ </aside>`;
+}
+
+const ADHERENCE_LABELS={
+ met:'Met',below_target:'Below target',partial:'Partial',not_assessable:'Not assessable',not_applicable:'Not applicable'
+};
+
+function adherenceTarget(definition){
+ if(definition?.adherenceTarget)return clone(definition.adherenceTarget);
+ const prescription=String(definition?.prescription||'');
+ if(definition?.type==='cardio'){
+  const duration=prescription.match(/(\d+(?:\.\d+)?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*(?:min|minutes?)/i)
+   ||prescription.match(/(\d+(?:\.\d+)?)\s*(?:min|minutes?)/i);
+  return duration?{kind:'cardio',minMinutes:Number(duration[1])}:null;
+ }
+ if(definition?.type==='timed'){
+  if(Array.isArray(definition.prescribedTimes)&&definition.prescribedTimes.length){
+   return {kind:'timed',sets:definition.prescribedTimes.length,minSecondsBySet:definition.prescribedTimes.map(parseTime)};
+  }
+  const sets=prescription.match(/(\d+)\s*×\s*(\d+(?:\.\d+)?)(?:\s*[–—-]\s*(\d+(?:\.\d+)?))?\s*(?:sec|seconds?)/i);
+  if(sets)return {kind:'timed',sets:Number(sets[1]),minSeconds:Number(sets[2])};
+  const duration=prescription.match(/(\d+(?:\.\d+)?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*(?:min|minutes?)/i)
+   ||prescription.match(/(\d+(?:\.\d+)?)\s*(?:min|minutes?)/i);
+  return duration?{kind:'duration',minSeconds:Number(duration[1])*60}:null;
+ }
+ if(['weighted','body'].includes(definition?.type)){
+  const range=prescription.match(/(\d+)\s*×\s*(\d+)\s*[–—-]\s*(\d+)/);
+  if(range)return {kind:'reps',sets:Number(range[1]),minReps:Number(range[2])};
+  const fixed=prescription.match(/(\d+)\s*×\s*(\d+)/);
+  if(fixed)return {kind:'reps',sets:Number(fixed[1]),minReps:Number(fixed[2])};
+ }
+ return null;
+}
+
+function isOptionalExercise(definition){
+ return Boolean(definition?.optional||PROGRAM.groups?.[definition?.group]?.optional);
+}
+
+function prescriptionAdherence(definition,result){
+ const override=result?.adherenceOverride?.value;
+ if(Object.prototype.hasOwnProperty.call(ADHERENCE_LABELS,override))return override;
+ const hasResult=Boolean(result&&(result.completed||hasMeaningfulResultData(result)));
+ if(isOptionalExercise(definition)&&!hasResult)return 'not_applicable';
+ if(!hasResult)return 'not_assessable';
+ const target=adherenceTarget(definition);
+ if(!target)return 'not_assessable';
+ if(target.kind==='reps'){
+  const reps=parseSetValues(result.reps).filter(value=>value!=='').map(Number);
+  if(reps.some(value=>!Number.isFinite(value)))return 'not_assessable';
+  if(reps.length<target.sets)return 'partial';
+  if(reps.some(value=>value<target.minReps))return 'below_target';
+  if(definition.targetLoad!=null){
+   const targetVariation=variationIdFor(definition.targetLoadVariation||'');
+   const resultVariation=exerciseVariationId(result);
+   if(!targetVariation||!resultVariation||targetVariation===resultVariation){
+    const total=totalLoadValue(result);
+    if(total==null)return 'partial';
+    if(total<Number(definition.targetLoad))return 'below_target';
+   }
+  }
+  return 'met';
+ }
+ if(target.kind==='timed'){
+  const times=parseSetValues(result.times).filter(value=>value!=='').map(parseTime);
+  if(times.length<target.sets)return 'partial';
+  if(times.some((value,index)=>value<(target.minSecondsBySet?.[index]??target.minSeconds)))return 'below_target';
+  return 'met';
+ }
+ if(target.kind==='cardio'){
+  if(result.minutes===''||result.minutes==null)return 'partial';
+  return Number(result.minutes)>=target.minMinutes?'met':'below_target';
+ }
+ if(target.kind==='duration'){
+  const seconds=parseTime(result.times);
+  if(!seconds)return 'partial';
+  return seconds>=target.minSeconds?'met':'below_target';
+ }
+ return 'not_assessable';
+}
+
+function adherenceResultMarkup(definition,state){
+ const hasResult=Boolean(state&&(state.completed||hasMeaningfulResultData(state)));
+ const value=prescriptionAdherence(definition,state);
+ const label=!hasResult&&!isOptionalExercise(definition)?'Not assessed yet':ADHERENCE_LABELS[value];
+ return `<div class="adherence-result adherence-${attr(value)}" data-adherence-result>
+  <span>Prescription result</span><strong>${esc(label)}</strong>
+ </div>`;
+}
+
+function exercisePainFields(state){
+ const pain=state?.exercisePain||{};
+ const hasPain=hasExercisePainData(pain);
+ return `<details class="exercise-pain" ${hasPain?'open':''}>
+  <summary>Exercise-specific pain (optional)</summary>
+  <div class="form-grid">
+   <label>Severity (0–10)<input data-pain-field="severity" type="number" min="0" max="10" step="1" inputmode="numeric" value="${attr(pain.severity)}"></label>
+   <label>Laterality<select data-pain-field="laterality">
+    <option value="">Not recorded</option>
+    ${['left','right','bilateral','central'].map(value=>`<option value="${value}" ${pain.laterality===value?'selected':''}>${esc(value[0].toUpperCase()+value.slice(1))}</option>`).join('')}
+   </select></label>
+   <label>Location<input data-pain-field="location" value="${attr(pain.location)}" placeholder="e.g. medial elbow"></label>
+   <label>Stopped the exercise?<select data-pain-field="causedExerciseToStop">
+    <option value="">Not recorded</option><option value="false" ${pain.causedExerciseToStop===false?'selected':''}>No</option><option value="true" ${pain.causedExerciseToStop===true?'selected':''}>Yes</option>
+   </select></label>
+  </div>
+  <label>Pain note<textarea data-pain-field="note" rows="2" placeholder="What did it feel like and when?">${esc(pain.note)}</textarea></label>
+ </details>`;
+}
+
+function hasExercisePainData(pain){
+ if(!pain||typeof pain!=='object')return false;
+ return Object.entries(pain).some(([field,value])=>
+  field==='causedExerciseToStop'?typeof value==='boolean':value!==''&&value!=null
+ );
 }
 
 function defaultExerciseState(definition){
@@ -430,7 +580,8 @@ function defaultExerciseState(definition){
 
 function exerciseCard(definition,index,state,{showPrevious=false}={}){
  const setPlan=getSetPlan(definition);
- const currentVariation=state.variation||definition.defaultVariation||'';
+ const currentVariation=state.variation||exerciseVariationLabel(state)||definition.defaultVariation||'';
+ const renderState=definition.variations?{...state,variation:currentVariation}:state;
  const variation=definition.variations
   ?grid(select('variation','Variation / equipment',currentVariation,definition.variations))
   :'';
@@ -446,9 +597,12 @@ function exerciseCard(definition,index,state,{showPrevious=false}={}){
   </div>
   ${definition.targetRpe?`<p class="target-rpe">Target RPE ${esc(definition.targetRpe)}</p>`:''}
   ${definition.coachingNotes?`<p class="coaching-note">${esc(definition.coachingNotes)}</p>`:''}
+  ${coachOverlayMarkup(definition)}
   <div data-result-reference>${previous}</div>
   <p class="today-result-label">Today's result</p>
-  ${variation}${fields(definition,state,setPlan)}
+  ${variation}${fields(definition,renderState,setPlan)}
+  ${adherenceResultMarkup(definition,renderState)}
+  ${exercisePainFields(renderState)}
   <label>Exercise notes<textarea data-field="notes" rows="3" placeholder="Technique, pain, substitutions...">${esc(state.notes)}</textarea></label>
  </section>`;
 }
@@ -495,6 +649,8 @@ function circuitRoundOptions(savedRounds){
 
 function weightedFields(definition,state,setPlan){
  const variation=state.variation||definition.defaultVariation||'';
+ const variationUnits=definition.variationUnits||{};
+ const activeUnit=variationUnits[variation]||definition.unit;
  const barWeights=definition.barWeights||{};
  const perSideVariations=definition.perSideVariations||[];
  const usesBar=Object.prototype.hasOwnProperty.call(barWeights,variation);
@@ -509,11 +665,12 @@ function weightedFields(definition,state,setPlan){
  const presetOptions=definition.barWeightOptions||[];
  const matchesPreset=presetOptions.some(value=>Number(value)===Number(barWeight));
  const preset=matchesPreset?String(barWeight):'custom';
- const loadLabel=mode==='platesPerSide'?'Plate weight per side (lb)':mode==='plates'?'Plate load, both sides combined (lb)':usesBar?'Total load (lb)':`Load (${definition.unit})`;
- return `<div class="weighted-load" data-unit="${attr(definition.unit)}"
+ const loadLabel=mode==='platesPerSide'?'Plate weight per side (lb)':mode==='plates'?'Plate load, both sides combined (lb)':usesBar?'Total load (lb)':`Load (${activeUnit})`;
+ return `<div class="weighted-load" data-unit="${attr(activeUnit)}"
    data-bar-weights="${attr(JSON.stringify(barWeights))}"
    data-per-side-variations="${attr(JSON.stringify(perSideVariations))}"
    data-bar-options="${attr(JSON.stringify(presetOptions))}"
+   data-variation-units="${attr(JSON.stringify(variationUnits))}"
    data-active-bar-variation="${attr(usesBar?variation:'')}">
   <div class="form-grid">
    <label><span data-load-label>${esc(loadLabel)}</span><input data-field="load" type="number" value="${attr(state.load)}" min="0" step=".5" inputmode="decimal"></label>
@@ -598,6 +755,7 @@ function applyPreviousLoad(card,definition,exercise,variation){
   }
   if(panel)updateWeightedLoad(panel,variation,false);
  }
+ updateCardAdherence(card);
  scheduleDraft();
  toast('Last load applied. Sets, reps, RPE, and notes were left blank.');
 }
@@ -621,10 +779,12 @@ function bindWeightedLoadControls(){
 }
 
 function updateWeightedLoad(panel,variation,variationChanged){
- let barWeights={},perSideVariations=[],barOptions=[];
+ let barWeights={},perSideVariations=[],barOptions=[],variationUnits={};
  try{barWeights=JSON.parse(panel.dataset.barWeights||'{}')}catch{}
  try{perSideVariations=JSON.parse(panel.dataset.perSideVariations||'[]')}catch{}
  try{barOptions=JSON.parse(panel.dataset.barOptions||'[]')}catch{}
+ try{variationUnits=JSON.parse(panel.dataset.variationUnits||'{}')}catch{}
+ panel.dataset.unit=variationUnits[variation]||panel.dataset.unit;
  const usesBar=Object.prototype.hasOwnProperty.call(barWeights,variation);
  const perSide=perSideVariations.includes(variation);
  const load=panel.querySelector('[data-field="load"]');
@@ -1369,47 +1529,81 @@ function resetSessionTimer(remove=true){
  updateSessionTimer();
 }
 
+function collectExerciseCard(card,definition,index,prior={}){
+ if(['interval','run'].includes(definition.type))updateRunCalculations(card);
+ const exercise={
+  ...prior,
+  exerciseId:definition.id||card.dataset.exerciseId,
+  name:definition.name||`Exercise ${index+1}`,
+  prescription:definition.prescription||'',
+  type:definition.type||'body',
+  unit:definition.unit||'',
+  targetRpe:definition.targetRpe||'',
+  completed:card.querySelector('.exercise-complete').checked
+ };
+ card.querySelectorAll('[data-field]').forEach(input=>{
+  exercise[input.dataset.field]=String(input.value??'').trim();
+ });
+ const pain={};
+ card.querySelectorAll('[data-pain-field]').forEach(input=>{
+  const field=input.dataset.painField;
+  const value=String(input.value??'').trim();
+  if(value==='')return;
+  pain[field]=field==='severity'?Number(value):field==='causedExerciseToStop'?value==='true':value;
+ });
+ if(Object.keys(pain).length)exercise.exercisePain=pain;
+ else delete exercise.exercisePain;
+ if(exercise.variation)exercise.variationId=variationIdFor(exercise.variation);
+ else if(definition.variations)exercise.variationId='';
+ exercise.unit=definition.variationUnits?.[exercise.variation]||definition.unit||exercise.unit||'';
+ if(card.querySelector('.set-rep-grid')){
+  const reps=readRepValues(card);
+  while(reps.at(-1)==='')reps.pop();
+  exercise.reps=reps.join(', ');
+ }
+ if(card.querySelector('.set-time-grid')){
+  const times=readTimeValues(card);
+  while(times.at(-1)==='')times.pop();
+  exercise.times=times.join(', ');
+ }
+ if(['interval','run'].includes(exercise.type)&&exercise.runEnvironment!=='Indoor treadmill')exercise.treadmillIncline='';
+ if(exercise.type==='weighted'){
+  const total=totalLoadValue(exercise);
+  exercise.totalLoad=total==null?'':String(total);
+ }
+ if(['interval','run'].includes(exercise.type)&&Number(exercise.runStage)){
+  exercise.runTarget=getRunStage(exercise.runStage).label;
+ }
+ return exercise;
+}
+
+function refreshAdherenceForEvent(target){
+ const card=target?.closest?.('.exercise-card');
+ if(card)updateCardAdherence(card);
+}
+
+function updateCardAdherence(card){
+ const cards=[...document.querySelectorAll('.exercise-card')];
+ const index=cards.indexOf(card);
+ const definition=activeSessionDefinition?.exercises?.[index];
+ const display=card.querySelector('[data-adherence-result]');
+ if(index<0||!definition||!display)return;
+ const prior=findSavedExercise(definition,activeSavedExercises,index)||{};
+ const result=collectExerciseCard(card,definition,index,prior);
+ const value=prescriptionAdherence(definition,result);
+ const hasResult=result.completed||hasMeaningfulResultData(result);
+ const label=!hasResult&&!isOptionalExercise(definition)?'Not assessed yet':ADHERENCE_LABELS[value];
+ display.className=`adherence-result adherence-${value}`;
+ display.querySelector('strong').textContent=label;
+}
+
 function collectWorkoutItem({draft=false}={}){
  const definitions=activeSessionDefinition?.exercises||[];
  const cards=[...document.querySelectorAll('.exercise-card')];
  const exercises=cards.map((card,index)=>{
   const definition=definitions[index]||{};
-  if(['interval','run'].includes(definition.type))updateRunCalculations(card);
   const prior=findSavedExercise(definition,activeSavedExercises,index)||{};
-  const exercise={
-   ...prior,
-   exerciseId:definition.id||card.dataset.exerciseId,
-   name:definition.name||`Exercise ${index+1}`,
-   prescription:definition.prescription||'',
-   type:definition.type||'body',
-   unit:definition.unit||'',
-   targetRpe:definition.targetRpe||'',
-   completed:card.querySelector('.exercise-complete').checked
-  };
-  card.querySelectorAll('[data-field]').forEach(input=>{
-   exercise[input.dataset.field]=String(input.value??'').trim();
-  });
-  if(exercise.variation)exercise.variationId=variationIdFor(exercise.variation);
-  else if(definition.variations)exercise.variationId='';
-  if(card.querySelector('.set-rep-grid')){
-   const reps=readRepValues(card);
-   while(reps.at(-1)==='')reps.pop();
-   exercise.reps=reps.join(', ');
-  }
-  if(card.querySelector('.set-time-grid')){
-   const times=readTimeValues(card);
-   while(times.at(-1)==='')times.pop();
-   exercise.times=times.join(', ');
-  }
-  if(['interval','run'].includes(exercise.type)&&exercise.runEnvironment!=='Indoor treadmill')exercise.treadmillIncline='';
-  if(exercise.type==='weighted'){
-   const total=totalLoadValue(exercise);
-   exercise.totalLoad=total==null?'':String(total);
-  }
-  if(['interval','run'].includes(exercise.type)&&Number(exercise.runStage)){
-   exercise.runTarget=getRunStage(exercise.runStage).label;
-  }
-  return exercise;
+  return collectExerciseCard(card,definition,index,prior);
  });
  const program=activeProgramContext||currentProgramMeta();
  return {
@@ -1430,6 +1624,7 @@ function collectWorkoutItem({draft=false}={}){
   bodyWeight:$('bodyWeight').value,
   preSoreness:$('preSoreness').value,
   readiness:$('readiness').value,
+  sleepQuality:$('sleepQuality').value,
   painDuring:$('painDuring').value,
   painLocation:$('painLocation').value.trim(),
   postSoreness:activeSessionDefinition.sessionType==='recovery'?$('postSoreness').value:'',
@@ -1646,6 +1841,7 @@ function compactLoadResult(definition,exercise){
  if(usesBar)return `${formatLoad(totalLoadValue(exercise))} lb total`;
  const unit=exercise.unit||definition.unit||'lb';
  if(/per hand/i.test(unit))return `${formatLoad(load)} lb/hand`;
+ if(/per side/i.test(unit))return `${formatLoad(load)} lb/side`;
  if(/total/i.test(unit))return `${formatLoad(load)} lb total`;
  return `${formatLoad(load)} lb`;
 }
@@ -1682,13 +1878,20 @@ function renderHistory(){
   return;
  }
  container.innerHTML=entries.map(entry=>{
-  const done=(entry.exercises||[]).filter(exercise=>exercise.completed||hasData(exercise)).map(exercise=>`<li><strong>${esc(exercise.name)}:</strong> ${esc(summary(exercise))}${exercise.notes?`<span class="history-exercise-note"><strong>Exercise notes:</strong> ${esc(exercise.notes).replaceAll('\n','<br>')}</span>`:''}</li>`).join('');
+  const definition=definitionForSavedEntry(entry);
+  const done=(entry.exercises||[]).filter(exercise=>exercise.completed||hasData(exercise)).map(exercise=>{
+   const planned=definition.exercises.find(item=>canonicalExerciseId(item.id)===exerciseIdentity(exercise))
+    ||definition.exercises.find(item=>item.name===exercise.name);
+   const adherence=planned?prescriptionAdherence(planned,exercise):'not_assessable';
+   return `<li><strong>${esc(exercise.name)}:</strong> ${esc(summary(exercise))}<span class="history-adherence adherence-${attr(adherence)}">Prescription: ${esc(ADHERENCE_LABELS[adherence])}</span>${exercise.notes?`<span class="history-exercise-note"><strong>Exercise notes:</strong> ${esc(exercise.notes).replaceAll('\n','<br>')}</span>`:''}</li>`;
+  }).join('');
   const program=entry.programVersion
    ?`${entry.programName||'AFT program'} · v${entry.programVersion}`
    :'Legacy workout';
   const sessionDetails=[];
   if(entry.preSoreness!=='')sessionDetails.push(`pre-soreness ${entry.preSoreness}/10`);
   if(entry.readiness)sessionDetails.push(`readiness ${readinessLabel(entry.readiness)}`);
+  if(entry.sleepQuality)sessionDetails.push(`sleep ${sleepQualityLabel(entry.sleepQuality)}`);
   if(entry.painDuring!=='')sessionDetails.push(`pain ${entry.painDuring}/10${entry.painLocation?` — ${entry.painLocation}`:''}`);
   else if(entry.painScore!==''&&entry.painScore!=null)sessionDetails.push(`legacy pain/discomfort ${entry.painScore}/10`);
   if(entry.postSoreness!=='')sessionDetails.push(`post-soreness ${entry.postSoreness}/10`);
@@ -1996,6 +2199,15 @@ function summary(exercise){
  if(exercise.sledLoad)parts.push(`legacy sled ${exercise.sledLoad} lb`);
  if(exercise.structure)parts.push(exercise.structure);
  if(exercise.rpe)parts.push(`RPE ${exercise.rpe}`);
+ const pain=exercise.exercisePain;
+ if(hasExercisePainData(pain)){
+  const painParts=[];
+  if(pain.severity!==''&&pain.severity!=null)painParts.push(`${pain.severity}/10`);
+  if(pain.laterality)painParts.push(pain.laterality);
+  if(pain.location)painParts.push(pain.location);
+  if(pain.causedExerciseToStop===true)painParts.push('stopped exercise');
+  parts.push(`exercise pain ${painParts.join(' ')||'recorded'}`);
+ }
  return parts.join(' · ')||(exercise.completed?'completed':exercise.prescription);
 }
 
@@ -2024,7 +2236,7 @@ function buildMd(){
  output+=`**Average session RPE:** ${averageRpe}  \n`;
  output+=`**Current coach-directed run stage:** Stage ${stage.id} — ${stage.label}\n\n`;
  if(weeks.length){
-  output+='## Weekly test-event volume\n\n| Week of | Hand-release push-ups | Front-plank time |\n|---|---:|---:|\n';
+  output+='## AFT-event practice volume\n\nPractice volume reflects accumulated training work and is not a benchmark or official AFT event result.\n\n| Week of | Hand-release push-ups | Front-plank time |\n|---|---:|---:|\n';
   weeks.slice().reverse().forEach(week=>{
    output+=`| ${dateFmt(week.week)} | ${week.pushups} reps | ${fmtSec(week.plankSeconds)} |\n`;
   });
@@ -2045,6 +2257,7 @@ function buildMd(){
    if(entry.bodyWeight)metadata.push(`${entry.bodyWeight} lb body weight`);
    if(entry.preSoreness!=='')metadata.push(`pre-session soreness ${entry.preSoreness}/10`);
    if(entry.readiness)metadata.push(`readiness ${readinessLabel(entry.readiness)}`);
+   if(entry.sleepQuality)metadata.push(`sleep quality ${sleepQualityLabel(entry.sleepQuality)}`);
    if(entry.painDuring!=='')metadata.push(`pain during session ${entry.painDuring}/10${entry.painLocation?` (${entry.painLocation})`:''}`);
    else if(entry.painScore!==''&&entry.painScore!=null)metadata.push(`legacy pain/discomfort ${entry.painScore}/10`);
    if(entry.postSoreness!=='')metadata.push(`post-session soreness ${entry.postSoreness}/10`);
@@ -2052,7 +2265,7 @@ function buildMd(){
    const definition=definitionForSavedEntry(entry);
    definition.exercises.forEach((planned,index)=>{
     const completed=findSavedExercise(planned,entry.exercises||[],index);
-    output+=markdownExercise(planned,completed);
+    output+=markdownExercise(planned,completed,entry);
    });
    if(entry.notes)output+=`\n${markdownTextBlock('Post-session notes',entry.notes)}`;
    output+='\n';
@@ -2061,18 +2274,83 @@ function buildMd(){
  return output+'## Coaching request\n\nReview this training block, compare the completed results with the prescribed targets, identify recovery or injury concerns, and provide the next coach-directed program update while keeping the November Army Fitness Test goal in mind.\n';
 }
 
-function markdownExercise(planned,completed){
+function markdownExercise(planned,completed,entry){
  const target=planned.targetRpe?` · target RPE ${planned.targetRpe}`:'';
  const coaching=planned.coachingNotes?` · ${planned.coachingNotes}`:'';
+ const overlay=activeCoachOverlay(entry?.programVersion,entry?.dayKey,planned.id,entry?.date);
+ const adherence=prescriptionAdherence(planned,completed);
  let output=`- **${planned.name}**\n`;
  output+=`  - Planned: ${planned.prescription}${target}${coaching}\n`;
+ if(overlay){
+  output+=`  - Active coach note: ${overlay.text}\n`;
+  if(overlay.reason)output+=`  - Coach-note reason: ${overlay.reason}\n`;
+ }
  output+=`  - Status: ${completed?.completed?'Completed':'Not marked complete'}\n`;
+ output+=`  - Prescription adherence: ${ADHERENCE_LABELS[adherence]}\n`;
  if(completed&&['interval','run'].includes(completed.type)){
   output+=markdownRunResult(completed);
  }else{
   output+=`  - Completed result: ${completed&&(completed.completed||hasData(completed))?summary(completed):'No result recorded'}\n`;
  }
+ if(hasExercisePainData(completed?.exercisePain))output+=markdownExercisePain(completed.exercisePain);
+ if(completed?.completed){
+  const previous=previousComparableForExport(entry,planned,completed);
+  if(previous)output+=markdownPreviousComparable(planned,previous);
+ }
  if(completed?.notes)output+=markdownTextBlock('Exercise notes',completed.notes,'  ');
+ return output;
+}
+
+function previousComparableForExport(entry,planned,completed){
+ if(!entry||!completed)return null;
+ const priorEntries=entries.filter(candidate=>candidate.id!==entry.id&&compareEntries(candidate,entry)>0);
+ const selected=previousResultData(planned,exerciseVariationLabel(completed),{
+  source:priorEntries,excludeEntryId:entry.id,limit:1
+ }).selected;
+ return selected?.comparable?selected:null;
+}
+
+function markdownPreviousComparable(planned,item){
+ const exercise=item.exercise;
+ const isRun=['run','interval'].includes(exercise.type);
+ const variation=exerciseVariationLabel(exercise);
+ const load=compactLoadResult(planned,exercise);
+ const reps=parseSetValues(exercise.reps).filter(Boolean);
+ const times=parseSetValues(exercise.times).filter(Boolean);
+ let output='  - Previous comparable result:\n';
+ output+=`    - Date: ${dateFmt(item.entry.date)}\n`;
+ if(variation)output+=`    - Variation: ${variation}\n`;
+ if(load)output+=`    - Load: ${load}\n`;
+ if(exercise.sets)output+=`    - Sets: ${exercise.sets}\n`;
+ if(reps.length){
+  output+=`    - Repetitions: ${reps.join(', ')}\n`;
+  output+=`    - Total repetitions: ${reps.reduce((sum,value)=>sum+(Number(value)||0),0)}\n`;
+ }
+ if(times.length)output+=`    - Timed results: ${times.map(formatCompletedTime).join(', ')}\n`;
+ if(exercise.minutes)output+=`    - Duration: ${exercise.minutes} minutes\n`;
+ if(isRun){
+  if(exercise.completedRounds)output+=`    - Completed rounds: ${exercise.completedRounds}${exercise.rounds?`/${exercise.rounds}`:''}\n`;
+  if(exercise.programmedIntervalTime)output+=`    - Programmed interval time: ${formatRunDurationValue(exercise.programmedIntervalTime)}\n`;
+  if(exercise.totalTime)output+=`    - Total elapsed time: ${formatRunDurationValue(exercise.totalTime)}\n`;
+  if(exercise.distance)output+=`    - Distance: ${exercise.distance} miles\n`;
+  const pace=calculatedPaceDetails(exercise);
+  if(pace.value)output+=`    - Calculated pace: ${pace.value}/mi${pace.basis==='programmedIntervalTime'?' (interval-time basis)':''}\n`;
+ }else if(exercise.distance){
+  output+=`    - Distance / output: ${exercise.distance}${exercise.outputUnit?` ${exercise.outputUnit}`:''}\n`;
+ }
+ if(exercise.rpe)output+=`    - Exercise RPE: ${exercise.rpe}/10\n`;
+ return output;
+}
+
+function markdownExercisePain(pain){
+ const parts=[];
+ if(pain.severity!==''&&pain.severity!=null)parts.push(`${pain.severity}/10`);
+ if(pain.laterality)parts.push(pain.laterality[0].toUpperCase()+pain.laterality.slice(1));
+ if(pain.location)parts.push(pain.location);
+ if(pain.causedExerciseToStop===true)parts.push('stopped the exercise');
+ else if(pain.causedExerciseToStop===false)parts.push('did not stop the exercise');
+ let output=`  - Exercise-specific pain: ${parts.join(' · ')||'Recorded'}\n`;
+ if(pain.note)output+=markdownTextBlock('Exercise-pain note',pain.note,'  ');
  return output;
 }
 
@@ -2154,24 +2432,31 @@ function buildCsv(){
  const headers=[
   'date','session_type','day','program_id','program_name','program_version','program_effective_date','active_run_stage',
   'target_session_rpe','duration_minutes','session_rpe','body_weight_lb','pre_session_soreness',
-  'pre_session_readiness','pain_during_session','pain_location','legacy_pain_discomfort',
+  'pre_session_readiness','sleep_quality','pain_during_session','pain_location','legacy_pain_discomfort',
   'post_session_soreness','exercise_id','exercise','planned_prescription','target_exercise_rpe',
   'variation','variation_id','entered_load','load_entry_mode','plate_weight_per_side','bar_weight','total_load',
   'sets','reps_by_set','times_by_set','run_stage','run_walk_structure','walk_interval_minutes','run_interval_minutes',
   'programmed_interval_time','total_elapsed_time','distance_miles','calculated_average_pace','pace_calculation_basis',
   'device_reported_pace','warmup_minutes','cooldown_minutes','walking_speed_mph','running_speed_mph',
   'run_environment','treadmill_incline_percent','average_hr','maximum_hr','run_rpe','run_discomfort','rounds_planned','rounds_completed',
-  'completed','completed_result','exercise_notes','session_notes'
+  'completed','prescription_adherence','adherence_override','adherence_override_reason',
+  'exercise_pain_severity','exercise_pain_location','exercise_pain_laterality','exercise_pain_note','exercise_pain_stopped_exercise',
+  'completed_result','exercise_notes','session_notes'
  ];
  const rows=[headers];
  entries.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(entry=>{
+  const definition=definitionForSavedEntry(entry);
   (entry.exercises||[]).forEach(exercise=>{
    const isRun=['run','interval'].includes(exercise.type);
    const pace=isRun?calculatedPaceDetails(exercise):{value:'',basis:''};
+   const planned=definition.exercises.find(item=>canonicalExerciseId(item.id)===exerciseIdentity(exercise))
+    ||definition.exercises.find(item=>item.name===exercise.name)||{};
+   const adherence=prescriptionAdherence(planned,exercise);
+   const pain=exercise.exercisePain||{};
    rows.push([
     entry.date,entry.sessionType||'primary',entry.dayLabel,entry.programId||'',entry.programName||'',
     entry.programVersion||'',entry.programEffectiveDate||'',entry.activeRunStage??'',entry.targetSessionRpe||'',entry.duration,
-    entry.sessionRpe,entry.bodyWeight,entry.preSoreness,entry.readiness,entry.painDuring,entry.painLocation,
+    entry.sessionRpe,entry.bodyWeight,entry.preSoreness,entry.readiness,entry.sleepQuality,entry.painDuring,entry.painLocation,
     entry.painScore,entry.postSoreness,exerciseIdentity(exercise),exercise.name,exercise.prescription,
     exercise.targetRpe||'',exercise.variation||'',exerciseVariationId(exercise),exercise.load||'',exercise.loadMode||'',
     exercise.loadMode==='platesPerSide'?exercise.load||'':'',exercise.barWeight||'',totalLoadValue(exercise)??'',
@@ -2182,10 +2467,13 @@ function buildCsv(){
     isRun?exercise.walkSpeed||'':'',isRun?exercise.runSpeed||'':'',isRun?exercise.runEnvironment||'':'',
     isRun?exercise.treadmillIncline||'':'',isRun?exercise.avgHr||'':'',isRun?exercise.maxHr||'':'',
     isRun?exercise.rpe||'':'',isRun?exercise.runPain||'':'',exercise.rounds||'',exercise.completedRounds||'',
-    exercise.completed?'yes':'no',summary(exercise),exercise.notes||'',entry.notes||''
+    exercise.completed?'yes':'no',adherence,exercise.adherenceOverride?.value||'',exercise.adherenceOverride?.reason||'',
+    pain.severity??'',pain.location||'',pain.laterality||'',pain.note||'',pain.causedExerciseToStop==null?'':pain.causedExerciseToStop?'yes':'no',
+    summary(exercise),exercise.notes||'',entry.notes||''
    ]);
   });
  });
+ if(rows.some(row=>row.length!==headers.length))throw new Error('CSV export row shape mismatch');
  return rows.map(row=>row.map(value=>`"${String(value??'').replaceAll('"','""')}"`).join(',')).join('\n');
 }
 
@@ -2223,7 +2511,10 @@ async function importJson(event){
 
 function normalizeExercise(exercise){
  if(!exercise||typeof exercise!=='object')return null;
- return {...exercise};
+ const normalized={...exercise};
+ if(exercise.exercisePain&&typeof exercise.exercisePain==='object')normalized.exercisePain={...exercise.exercisePain};
+ else delete normalized.exercisePain;
+ return normalized;
 }
 
 function normalizeEntry(entry){
@@ -2239,6 +2530,7 @@ function normalizeEntry(entry){
   painScore:entry.painScore??'',
   preSoreness:entry.preSoreness??'',
   readiness:entry.readiness??'',
+  sleepQuality:entry.sleepQuality??'',
   painDuring:entry.painDuring??'',
   painLocation:entry.painLocation??'',
   postSoreness:entry.postSoreness??'',
@@ -2423,6 +2715,7 @@ function hasData(exercise){
 
 function hasMeaningfulResultData(exercise){
  if(!exercise)return false;
+ if(hasExercisePainData(exercise.exercisePain))return true;
  const fieldsByType={
   weighted:['load','reps','rpe'],body:['reps','rpe'],timed:['times','rpe'],
   carry:['load','distance','carrySeconds','rpe'],cardio:['minutes','distance','modality','avgHr','rpe'],
@@ -2436,6 +2729,10 @@ function hasMeaningfulResultData(exercise){
 
 function readinessLabel(value){
  return ({1:'1 — Very poor',2:'2 — Below average',3:'3 — Normal',4:'4 — Good',5:'5 — Excellent'})[Number(value)]||String(value||'not recorded');
+}
+
+function sleepQualityLabel(value){
+ return ({very_poor:'Very poor',poor:'Poor',fair:'Fair',good:'Good',very_good:'Very good'})[value]||String(value||'Not recorded');
 }
 
 function setExportDates(){

@@ -17,11 +17,15 @@ Day 3 is **Lower Strength and Gym Conditioning**. Its current program-version li
 
 The current block also includes a low-fatigue Test Skill Practice group. Legacy `sledLoad` fields remain readable in historical summaries, but no new sled input is shown.
 
+The version 1.3 Day 3 Romanian-deadlift prescription is **95 lb total for 2 × 8**. This is a synchronization correction, not a new program version. Keep the two-round conditioning prescription unchanged.
+
 ## Current program model
 
 `program-config.js` is the single source of truth for program metadata, daily prescriptions, stable exercise IDs, target RPEs, coaching notes, run stage, and recovery work. The active program is **AFT Foundation Block 1**, version **1.3**, effective **2026-08-01**.
 
 Do not add an automatic coaching or load-progression algorithm. ChatGPT is the coach; Codex updates `program-config.js` after the user reviews recommendations.
+
+Temporary exercise-specific coach instructions live in `coachNoteOverlays`. An overlay is scoped to program version, workout day, exercise identity, and effective date. Set its status to `resolved` (and add `resolvedDate`) to remove it from future cards and exports without rewriting prescriptions or workout history. The active version 1.3 Day 2 lateral-raise overlay advises a pain-free machine/cuffed-cable variation or omission after a right medial-elbow twinge.
 
 Every saved workout stores program metadata and a complete `prescriptionSnapshot`. Editing an old workout renders that snapshot—or its own legacy saved exercise list—not the current program. This is required so a later coach update never changes historical prescriptions. Current variation/equipment logging options are merged into snapshot-backed edit screens, but the saved prescription, targets, names, and coaching details remain untouched.
 
@@ -49,11 +53,13 @@ Blank primary workouts select the day after the most recent primary workout usin
 
 Session tracking separates pre-session soreness, readiness, pain during training, pain location, and post-session notes. Recovery also records post-session soreness. The old `painScore` field remains explicitly labeled as legacy pain/discomfort and is never reinterpreted.
 
+Sleep quality is an optional five-value pre-session field. Exercise results may also store an optional `exercisePain` object with severity, location, laterality, note, and whether the symptom stopped the exercise. Neither field drives automatic recommendations or blocks saving.
+
 The optional session timer persists across reloads, supports pause/resume, fills duration only when manual duration is blank, and does not mark exercises complete. The walk/run timer remains separate.
 
 Progress and exports include Monday–Sunday hand-release push-up volume, front-plank time, running distance, and running time. Side-plank time is excluded from front-plank totals. Running progress includes pain-free session count, most-recent distance and pace, longest distance, and best calculated pace grouped by stage.
 
-The coaching Markdown export includes every planned exercise, completion status, detailed result fields, coach instructions, exercise RPE, run metrics, full multiline exercise notes, and full post-session notes. CSV and JSON carry the same underlying run values without conflating device and calculated pace.
+The coaching Markdown export includes every planned exercise, completion status, derived prescription adherence, one chronologically prior directly comparable result, active coach overlays, detailed result fields, exercise-specific pain, sleep quality, coach instructions, exercise RPE, run metrics, full multiline exercise notes, and full post-session notes. CSV and JSON carry the same underlying values without conflating device and calculated pace. The practice section is named **AFT-event practice volume** and explicitly states that accumulated work is not a benchmark or official event result.
 
 The PWA uses versioned CSS/JavaScript/config URLs and network-first same-origin fetching with offline cache fallback. When a newly activated service worker takes control, a persistent **Reload update** banner appears. Reloading first autosaves the active draft.
 
@@ -79,6 +85,6 @@ The canonical workout array stays under the existing `aftWorkoutEntries.v1` loca
 - `aftBackupMeta.v1` — last downloaded JSON backup metadata
 - `aftDataVersion.v1` — app data migration marker
 
-Data schema version 8 adds optional stable `variationId` values for new exercise results and the lookup compatibility layer. No existing workout is rewritten; legacy IDs and variation labels are derived only during display and matching. Version 7 run fields and `activeRunStage` remain compatible. A safety snapshot is created before the version marker advances.
+Data schema version 9 adds optional `sleepQuality`, `exercisePain`, and `adherenceOverride` values. Prescription adherence is derived at display/export time whenever explicit snapshot metadata or a safely parseable saved prescription is available; otherwise it is `not_assessable`. No existing workout or prescription snapshot is rewritten. Version 8 variation IDs and version 7 run fields remain compatible. A safety snapshot is created before the version marker advances.
 
 The app requests persistent browser storage on demand. This reduces eviction risk but does not sync across devices. JSON backup/import remains the only portable, device-loss-safe copy.

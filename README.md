@@ -20,16 +20,18 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 - Automatic Day 1 → Day 4 rotation that ignores recovery sessions
 - Variation-aware last results plus a collapsed three-result history on every exercise card
 - Optional **Use last load** actions that copy only compatible load fields
+- Coach-controlled, exercise-specific note overlays that can be resolved without changing the program version or historical prescriptions
+- A separate derived prescription-adherence result for met, below-target, partial, not-assessable, and optional work
 - A pre-save review for unchecked result data and incomplete or entirely missing rep/time set logs when other results were entered
 - Strength, running, standard-gym conditioning, and calisthenics logging
-- Separate readiness, muscle-soreness, pain, and pain-location tracking
+- Separate readiness, sleep quality, muscle soreness, session pain, and optional structured exercise-specific pain tracking
 - Weekly push-up and front-plank progress totals
 - Weekly run distance/time, pain-free run counts, recent pace, and stage-specific best-pace metrics
 - Autosaved workout drafts and durable on-device workout history
 - Five rolling local restore points, protected-storage status, and backup reminders
 - Edit/delete saved sessions
 - Progress summary
-- Detailed Markdown export for the coach chat, including planned versus completed work and full exercise/session notes
+- Detailed Markdown export for the coach chat, including adherence, one prior comparable result, active coach notes, and full exercise/session notes
 - JSON backup/import and CSV export
 - PWA manifest, offline service worker, and iPhone home-screen icon
 
@@ -78,6 +80,8 @@ The default program is designed for a normal commercial gym. It uses free weight
 
 Day 3 uses a coach-capped two-round conditioning circuit: a 45 lb-per-hand farmer carry, lateral step-ups, 45 seconds of hard bike/rower/elliptical work, and 2:30 rest.
 
+Program v1.3 displays the synchronized Day 3 Romanian-deadlift target as 95 lb total for 2 × 8. The load is a visible target and is not prefilled as if it had already been performed.
+
 Day 1 deadlifts can be logged separately with a trap/hex bar, conventional barbell, sumo barbell, or dumbbells. Exercises with realistic commercial-gym substitutions include an explicit variation selector, and coach notes come directly from the current program configuration.
 
 New workouts use the device-local calendar date and default to the day following the most recent saved primary session. Optional recovery sessions appear in history and exports but do not advance that rotation. The **New Workout** action returns to the suggested primary day without affecting saved history.
@@ -87,6 +91,8 @@ Run progression is coach-directed rather than automatically advanced. Program v1
 Calculated pace uses total elapsed time divided by distance. A plain elapsed-time value such as `20` means 20 minutes; `20:00` is equivalent. Timed strength fields keep their existing seconds-based behavior. When elapsed time is blank, the app can use programmed interval time and labels that basis explicitly. Device-reported pace remains independently editable; a material difference produces an informational warning without blocking the save.
 
 Exercise cards keep the coach prescription, previous results, and today's result visually separate. Last-result lookup uses saved workout date and `updatedAt`, accepts meaningful data even when an older Completed box was missed, excludes the workout currently being edited, and derives compatibility IDs without rewriting history. Different machine variations are labeled as not directly comparable. **Use last load** appears only for an exact compatible variation and never copies completion, sets, reps, RPE, notes, or pain.
+
+Prescription adherence is derived conservatively from explicit set, rep, timed-set, cardio-duration, and load targets. It never changes programming automatically. The coach export also reuses the same comparability rules to include at most one chronologically prior compatible result per completed exercise.
 
 The full Day 1 walk/run interval block remains after the primary strength work because it is conditioning, not the warm-up. Every workout displays a separate 5–10 minute active warm-up. Day 4 starts with its primary run after that warm-up, and every walk/run timer begins with the walk segment before progressing to the run segment.
 

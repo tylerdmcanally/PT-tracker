@@ -21,16 +21,26 @@ window.AFT_PROGRAM_CONFIG={
  ],
  groups:{
   testSkillPractice:{
+   optional:true,
    eyebrow:'OPTIONAL LOW-FATIGUE WORK',
    label:'Test Skill Practice',
    instruction:'These sets should remain easy and technically clean. They are not maximal attempts.'
   },
   armSuperset:{
+   optional:true,
    eyebrow:'OPTIONAL ACCESSORY',
    label:'Arm Superset',
    instruction:'Perform curls and pressdowns back-to-back, then rest 60–90 seconds.'
   }
  },
+ coachNoteOverlays:[
+  {
+   id:'day2-lateral-raise-right-elbow-2026-08-03',programVersion:'1.3',workoutDayId:'day2',exerciseId:'lateralRaise',
+   effectiveDate:'2026-08-03',status:'active',
+   text:'Right medial-elbow discomfort occurred with the dumbbell variation. Use a pain-free machine or cuffed-cable variation, or omit this exercise. Stop if discomfort increases.',
+   reason:'Right medial-elbow twinge rated 1/10 during the August 3 workout.'
+  }
+ ],
  sessions:{
   day1:{
    key:'day1',
@@ -47,8 +57,8 @@ window.AFT_PROGRAM_CONFIG={
     {id:'loadedCarry',name:'Farmer carry',prescription:'4 trips of approximately 30–40 yd',type:'carry',unit:'lb per hand',sets:4,variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry'},
     {id:'plank',name:'Front plank',prescription:'3 × 25–30 sec',type:'timed',sets:3},
     {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 2 — 1:00 walk / 1:30 run × 8',type:'interval',runStage:2,coachingNotes:'Begin each round with the one-minute walk. Keep the running pace relaxed and similar to Stage 1. The goal is to extend continuous running time, not increase speed.'},
-    {id:'dumbbellCurl',name:'Dumbbell curls',prescription:'2 × 10–12',type:'weighted',unit:'lb per hand',sets:2,group:'armSuperset'},
-    {id:'tricepsPressdown',name:'Cable triceps pressdowns',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,group:'armSuperset'}
+    {id:'dumbbellCurl',name:'Dumbbell curls',prescription:'2 × 10–12',type:'weighted',unit:'lb per hand',sets:2,group:'armSuperset',optional:true},
+    {id:'tricepsPressdown',name:'Cable triceps pressdowns',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,group:'armSuperset',optional:true}
    ]
   },
   day2:{
@@ -63,7 +73,7 @@ window.AFT_PROGRAM_CONFIG={
     {id:'verticalPull',name:'Lat pulldown',prescription:'3 × 8–10',type:'weighted',unit:'lb',sets:3,variations:['Lat pulldown','Assisted pull-up','Band-assisted pull-up'],defaultVariation:'Lat pulldown'},
     {id:'overheadPress',name:'Seated dumbbell overhead press',prescription:'3 × 8–10',type:'weighted',unit:'lb per hand',sets:3,variations:['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],defaultVariation:'Seated dumbbell press'},
     {id:'chestSupportedRow',name:'Chest-supported or machine row',prescription:'3 × 10–12',type:'weighted',unit:'lb',sets:3,variations:['Dumbbell row','Machine row','T-bar row'],defaultVariation:'Machine row'},
-    {id:'lateralRaise',name:'Dumbbell lateral raises',prescription:'2 × 12–15',type:'weighted',unit:'lb per hand',sets:2},
+    {id:'lateralRaise',name:'Dumbbell lateral raises',prescription:'2 × 12–15',type:'weighted',unit:'lb per hand',sets:2,variations:['Dumbbell lateral raise','Machine lateral raise','Cable lateral raise','Cuffed-cable lateral raise'],defaultVariation:'Machine lateral raise',variationUnits:{'Dumbbell lateral raise':'lb per hand','Machine lateral raise':'lb total','Cable lateral raise':'lb per side','Cuffed-cable lateral raise':'lb per side'}},
     {id:'trunkStability',name:'Dead bug or Pallof press',prescription:'3 × 10 each side',type:'body',sets:3,variations:['Dead bug','Pallof press'],defaultVariation:'Dead bug'},
     {id:'easyCardio',name:'Easy cardio',prescription:'25–30 minutes',type:'cardio',modalities:['Bike','Elliptical','Rower','Incline walk','Other'],targetRpe:'4–5',coachingNotes:'Use conversational effort throughout.'}
    ]
@@ -77,16 +87,16 @@ window.AFT_PROGRAM_CONFIG={
    warmup:'5–8 minutes of easy cardio, dynamic hip and ankle prep, then 2–4 progressive goblet-squat warm-up sets.',
    exercises:[
     {id:'squatPattern',name:'Goblet squat',prescription:'3 × 8',type:'weighted',unit:'lb',sets:3,variations:['Goblet squat','Front squat','Hack squat','Leg press'],defaultVariation:'Goblet squat',barWeights:{'Front squat':45}},
-    {id:'romanianDeadlift',name:'Romanian deadlift',prescription:'2 × 8',type:'weighted',unit:'lb',sets:2,variations:['Barbell','Dumbbells','Smith machine'],defaultVariation:'Barbell',barWeights:{'Barbell':45,'Smith machine':20}},
+    {id:'romanianDeadlift',name:'Romanian deadlift',prescription:'95 lb total for 2 × 8',type:'weighted',unit:'lb',sets:2,targetLoad:95,targetLoadVariation:'Barbell',variations:['Barbell','Dumbbells','Smith machine'],defaultVariation:'Barbell',barWeights:{'Barbell':45,'Smith machine':20}},
     {id:'inclinePress',name:'Incline dumbbell press',prescription:'3 × 8–10',type:'weighted',unit:'lb per hand',sets:3,variations:['Incline dumbbell press','Incline chest-press machine'],defaultVariation:'Incline dumbbell press'},
     {id:'oneArmRow',name:'One-arm dumbbell row',prescription:'3 × 10 each side',type:'weighted',unit:'lb',sets:3,variations:['One-arm dumbbell row','One-arm cable row'],defaultVariation:'One-arm dumbbell row'},
     {id:'singleLegStrength',name:'Split squat',prescription:'2 × 8 each leg using body weight or a light load',type:'weighted',unit:'lb total',sets:2,variations:['Body-weight split squat','Light dumbbell split squat','Forward step-up','Lateral step-up'],defaultVariation:'Body-weight split squat',coachingNotes:'Keep the load light and the repetitions controlled.'},
     {id:'sidePlank',name:'Side plank',prescription:'3 × 25 sec each side',type:'timed',sets:3},
-    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'3 × 4',type:'body',sets:3,group:'testSkillPractice'},
-    {id:'plank',name:'Front plank',prescription:'2 × 20–25 sec',type:'timed',sets:2,group:'testSkillPractice'},
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'3 × 4',type:'body',sets:3,group:'testSkillPractice',optional:true},
+    {id:'plank',name:'Front plank',prescription:'2 × 20–25 sec',type:'timed',sets:2,group:'testSkillPractice',optional:true},
     {id:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, 45-sec hard cardio, then 2:30 rest',type:'circuit',circuitVersion:'foundation-1.2',defaults:{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'45',restSeconds:'150'},coachingNotes:'Current block limit: two rounds. Do not extend the hard interval beyond 45 seconds.'},
-    {id:'dumbbellCurl',name:'Dumbbell curls',prescription:'2 × 10–12',type:'weighted',unit:'lb per hand',sets:2,group:'armSuperset'},
-    {id:'tricepsPressdown',name:'Cable triceps pressdowns',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,group:'armSuperset'}
+    {id:'dumbbellCurl',name:'Dumbbell curls',prescription:'2 × 10–12',type:'weighted',unit:'lb per hand',sets:2,group:'armSuperset',optional:true},
+    {id:'tricepsPressdown',name:'Cable triceps pressdowns',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,group:'armSuperset',optional:true}
    ]
   },
   day4:{

@@ -6,7 +6,7 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 
 - Four primary workout days plus an optional recovery session
 - Coach-controlled, versioned workout prescriptions in `program-config.js`
-- Saved prescription snapshots so later program changes do not rewrite old workouts
+- Saved prescription snapshots so later program changes do not rewrite old workouts, while current logging/equipment choices remain available when editing history
 - A read-only current run stage with per-session logging of the stage actually completed
 - A built-in walk-first interval timer with live phase, round, next-segment, sound/vibration cues, pause, skip, and reset controls
 - Separate programmed interval time, total elapsed time, calculated pace, and device-reported pace
@@ -18,7 +18,9 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 - Combined-plate and direct-total modes for other barbell and machine variations
 - Mobile-friendly set and per-set rep selectors prefilled from each prescription
 - Automatic Day 1 → Day 4 rotation that ignores recovery sessions
-- Most-recent matching exercise results shown as a reference on new workouts
+- Variation-aware last results plus a collapsed three-result history on every exercise card
+- Optional **Use last load** actions that copy only compatible load fields
+- A pre-save review for unchecked result data and incomplete or entirely missing rep/time set logs when other results were entered
 - Strength, running, standard-gym conditioning, and calisthenics logging
 - Separate readiness, muscle-soreness, pain, and pain-location tracking
 - Weekly push-up and front-plank progress totals
@@ -82,7 +84,9 @@ New workouts use the device-local calendar date and default to the day following
 
 Run progression is coach-directed rather than automatically advanced. Program v1.3 uses Stage 2—one minute walking followed by 1:30 running for eight rounds—on Days 1 and 4. The timer starts every interval round with walking, automatically logs completed rounds and programmed interval time, and marks the run exercise done. Total elapsed time remains a separate user-entered value.
 
-Calculated pace uses total elapsed time divided by distance. When elapsed time is blank, the app can use programmed interval time and labels that basis explicitly. Device-reported pace remains independently editable; a material difference produces an informational warning without blocking the save.
+Calculated pace uses total elapsed time divided by distance. A plain elapsed-time value such as `20` means 20 minutes; `20:00` is equivalent. Timed strength fields keep their existing seconds-based behavior. When elapsed time is blank, the app can use programmed interval time and labels that basis explicitly. Device-reported pace remains independently editable; a material difference produces an informational warning without blocking the save.
+
+Exercise cards keep the coach prescription, previous results, and today's result visually separate. Last-result lookup uses saved workout date and `updatedAt`, accepts meaningful data even when an older Completed box was missed, excludes the workout currently being edited, and derives compatibility IDs without rewriting history. Different machine variations are labeled as not directly comparable. **Use last load** appears only for an exact compatible variation and never copies completion, sets, reps, RPE, notes, or pain.
 
 The full Day 1 walk/run interval block remains after the primary strength work because it is conditioning, not the warm-up. Every workout displays a separate 5–10 minute active warm-up. Day 4 starts with its primary run after that warm-up, and every walk/run timer begins with the walk segment before progressing to the run segment.
 

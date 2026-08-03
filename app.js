@@ -9,7 +9,7 @@ const SNAPSHOT_KEY='aftWorkoutSnapshots.v1';
 const TIMER_KEY='aftSessionTimer.v1';
 const BACKUP_META_KEY='aftBackupMeta.v1';
 const DATA_VERSION_KEY='aftDataVersion.v1';
-const DATA_VERSION=7;
+const DATA_VERSION=8;
 const MAX_SNAPSHOTS=5;
 
 const EXERCISE_NAME_IDS={
@@ -37,6 +37,22 @@ const EXERCISE_NAME_IDS={
  'Side plank':'sidePlank','Gym conditioning circuit':'gymConditioningCircuit',
  'Primary run':'primaryRun','Mobility':'mobility',
  'Easy stationary bike or walk':'recoveryCardio','Gentle mobility':'recoveryMobility'
+};
+
+const EXERCISE_ID_ALIASES={
+ trapBarDeadlift:'deadlift',legPress:'squatOrLegPress',seatedCableRow:'seatedRow',farmerCarry:'loadedCarry',
+ frontPlank:'plank',cableTricepsPressdown:'tricepsPressdown',primaryRun:'runWalkIntervals'
+};
+
+const VARIATION_ID_BY_LABEL={
+ 'Trap / hex bar':'trapBar','Conventional barbell':'conventionalBarbell','Sumo barbell':'sumoBarbell','Dumbbells':'dumbbells',
+ 'Leg press':'unspecifiedLegPress','Lying leg press':'lyingLegPress','Upright leg press':'uprightLegPress',
+ 'Plate-loaded leg press':'plateLoadedLegPress','Selectorized leg press':'selectorizedLegPress','Other leg press':'otherLegPress',
+ 'Dumbbell bench press':'dumbbellBenchPress','Barbell bench press':'barbellBenchPress','Chest-press machine':'machineChestPress',
+ 'Lat pulldown':'latPulldown','Assisted pull-up':'assistedPullup','Band-assisted pull-up':'assistedPullup',
+ 'Seated cable row':'seatedCableRow','Chest-supported machine row':'machineRow','Chest-supported dumbbell row':'chestSupportedDumbbellRow',
+ 'Dumbbell row':'chestSupportedDumbbellRow','Machine row':'machineRow','T-bar row':'tBarRow',
+ 'Farmer carry':'farmerCarry','Heavy static hold':'heavyStaticHold','Suitcase carry':'suitcaseCarry'
 };
 
 let entries=[];
@@ -206,6 +222,13 @@ function snapshotSession(definition){
 function definitionForSavedEntry(entry){
  const snapshot=entry?.prescriptionSnapshot;
  if(snapshot&&Array.isArray(snapshot.exercises)){
+  const current=SESSIONS[snapshot.sessionKey||entry.dayKey];
+  const exercises=snapshot.exercises.map(saved=>{
+   const savedId=exerciseIdentity(saved);
+   const currentDefinition=current?.exercises?.find(exercise=>canonicalExerciseId(exercise.id)===savedId)
+    ||current?.exercises?.find(exercise=>exercise.name===saved.name);
+   return mergeCurrentLoggingOptions(saved,currentDefinition);
+  });
   return {
    key:snapshot.sessionKey||entry.dayKey,
    sessionType:snapshot.sessionType||entry.sessionType||'primary',
@@ -214,7 +237,7 @@ function definitionForSavedEntry(entry){
    warmup:snapshot.warmup||'',
    targetSessionRpe:snapshot.targetSessionRpe||entry.targetSessionRpe||'',
    optional:Boolean(snapshot.optional),
-   exercises:clone(snapshot.exercises)
+   exercises
   };
  }
  const current=SESSIONS[entry.dayKey];
@@ -244,6 +267,28 @@ function definitionForSavedEntry(entry){
   optional:entry.sessionType==='recovery',
   exercises
  };
+}
+
+function mergeCurrentLoggingOptions(saved,current){
+ const merged=clone(saved);
+ if(!current||!Array.isArray(current.variations))return merged;
+ const savedVariations=Array.isArray(saved.variations)?saved.variations:[];
+ merged.variations=[...new Set([...savedVariations,...current.variations])];
+ if(!merged.defaultVariation&&current.defaultVariation)merged.defaultVariation=current.defaultVariation;
+ if(current.barWeights||saved.barWeights)merged.barWeights={...(current.barWeights||{}),...(saved.barWeights||{})};
+ if(Array.isArray(current.perSideVariations)||Array.isArray(saved.perSideVariations)){
+  merged.perSideVariations=[...new Set([
+   ...(Array.isArray(saved.perSideVariations)?saved.perSideVariations:[]),
+   ...(Array.isArray(current.perSideVariations)?current.perSideVariations:[])
+  ])];
+ }
+ if(Array.isArray(current.barWeightOptions)||Array.isArray(saved.barWeightOptions)){
+  merged.barWeightOptions=[...new Set([
+   ...(Array.isArray(saved.barWeightOptions)?saved.barWeightOptions:[]),
+   ...(Array.isArray(current.barWeightOptions)?current.barWeightOptions:[])
+  ])];
+ }
+ return merged;
 }
 
 function renderWorkout(saved=null,{preserveSession=false}={}){
@@ -328,7 +373,7 @@ function renderExerciseList(session,saved){
    }
   }
   const state=findSavedExercise(definition,savedExercises,index)||defaultExerciseState(definition);
-  html+=exerciseCard(definition,visibleIndex,state,{showPrevious:!saved});
+  html+=exerciseCard(definition,visibleIndex,state,{showPrevious:true});
   visibleIndex+=1;
  });
  if(openGroup)html+='</div></section>';
@@ -336,7 +381,8 @@ function renderExerciseList(session,saved){
 }
 
 function findSavedExercise(definition,savedExercises,index){
- const byId=savedExercises.find(exercise=>exerciseIdentity(exercise)===definition.id);
+ const definitionId=canonicalExerciseId(definition.id);
+ const byId=savedExercises.find(exercise=>exerciseIdentity(exercise)===definitionId);
  if(byId)return byId;
  const byName=savedExercises.find(exercise=>exercise.name===definition.name);
  if(byName)return byName;
@@ -344,8 +390,30 @@ function findSavedExercise(definition,savedExercises,index){
  return positional&&!exerciseIdentity(positional)?positional:null;
 }
 
+function canonicalExerciseId(value){
+ const id=String(value||'');
+ return EXERCISE_ID_ALIASES[id]||id;
+}
+
 function exerciseIdentity(exercise){
- return exercise?.exerciseId||exercise?.templateId||exercise?.id||EXERCISE_NAME_IDS[exercise?.name]||exercise?.name||'';
+ const raw=exercise?.exerciseId||exercise?.templateId||exercise?.id||EXERCISE_NAME_IDS[exercise?.name]||exercise?.name||'';
+ return canonicalExerciseId(raw);
+}
+
+function exerciseVariationLabel(exercise){
+ if(exercise?.variation)return exercise.variation;
+ if(exercise?.name==='Trap-bar deadlift')return 'Trap / hex bar';
+ return '';
+}
+
+function variationIdFor(value){
+ const label=String(value||'').trim();
+ if(!label)return '';
+ return VARIATION_ID_BY_LABEL[label]||label.toLowerCase().replace(/[^a-z0-9]+(.)/g,(_,next)=>next.toUpperCase()).replace(/[^a-z0-9]/g,'');
+}
+
+function exerciseVariationId(exercise){
+ return exercise?.variationId||variationIdFor(exerciseVariationLabel(exercise));
 }
 
 function defaultExerciseState(definition){
@@ -362,14 +430,15 @@ function defaultExerciseState(definition){
 
 function exerciseCard(definition,index,state,{showPrevious=false}={}){
  const setPlan=getSetPlan(definition);
+ const currentVariation=state.variation||definition.defaultVariation||'';
  const variation=definition.variations
-  ?grid(select('variation','Variation / equipment',state.variation||definition.defaultVariation||'',definition.variations))
+  ?grid(select('variation','Variation / equipment',currentVariation,definition.variations))
   :'';
- const previous=showPrevious?previousResult(definition,state.variation||definition.defaultVariation):null;
+ const previous=showPrevious?previousResultReference(definition,currentVariation):'';
  return `<section class="card exercise-card ${state.completed?'completed':''}" data-i="${index}" data-exercise-id="${attr(definition.id)}">
   <div class="exercise-heading">
    <div>
-    <p class="exercise-order">Exercise ${index+1}</p>
+    <p class="exercise-order">Exercise ${index+1} · Today's prescription</p>
     <h2>${esc(definition.name)}</h2>
     <p>${esc(definition.prescription)}</p>
    </div>
@@ -377,7 +446,8 @@ function exerciseCard(definition,index,state,{showPrevious=false}={}){
   </div>
   ${definition.targetRpe?`<p class="target-rpe">Target RPE ${esc(definition.targetRpe)}</p>`:''}
   ${definition.coachingNotes?`<p class="coaching-note">${esc(definition.coachingNotes)}</p>`:''}
-  ${previous?`<div class="previous-result"><strong>Last session:</strong> ${esc(previous)}</div>`:''}
+  <div data-result-reference>${previous}</div>
+  <p class="today-result-label">Today's result</p>
   ${variation}${fields(definition,state,setPlan)}
   <label>Exercise notes<textarea data-field="notes" rows="3" placeholder="Technique, pain, substitutions...">${esc(state.notes)}</textarea></label>
  </section>`;
@@ -481,6 +551,7 @@ function bindExerciseControls(){
  });
  bindSetControls();
  bindWeightedLoadControls();
+ bindPreviousResultControls();
  document.querySelectorAll('[data-field="runStage"]').forEach(selectInput=>selectInput.onchange=()=>{
  const card=selectInput.closest('.exercise-card');
  const stage=Number(selectInput.value);
@@ -491,6 +562,44 @@ function bindExerciseControls(){
  });
  bindRunTimers();
  bindRunCalculations();
+}
+
+function bindPreviousResultControls(){
+ document.querySelectorAll('.exercise-card').forEach((card,index)=>{
+  const definition=activeSessionDefinition?.exercises?.[index];
+  const reference=card.querySelector('[data-result-reference]');
+  if(!definition||!reference)return;
+  const currentVariation=()=>card.querySelector('[data-field="variation"]')?.value||definition.defaultVariation||'';
+  const render=()=>{reference.innerHTML=previousResultReference(definition,currentVariation())};
+  card.querySelector('[data-field="variation"]')?.addEventListener('change',render);
+  reference.onclick=event=>{
+   if(!event.target.closest('[data-use-last-load]'))return;
+   const previous=previousResultData(definition,currentVariation()).selected;
+   if(!previous?.comparable)return;
+   applyPreviousLoad(card,definition,previous.exercise,currentVariation());
+  };
+ });
+}
+
+function applyPreviousLoad(card,definition,exercise,variation){
+ const fields=reusableLoadFields(exercise);
+ const load=card.querySelector('[data-field="load"]');
+ if(!load||fields.load==='')return;
+ load.value=fields.load;
+ if(definition.type==='weighted'){
+  const panel=card.querySelector('.weighted-load');
+  const mode=panel?.querySelector('[data-field="loadMode"]');
+  const barWeight=panel?.querySelector('[data-field="barWeight"]');
+  if(mode)mode.value=fields.loadMode||'total';
+  if(barWeight)barWeight.value=fields.barWeight||'';
+  const preset=panel?.querySelector('[data-bar-preset]');
+  if(preset&&fields.barWeight){
+   preset.value=[...preset.options].some(option=>option.value===fields.barWeight)?fields.barWeight:'custom';
+  }
+  if(panel)updateWeightedLoad(panel,variation,false);
+ }
+ scheduleDraft();
+ toast('Last load applied. Sets, reps, RPE, and notes were left blank.');
 }
 
 function bindWeightedLoadControls(){
@@ -824,8 +933,8 @@ function formatMinutes(value){
 function calculatedPaceDetails(exercise){
  const distance=Number(exercise?.distance)||0;
  if(distance<=0)return {value:'',basis:''};
- const elapsedSeconds=parseTime(exercise?.totalTime||'');
- const programmedSeconds=parseTime(exercise?.programmedIntervalTime||'')||programmedRunSeconds(exercise);
+ const elapsedSeconds=parseRunDuration(exercise?.totalTime||'');
+ const programmedSeconds=parseRunDuration(exercise?.programmedIntervalTime||'')||programmedRunSeconds(exercise);
  const seconds=elapsedSeconds>0?elapsedSeconds:programmedSeconds;
  if(seconds<=0)return {value:'',basis:''};
  return {
@@ -841,7 +950,7 @@ function formatPace(secondsPerMile){
 
 function parsePace(value){
  const cleaned=String(value||'').toLowerCase().replace(/\s*(?:\/\s*mi|per\s*mile)\s*$/,'').trim();
- return parseTime(cleaned);
+ return parseRunDuration(cleaned);
 }
 
 function paceDifferenceIsMaterial(calculatedSeconds,deviceSeconds){
@@ -1280,6 +1389,8 @@ function collectWorkoutItem({draft=false}={}){
   card.querySelectorAll('[data-field]').forEach(input=>{
    exercise[input.dataset.field]=String(input.value??'').trim();
   });
+  if(exercise.variation)exercise.variationId=variationIdFor(exercise.variation);
+  else if(definition.variations)exercise.variationId='';
   if(card.querySelector('.set-rep-grid')){
    const reps=readRepValues(card);
    while(reps.at(-1)==='')reps.pop();
@@ -1329,10 +1440,25 @@ function collectWorkoutItem({draft=false}={}){
  };
 }
 
-function saveWorkout(event){
+async function saveWorkout(event){
  event.preventDefault();
  pauseRunTimer();
  const item=collectWorkoutItem();
+ let issues=workoutReviewIssues(item);
+ while(issues.length){
+  const decision=await showSaveReview(issues);
+  if(decision==='return'){
+   returnToReviewIssue(issues[0]);
+   return;
+  }
+  if(decision==='mark'){
+   markReviewExercisesCompleted(item,issues);
+   issues=workoutReviewIssues(item);
+   continue;
+  }
+  if(decision!=='save')return;
+  break;
+ }
  const index=entries.findIndex(entry=>entry.id===item.id);
  const wasEditing=index>=0;
  index>=0?entries[index]=item:entries.push(item);
@@ -1350,6 +1476,62 @@ function saveWorkout(event){
  updatePreview();
  renderStorageStatus();
  toast(`${wasEditing?'Workout updated':'Workout saved'} · next workout ready`);
+}
+
+function workoutReviewIssues(item){
+ const issues=[];
+ (item.exercises||[]).forEach((exercise,index)=>{
+  const hasResult=hasMeaningfulResultData(exercise);
+  if(hasResult&&!exercise.completed){
+   issues.push({type:'completion',index,name:exercise.name,message:`${exercise.name}: result data is entered, but Done is unchecked.`});
+  }
+  const setCount=Math.max(0,Number(exercise.sets)||0);
+  const reps=parseSetValues(exercise.reps).filter(value=>value!=='');
+  if(setCount&&hasResult&&['weighted','body'].includes(exercise.type)&&reps.length!==setCount){
+   issues.push({type:'reps',index,name:exercise.name,message:`${exercise.name}: ${reps.length} rep ${reps.length===1?'entry':'entries'} for ${setCount} selected sets.`});
+  }
+  const times=parseSetValues(exercise.times).filter(value=>value!=='');
+  if(setCount&&hasResult&&exercise.type==='timed'&&times.length!==setCount){
+   issues.push({type:'times',index,name:exercise.name,message:`${exercise.name}: ${times.length} time ${times.length===1?'entry':'entries'} for ${setCount} selected sets.`});
+  }
+ });
+ return issues;
+}
+
+function showSaveReview(issues){
+ const dialog=$('saveReviewDialog');
+ if(!dialog?.showModal){
+  const message=issues.map(issue=>`• ${issue.message}`).join('\n');
+  return Promise.resolve(confirm(`Review these entries before saving:\n\n${message}\n\nSave anyway?`)?'save':'return');
+ }
+ $('saveReviewIssues').innerHTML=issues.map(issue=>`<li>${esc(issue.message)}</li>`).join('');
+ $('markReviewCompletedButton').classList.toggle('hidden',!issues.some(issue=>issue.type==='completion'));
+ dialog.returnValue='';
+ return new Promise(resolve=>{
+  dialog.addEventListener('close',()=>resolve(dialog.returnValue||'return'),{once:true});
+  dialog.showModal();
+ });
+}
+
+function markReviewExercisesCompleted(item,issues){
+ const indices=[...new Set(issues.filter(issue=>issue.type==='completion').map(issue=>issue.index))];
+ indices.forEach(index=>{
+  if(item.exercises[index])item.exercises[index].completed=true;
+  const card=document.querySelector(`.exercise-card[data-i="${index}"]`);
+  const checkbox=card?.querySelector('.exercise-complete');
+  if(checkbox)checkbox.checked=true;
+  card?.classList.add('completed');
+ });
+ scheduleDraft();
+}
+
+function returnToReviewIssue(issue){
+ const card=document.querySelector(`.exercise-card[data-i="${issue.index}"]`);
+ card?.scrollIntoView({behavior:'smooth',block:'center'});
+ const target=issue.type==='completion'
+  ?card?.querySelector('.exercise-complete')
+  :issue.type==='times'?card?.querySelector('.set-time-grid input'):card?.querySelector('.set-rep-grid select, .set-rep-grid input');
+ setTimeout(()=>target?.focus(),250);
 }
 
 function newWorkout(notify=true){
@@ -1378,33 +1560,119 @@ function compareEntries(a,b){
   ||String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));
 }
 
-function previousResult(definition,variation){
- const candidates=entries.slice().sort(compareEntries).flatMap(entry=>
-  (entry.exercises||[])
-   .filter(exercise=>exerciseIdentity(exercise)===definition.id&&(exercise.completed||hasData(exercise)))
-   .map(exercise=>({entry,exercise}))
- );
- if(!candidates.length)return '';
- const selected=candidates.find(item=>!variation||item.exercise.variation===variation)||candidates[0];
+function previousResultData(definition,variation,{source=entries,excludeEntryId=editing,limit=3}={}){
+ const definitionId=canonicalExerciseId(definition.id);
+ const candidates=source.slice().sort(compareEntries).flatMap(entry=>{
+  if(excludeEntryId&&entry.id===excludeEntryId)return [];
+  return (entry.exercises||[])
+   .filter(exercise=>exerciseIdentity(exercise)===definitionId&&hasMeaningfulResultData(exercise))
+   .map(exercise=>({entry,exercise,comparable:isComparableResult(definition,variation,exercise)}));
+ });
+ const selected=candidates.find(item=>item.comparable)||candidates[0]||null;
+ const recent=selected?[selected,...candidates.filter(item=>item!==selected)].slice(0,limit):[];
+ return {selected,recent,candidates};
+}
+
+function isComparableResult(definition,variation,exercise){
+ if(['interval','run'].includes(definition.type)){
+  const currentStage=Number(definition.runStage||PROGRAM.currentRunStage);
+  return Boolean(currentStage)&&Number(exercise.runStage)===currentStage;
+ }
+ if(definition.variations){
+  const currentVariationId=variationIdFor(variation);
+  return Boolean(currentVariationId)&&exerciseVariationId(exercise)===currentVariationId;
+ }
+ return true;
+}
+
+function previousResultReference(definition,variation){
+ const data=previousResultData(definition,variation);
+ if(!data.selected)return `<div class="previous-result previous-empty"><strong>Last result</strong><p>No previous result logged.</p></div>`;
+ const {entry,exercise,comparable}=data.selected;
+ const variationLabel=exerciseVariationLabel(exercise);
+ const isRun=['interval','run'].includes(definition.type);
+ const label=isRun&&exercise.runStage
+  ?`Last Stage ${exercise.runStage}`
+  :variationLabel&&comparable?`Last on ${variationLabel.toLowerCase()}`:'Last result';
+ const fallback=variationLabel&&!comparable
+  ?`<p class="comparison-warning">Most recent ${esc(definition.name.toLowerCase())} was ${esc(variationLabel)}. Its load is not directly comparable.</p>`
+  :!comparable&&isRun?`<p class="comparison-warning">Most recent run used Stage ${esc(exercise.runStage||'unknown')}. Pace is not directly comparable with today's stage.</p>`:'';
+ const canReuseLoad=comparable&&['weighted','carry'].includes(definition.type)&&exercise.load!==''&&exercise.load!=null;
+ const recent=data.recent.map(item=>`<li>${esc(shortDateFmt(item.entry.date))} · ${esc(resultContext(item.exercise))}${resultContext(item.exercise)?' · ':''}${esc(compactResultSummary(definition,item.exercise))}${item.comparable?'':' · not directly comparable'}</li>`).join('');
+ return `<div class="previous-result">
+  <div class="previous-result-heading"><strong>${esc(label)}</strong><span>${esc(shortDateFmt(entry.date))}</span></div>
+  <p>${esc(compactResultSummary(definition,exercise))}</p>
+  ${fallback}
+  ${canReuseLoad?'<button class="secondary subtle use-last-load" type="button" data-use-last-load>Use last load</button>':''}
+  <details class="recent-results"><summary>Recent results</summary><ul>${recent}</ul></details>
+ </div>`;
+}
+
+function resultContext(exercise){
+ if(['interval','run'].includes(exercise.type)&&exercise.runStage)return `Stage ${exercise.runStage}`;
+ return exerciseVariationLabel(exercise);
+}
+
+function compactResultSummary(definition,exercise){
  const parts=[];
- const exercise=selected.exercise;
- if(exercise.variation&&exercise.variation!==variation)parts.push(exercise.variation);
- const total=totalLoadValue(exercise);
- if(total!=null)parts.push(`${formatLoad(total)} lb total`);
- if(exercise.sets)parts.push(`${exercise.sets} sets`);
- if(exercise.reps)parts.push(`reps ${exercise.reps}`);
- if(exercise.times)parts.push(`times ${exercise.times}`);
- if(exercise.completedRounds)parts.push(`${exercise.completedRounds}/${exercise.rounds||'?'} rounds`);
- if(exercise.totalTime)parts.push(`${exercise.totalTime} elapsed`);
- if(exercise.minutes)parts.push(`${exercise.minutes} min`);
- if(exercise.distance)parts.push(`${exercise.distance}${['run','interval'].includes(exercise.type)?' mi':''}`);
- if(['run','interval'].includes(exercise.type)){
+ if(['interval','run'].includes(exercise.type)){
+  if(exercise.distance)parts.push(`${exercise.distance} mi`);
+  const duration=runDurationSeconds(exercise);
+  if(duration)parts.push(fmtSec(duration));
   const pace=calculatedPaceDetails(exercise);
-  if(pace.value)parts.push(`${pace.value}/mi calculated`);
-  if(exercise.deviceReportedPace)parts.push(`${exercise.deviceReportedPace}/mi device`);
+  if(pace.value)parts.push(`${pace.value}/mi${pace.basis==='programmedIntervalTime'?' (interval-time basis)':''}`);
+  if(exercise.completedRounds)parts.push(`${exercise.completedRounds}/${exercise.rounds||'?'} rounds`);
+ }else if(exercise.type==='timed'&&exercise.times){
+  parts.push(parseSetValues(exercise.times).filter(Boolean).map(formatCompletedTime).join(', '));
+ }else{
+  const load=compactLoadResult(definition,exercise);
+  if(load)parts.push(load);
+  if(exercise.type==='carry'&&exercise.distance){
+   parts.push(`${Number(exercise.sets)||'?'} × ${exercise.distance} yd`);
+  }else{
+   const sets=compactSetsAndReps(exercise);
+   if(sets)parts.push(sets);
+  }
+  if(exercise.minutes)parts.push(`${exercise.minutes} min`);
  }
  if(exercise.rpe)parts.push(`RPE ${exercise.rpe}`);
- return `${dateFmt(selected.entry.date)} · ${parts.join(' · ')||'completed'}`;
+ return parts.join(' · ')||'Result logged';
+}
+
+function compactLoadResult(definition,exercise){
+ const load=numberOrNull(exercise.load);
+ if(load==null)return '';
+ const usesBar=['platesPerSide','plates','total'].includes(exercise.loadMode)||exercise.barWeight!==''&&exercise.barWeight!=null;
+ if(usesBar)return `${formatLoad(totalLoadValue(exercise))} lb total`;
+ const unit=exercise.unit||definition.unit||'lb';
+ if(/per hand/i.test(unit))return `${formatLoad(load)} lb/hand`;
+ if(/total/i.test(unit))return `${formatLoad(load)} lb total`;
+ return `${formatLoad(load)} lb`;
+}
+
+function compactSetsAndReps(exercise){
+ const reps=parseSetValues(exercise.reps).filter(Boolean);
+ const sets=Number(exercise.sets)||reps.length;
+ if(reps.length&&reps.every(value=>value===reps[0])&&sets===reps.length)return `${sets} × ${reps[0]}`;
+ if(reps.length)return `${sets||reps.length} sets · reps ${reps.join(', ')}`;
+ return sets?`${sets} sets`:'';
+}
+
+function formatCompletedTime(value){
+ const seconds=parseTime(value);
+ if(!seconds)return value;
+ return seconds<60?`${seconds} sec`:fmtSec(seconds);
+}
+
+function reusableLoadFields(exercise){
+ const fields={load:String(exercise?.load??'')};
+ if(['platesPerSide','plates','total'].includes(exercise?.loadMode))fields.loadMode=exercise.loadMode;
+ if(exercise?.barWeight!==''&&exercise?.barWeight!=null)fields.barWeight=String(exercise.barWeight);
+ return fields;
+}
+
+function shortDateFmt(value){
+ return new Date(`${value}T12:00:00`).toLocaleDateString(undefined,{month:'short',day:'numeric'});
 }
 
 function renderHistory(){
@@ -1580,8 +1848,8 @@ function runRecords(source){
 }
 
 function runDurationSeconds(exercise){
- return parseTime(exercise?.totalTime||'')
-  ||parseTime(exercise?.programmedIntervalTime||'')
+ return parseRunDuration(exercise?.totalTime||'')
+  ||parseRunDuration(exercise?.programmedIntervalTime||'')
   ||programmedRunSeconds(exercise);
 }
 
@@ -1698,8 +1966,8 @@ function summary(exercise){
  if(exercise.times)parts.push(`times ${exercise.times}`);
  if(exercise.runMinutes||exercise.walkMinutes)parts.push(`${exercise.walkMinutes||0} min walk / ${exercise.runMinutes||0} min run`);
  if(exercise.continuousMinutes)parts.push(`${exercise.continuousMinutes} min continuous`);
- if(exercise.programmedIntervalTime)parts.push(`programmed ${exercise.programmedIntervalTime}`);
- if(exercise.totalTime)parts.push(`elapsed ${exercise.totalTime}`);
+ if(exercise.programmedIntervalTime)parts.push(`programmed ${['run','interval'].includes(exercise.type)?formatRunDurationValue(exercise.programmedIntervalTime):exercise.programmedIntervalTime}`);
+ if(exercise.totalTime)parts.push(`elapsed ${['run','interval'].includes(exercise.type)?formatRunDurationValue(exercise.totalTime):exercise.totalTime}`);
  if(exercise.completedRounds)parts.push(`${exercise.completedRounds}${exercise.rounds?`/${exercise.rounds}`:''} rounds completed`);
  else if(exercise.rounds&&['run','interval'].includes(exercise.type))parts.push(`${exercise.rounds} rounds planned`);
  if(exercise.type==='circuit'&&exercise.rounds)parts.push(`${exercise.rounds} rounds completed`);
@@ -1820,7 +2088,7 @@ function markdownRunResult(exercise){
  output+=`  - Stage completed: ${stage}\n`;
  output+=`  - Completed rounds: ${completedRounds}\n`;
  output+=`  - Programmed interval time: ${programmed||'Not recorded'}\n`;
- output+=`  - Total elapsed time: ${exercise.totalTime||'Not recorded'}\n`;
+ output+=`  - Total elapsed time: ${exercise.totalTime?formatRunDurationValue(exercise.totalTime):'Not recorded'}\n`;
  output+=`  - Distance: ${exercise.distance?`${exercise.distance} miles`:'Not recorded'}\n`;
  const paceBasis=pace.basis==='totalElapsedTime'
   ?'based on total elapsed time'
@@ -1888,7 +2156,7 @@ function buildCsv(){
   'target_session_rpe','duration_minutes','session_rpe','body_weight_lb','pre_session_soreness',
   'pre_session_readiness','pain_during_session','pain_location','legacy_pain_discomfort',
   'post_session_soreness','exercise_id','exercise','planned_prescription','target_exercise_rpe',
-  'variation','entered_load','load_entry_mode','plate_weight_per_side','bar_weight','total_load',
+  'variation','variation_id','entered_load','load_entry_mode','plate_weight_per_side','bar_weight','total_load',
   'sets','reps_by_set','times_by_set','run_stage','run_walk_structure','walk_interval_minutes','run_interval_minutes',
   'programmed_interval_time','total_elapsed_time','distance_miles','calculated_average_pace','pace_calculation_basis',
   'device_reported_pace','warmup_minutes','cooldown_minutes','walking_speed_mph','running_speed_mph',
@@ -1905,11 +2173,11 @@ function buildCsv(){
     entry.programVersion||'',entry.programEffectiveDate||'',entry.activeRunStage??'',entry.targetSessionRpe||'',entry.duration,
     entry.sessionRpe,entry.bodyWeight,entry.preSoreness,entry.readiness,entry.painDuring,entry.painLocation,
     entry.painScore,entry.postSoreness,exerciseIdentity(exercise),exercise.name,exercise.prescription,
-    exercise.targetRpe||'',exercise.variation||'',exercise.load||'',exercise.loadMode||'',
+    exercise.targetRpe||'',exercise.variation||'',exerciseVariationId(exercise),exercise.load||'',exercise.loadMode||'',
     exercise.loadMode==='platesPerSide'?exercise.load||'':'',exercise.barWeight||'',totalLoadValue(exercise)??'',
     exercise.sets||'',exercise.reps||'',exercise.times||'',exercise.runStage||'',isRun?exercise.structure||exercise.runTarget||'':'',
-    isRun?exercise.walkMinutes||'':'',isRun?exercise.runMinutes||'':'',isRun?exercise.programmedIntervalTime||'':'',
-    isRun?exercise.totalTime||'':'',isRun?exercise.distance||'':'',pace.value,pace.basis,
+    isRun?exercise.walkMinutes||'':'',isRun?exercise.runMinutes||'':'',isRun?formatRunDurationValue(exercise.programmedIntervalTime):'',
+    isRun?formatRunDurationValue(exercise.totalTime):'',isRun?exercise.distance||'':'',pace.value,pace.basis,
     isRun?exercise.deviceReportedPace||'':'',isRun?exercise.warmupMinutes||'':'',isRun?exercise.cooldownMinutes||'':'',
     isRun?exercise.walkSpeed||'':'',isRun?exercise.runSpeed||'':'',isRun?exercise.runEnvironment||'':'',
     isRun?exercise.treadmillIncline||'':'',isRun?exercise.avgHr||'':'',isRun?exercise.maxHr||'':'',
@@ -1955,9 +2223,7 @@ async function importJson(event){
 
 function normalizeExercise(exercise){
  if(!exercise||typeof exercise!=='object')return null;
- const normalized={...exercise};
- if(normalized.name==='Trap-bar deadlift'&&!normalized.variation)normalized.variation='Trap / hex bar';
- return normalized;
+ return {...exercise};
 }
 
 function normalizeEntry(entry){
@@ -2147,12 +2413,25 @@ function hasData(exercise){
   return ['completedRounds','distance','totalTime','deviceReportedPace','warmupMinutes','cooldownMinutes','walkSpeed','runSpeed','runEnvironment','treadmillIncline','avgHr','maxHr','rpe','runPain','notes'].some(field=>exercise[field]);
  }
  const ignored=[
-  'exerciseId','templateId','id','name','prescription','type','unit','targetRpe','completed','variation',
+  'exerciseId','templateId','id','name','prescription','type','unit','targetRpe','completed','variation','variationId',
   'loadMode','barWeight','totalLoad','runStage','runTarget','structure','rounds','carryLoad','carrySeconds',
   'stepReps','intervalSeconds','restSeconds','programmedIntervalTime','calculatedPace','paceBasis'
  ];
  if(['weighted','body','timed','carry'].includes(exercise.type))ignored.push('sets');
  return Object.entries(exercise).some(([key,value])=>!ignored.includes(key)&&value!==''&&value!=null);
+}
+
+function hasMeaningfulResultData(exercise){
+ if(!exercise)return false;
+ const fieldsByType={
+  weighted:['load','reps','rpe'],body:['reps','rpe'],timed:['times','rpe'],
+  carry:['load','distance','carrySeconds','rpe'],cardio:['minutes','distance','modality','avgHr','rpe'],
+  circuit:['totalTime','modality','rpe'],
+  interval:['completedRounds','totalTime','distance','deviceReportedPace','warmupMinutes','cooldownMinutes','walkSpeed','runSpeed','runEnvironment','treadmillIncline','avgHr','maxHr','rpe','runPain'],
+  run:['completedRounds','totalTime','distance','deviceReportedPace','warmupMinutes','cooldownMinutes','walkSpeed','runSpeed','runEnvironment','treadmillIncline','avgHr','maxHr','rpe','runPain']
+ };
+ const fields=fieldsByType[exercise.type]||['load','reps','times','minutes','distance','totalTime','rpe'];
+ return fields.some(field=>exercise[field]!==''&&exercise[field]!=null);
 }
 
 function readinessLabel(value){
@@ -2225,6 +2504,18 @@ function parseTime(value){
  const parts=String(value).split(':').map(Number);
  if(parts.some(part=>!Number.isFinite(part)))return 0;
  return parts.length===3?parts[0]*3600+parts[1]*60+parts[2]:parts.length===2?parts[0]*60+parts[1]:Number(value);
+}
+
+function parseRunDuration(value){
+ const cleaned=String(value??'').trim();
+ if(!cleaned)return 0;
+ if(/^\d+(?:\.\d+)?$/.test(cleaned))return Number(cleaned)*60;
+ return parseTime(cleaned);
+}
+
+function formatRunDurationValue(value){
+ const seconds=parseRunDuration(value);
+ return seconds?fmtSec(seconds):String(value||'');
 }
 
 function fmtSec(seconds){

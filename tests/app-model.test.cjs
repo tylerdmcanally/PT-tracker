@@ -94,6 +94,13 @@ const fallbackPace=evaluate(`calculatedPaceDetails({
 })`);
 assert.equal(fallbackPace.value,'10:45');
 assert.equal(fallbackPace.basis,'programmedIntervalTime');
+assert.equal(evaluate(`compactResultSummary(SESSIONS.day4.exercises[0],{
+ type:'run',distance:'1.86',totalTime:'',programmedIntervalTime:'20:00'
+})`),'1.86 mi · 20:00 · 10:45/mi (interval-time basis)','Last Result labels programmed-time pace explicitly');
+assert.equal(evaluate(`calculatedPaceDetails({totalTime:'20',distance:'1.55'}).value`),'12:54','plain run time means minutes');
+assert.equal(evaluate(`calculatedPaceDetails({totalTime:'30',distance:'2'}).value`),'15:00');
+assert.equal(evaluate(`parseRunDuration('20')`),1200);
+assert.equal(evaluate(`parseTime('30')`),30,'plain timed-set values remain seconds');
 assert.equal(evaluate(`paceDifferenceIsMaterial(parsePace('12:54'),parsePace('14:16'))`),true);
 assert.equal(evaluate(`paceDifferenceIsMaterial(parsePace('12:54'),parsePace('13:00'))`),false);
 const runProgress=evaluate(`runRecords([{
@@ -136,9 +143,73 @@ assert.equal(oldDefinition.exercises.length,2);
 assert.equal(oldDefinition.exercises[1].id,'lungePattern');
 assert.equal(oldDefinition.exercises[1].prescription,'3 × 8 each leg');
 
+const historicalVariationDefinition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry({
+ date:'2026-08-01',dayKey:'day1',dayLabel:'Day 1 — Deadlift and Intervals',
+ prescriptionSnapshot:{sessionKey:'day1',label:'Day 1 — Deadlift and Intervals',exercises:[
+  {id:'squatOrLegPress',name:'Leg press',prescription:'Coach-old prescription',type:'weighted',unit:'lb',sets:3,variations:['Leg press'],defaultVariation:'Leg press',coachingNotes:'Coach-old note'}
+ ]}
+}))`));
+assert.equal(historicalVariationDefinition.exercises[0].prescription,'Coach-old prescription','historical prescription remains frozen');
+assert.equal(historicalVariationDefinition.exercises[0].coachingNotes,'Coach-old note','historical coaching notes remain frozen');
+assert.ok(historicalVariationDefinition.exercises[0].variations.includes('Lying leg press'),'current logging-only variations are available in historical edits');
+
 const snapshot=evaluate('snapshotSession(SESSIONS.day1)');
 assert.equal(snapshot.exercises[0].id,'deadlift');
 assert.equal(snapshot.exercises[0].prescription,'3 × 5');
+
+evaluate(`entries=[{
+ id:'august-1-day-1',date:'2026-08-01',updatedAt:'2026-08-01T19:00:00.000Z',dayKey:'day1',
+ dayLabel:'Day 1 — Deadlift and Intervals',sessionType:'primary',programVersion:'1.3',
+ exercises:[
+  {exerciseId:'deadlift',name:'Trap-bar deadlift',type:'weighted',unit:'lb',variation:'Trap / hex bar',load:'45',loadMode:'platesPerSide',barWeight:'45',sets:'3',reps:'5, 5, 5',rpe:'7',completed:true},
+  {exerciseId:'squatOrLegPress',name:'Leg press',type:'weighted',unit:'lb',variation:'Lying leg press',load:'100',sets:'3',reps:'8, 8, 8',rpe:'7',completed:true},
+  {exerciseId:'horizontalPress',name:'Horizontal press',type:'weighted',unit:'lb per hand',variation:'Dumbbell bench press',load:'30',sets:'3',reps:'10, 10, 10',rpe:'7',completed:true},
+  {exerciseId:'seatedRow',name:'Seated cable row',type:'weighted',unit:'lb',variation:'Seated cable row',load:'77',sets:'3',reps:'10, 10, 10',rpe:'6',completed:true},
+  {exerciseId:'loadedCarry',name:'Farmer carry',type:'carry',unit:'lb per hand',variation:'Farmer carry',load:'45',sets:'4',distance:'40',rpe:'6',completed:true},
+  {exerciseId:'plank',name:'Front plank',type:'timed',sets:'3',times:'30, 30, 30',rpe:'7',completed:true},
+  {exerciseId:'runWalkIntervals',name:'Walk / run intervals',type:'interval',runStage:'2',rounds:'8',completedRounds:'8',totalTime:'20',distance:'1.55',rpe:'7',completed:true},
+  {exerciseId:'dumbbellCurl',name:'Dumbbell curls',type:'weighted',unit:'lb per hand',load:'25',sets:'2',reps:'12, 12',rpe:'7',completed:false},
+  {exerciseId:'tricepsPressdown',name:'Cable triceps pressdowns',type:'weighted',unit:'lb total',load:'77',sets:'2',reps:'12, 12',rpe:'7',completed:true}
+ ]
+}]`);
+const fixtureSummaries=JSON.parse(evaluate(`JSON.stringify(SESSIONS.day1.exercises.map(definition=>{
+ const variations={deadlift:'Trap / hex bar',squatOrLegPress:'Lying leg press',horizontalPress:'Dumbbell bench press',seatedRow:'Seated cable row',loadedCarry:'Farmer carry'};
+ const selected=previousResultData(definition,variations[definition.id]||'').selected;
+ return [definition.id,selected?compactResultSummary(definition,selected.exercise):''];
+}))`));
+const summaryMap=Object.fromEntries(fixtureSummaries);
+assert.equal(summaryMap.deadlift,'135 lb total · 3 × 5 · RPE 7');
+assert.equal(summaryMap.squatOrLegPress,'100 lb · 3 × 8 · RPE 7');
+assert.equal(summaryMap.horizontalPress,'30 lb/hand · 3 × 10 · RPE 7');
+assert.equal(summaryMap.seatedRow,'77 lb · 3 × 10 · RPE 6');
+assert.equal(summaryMap.loadedCarry,'45 lb/hand · 4 × 40 yd · RPE 6');
+assert.equal(summaryMap.plank,'30 sec, 30 sec, 30 sec · RPE 7');
+assert.match(summaryMap.runWalkIntervals,/1\.55 mi · 20:00 · 12:54\/mi/);
+assert.equal(summaryMap.dumbbellCurl,'25 lb/hand · 2 × 12 · RPE 7','unchecked legacy results remain discoverable');
+assert.equal(summaryMap.tricepsPressdown,'77 lb total · 2 × 12 · RPE 7');
+assert.equal(evaluate(`previousResultData(SESSIONS.day1.exercises[0],'Trap / hex bar',{excludeEntryId:'august-1-day-1'}).selected`),null,'editing excludes the workout itself');
+assert.equal(evaluate(`previousResultData(SESSIONS.day1.exercises[0],'Trap / hex bar',{excludeEntryId:null,source:[
+ {id:'older',date:'2026-08-01',updatedAt:'2026-08-01T10:00:00Z',exercises:[{exerciseId:'deadlift',type:'weighted',variation:'Trap / hex bar',load:'35'}]},
+ {id:'newer',date:'2026-08-01',updatedAt:'2026-08-01T11:00:00Z',exercises:[{exerciseId:'deadlift',type:'weighted',variation:'Trap / hex bar',load:'45'}]}
+]}).selected.exercise.load`),'45','updatedAt breaks same-date ties');
+assert.equal(evaluate(`exerciseIdentity({exerciseId:'trapBarDeadlift'})`),'deadlift');
+assert.equal(evaluate(`exerciseIdentity({exerciseId:'primaryRun'})`),'runWalkIntervals');
+assert.equal(evaluate(`exerciseIdentity({name:'Loaded carry or hold'})`),'loadedCarry');
+assert.equal(evaluate(`exerciseVariationId({variation:'Lying leg press'})`),'lyingLegPress');
+assert.match(evaluate(`previousResultReference(SESSIONS.day1.exercises[1],'Upright leg press')`),/not directly comparable/);
+const copiedLoad=JSON.parse(evaluate(`JSON.stringify(reusableLoadFields(entries[0].exercises[0]))`));
+assert.deepEqual(copiedLoad,{load:'45',loadMode:'platesPerSide',barWeight:'45'});
+const reviewIssues=JSON.parse(evaluate(`JSON.stringify(workoutReviewIssues({exercises:[
+ {name:'Leg press',type:'weighted',sets:'3',reps:'8, 8',load:'100',completed:false},
+ {name:'Dumbbell curls',type:'weighted',sets:'2',reps:'12, 12',load:'25',completed:false},
+ {name:'Bench press',type:'weighted',sets:'3',reps:'',load:'95',completed:true},
+ {name:'Front plank',type:'timed',sets:'3',times:'',rpe:'7',completed:true},
+ {name:'Notes only',type:'weighted',sets:'3',notes:'Machine unavailable',completed:false}
+]}))`));
+assert.equal(reviewIssues.filter(issue=>issue.type==='completion').length,2);
+assert.equal(reviewIssues.filter(issue=>issue.type==='reps').length,2,'partial and entirely missing reps are reviewed');
+assert.equal(reviewIssues.filter(issue=>issue.type==='times').length,1,'entirely missing timed sets are reviewed');
+assert.equal(evaluate(`hasData({type:'weighted',sets:'3',variation:'Dumbbell bench press',variationId:'dumbbellBenchPress'})`),false,'variation metadata alone is not a result');
 
 const elements={
  exportFrom:{value:'2026-07-01'},
@@ -192,12 +263,13 @@ assert.match(csv,/"programmed_interval_time"/);
 assert.match(csv,/"total_elapsed_time"/);
 assert.match(csv,/"calculated_average_pace"/);
 assert.match(csv,/"device_reported_pace"/);
+assert.match(csv,/"variation_id"/);
 assert.match(csv,/"20:00"/);
 assert.match(csv,/"12:54"/);
 assert.match(csv,/"14:16"/);
 assert.match(csv,/"Relaxed pace\.\nNo pain\."/);
 const jsonBackup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
-assert.equal(jsonBackup.version,7);
+assert.equal(jsonBackup.version,8);
 assert.equal(jsonBackup.currentProgram.version,'1.3');
 assert.equal(jsonBackup.currentProgram.runStage,2);
 assert.equal(jsonBackup.entries[0].exercises[0].deviceReportedPace,'14:16');
@@ -226,9 +298,9 @@ const indexHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const appSource=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 assert.match(appSource,/Exercise notes<textarea[^>]+data-field="notes"/,'exercise notes must support detailed multiline comments');
-assert.ok(indexHtml.indexOf('program-config.js?v=16')<indexHtml.indexOf('app.js?v=16'));
-assert.match(serviceWorker,/aft-workout-tracker-v16/);
-assert.match(serviceWorker,/program-config\.js\?v=16/);
+assert.ok(indexHtml.indexOf('program-config.js?v=20')<indexHtml.indexOf('app.js?v=20'));
+assert.match(serviceWorker,/aft-workout-tracker-v20/);
+assert.match(serviceWorker,/program-config\.js\?v=20/);
 const htmlIds=[...indexHtml.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]);
 assert.equal(new Set(htmlIds).size,htmlIds.length,'HTML IDs must be unique');
 const referencedIds=[...appSource.matchAll(/\$\('([^']+)'\)/g)].map(match=>match[1]);

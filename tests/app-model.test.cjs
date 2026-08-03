@@ -82,6 +82,8 @@ evaluate(`activeProgramContext=currentProgramMeta();activeSessionDefinition=SESS
 const overlayCard=evaluate(`exerciseCard(SESSIONS.day2.exercises.find(exercise=>exercise.id==='lateralRaise'),0,defaultExerciseState(SESSIONS.day2.exercises.find(exercise=>exercise.id==='lateralRaise')))`);
 assert.match(overlayCard,/ACTIVE COACH NOTE/);
 assert.match(overlayCard,/2 × 12–15/,'overlay does not replace the original prescription');
+assert.match(overlayCard,/<details class="exercise-extras"/,'notes and pain use progressive disclosure');
+assert.match(overlayCard,/data-completion-label/,'the completion action remains at the end of the logging flow');
 const legacyLateralCard=evaluate(`exerciseCard(SESSIONS.day2.exercises.find(exercise=>exercise.id==='lateralRaise'),0,{exerciseId:'lateralRaise',name:'Dumbbell lateral raises',type:'weighted',unit:'lb per hand'})`);
 assert.match(legacyLateralCard,/value="Dumbbell lateral raise" selected/,'legacy lateral-raise records without a variation remain identified as dumbbell work');
 assert.match(legacyLateralCard,/data-unit="lb per hand"/);
@@ -141,6 +143,10 @@ assert.equal(evaluate(`parseRunDuration('20')`),1200);
 assert.equal(evaluate(`parseTime('30')`),30,'plain timed-set values remain seconds');
 assert.equal(evaluate(`paceDifferenceIsMaterial(parsePace('12:54'),parsePace('14:16'))`),true);
 assert.equal(evaluate(`paceDifferenceIsMaterial(parsePace('12:54'),parsePace('13:00'))`),false);
+const runLoggingMarkup=evaluate(`runFields('run',runDefaults(2))`);
+assert.ok(runLoggingMarkup.indexOf('Set the interval plan')<runLoggingMarkup.indexOf('Run the workout'));
+assert.ok(runLoggingMarkup.indexOf('Run the workout')<runLoggingMarkup.indexOf('Record the result'));
+assert.match(runLoggingMarkup,/<details class="exercise-inline-details" >/,'unused advanced run fields stay collapsed');
 const runProgress=evaluate(`runRecords([{
  id:'run-entry',date:'2026-07-31',updatedAt:'2026-07-31T12:00:00Z',dayKey:'day4',sessionType:'primary',
  exercises:[{exerciseId:'primaryRun',type:'run',completed:true,runStage:'1',distance:'1.86',totalTime:'24:00',runPain:'0'}]
@@ -423,9 +429,9 @@ const indexHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const appSource=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 assert.match(appSource,/Exercise notes<textarea[^>]+data-field="notes"/,'exercise notes must support detailed multiline comments');
-assert.ok(indexHtml.indexOf('program-config.js?v=21')<indexHtml.indexOf('app.js?v=21'));
-assert.match(serviceWorker,/aft-workout-tracker-v21/);
-assert.match(serviceWorker,/program-config\.js\?v=21/);
+assert.ok(indexHtml.indexOf('program-config.js?v=22')<indexHtml.indexOf('app.js?v=22'));
+assert.match(serviceWorker,/aft-workout-tracker-v22/);
+assert.match(serviceWorker,/program-config\.js\?v=22/);
 const htmlIds=[...indexHtml.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]);
 assert.equal(new Set(htmlIds).size,htmlIds.length,'HTML IDs must be unique');
 const referencedIds=[...appSource.matchAll(/\$\('([^']+)'\)/g)].map(match=>match[1]);

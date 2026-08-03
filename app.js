@@ -124,10 +124,12 @@ function bind(){
  $('workoutForm').oninput=event=>{
   if(event.target.id==='painDuring')updatePainVisibility();
   refreshAdherenceForEvent(event.target);
+  refreshExerciseExtraForEvent(event.target);
   scheduleDraft();
  };
  $('workoutForm').onchange=event=>{
   refreshAdherenceForEvent(event.target);
+  refreshExerciseExtraForEvent(event.target);
   scheduleDraft();
  };
  $('sessionDate').onchange=()=>scheduleDraft();
@@ -149,6 +151,7 @@ function bind(){
  $('startSessionTimerButton').onclick=startSessionTimer;
  $('pauseSessionTimerButton').onclick=pauseSessionTimer;
  $('finishSessionTimerButton').onclick=finishAndSaveSession;
+ $('nextExerciseButton').onclick=scrollToNextExercise;
  window.addEventListener('beforeinstallprompt',event=>{
   event.preventDefault();
   installPrompt=event;
@@ -330,6 +333,7 @@ function renderWorkout(saved=null,{preserveSession=false}={}){
  clearRunTimer();
  $('exerciseList').innerHTML=renderExerciseList(session,saved);
  bindExerciseControls();
+ updateWorkoutFlow();
  if(saved){
   $('sessionDate').value=saved.date;
   $('duration').value=saved.duration||'';
@@ -390,6 +394,60 @@ function renderExerciseList(session,saved){
  });
  if(openGroup)html+='</div></section>';
  return html;
+}
+
+function workoutFlowState(){
+ const definitions=activeSessionDefinition?.exercises||[];
+ const cards=[...document.querySelectorAll('.exercise-card')];
+ const items=definitions.map((definition,index)=>({
+  definition,
+  card:cards[index],
+  completed:Boolean(cards[index]?.querySelector('.exercise-complete')?.checked),
+  optional:isOptionalExercise(definition)
+ }));
+ const required=items.filter(item=>!item.optional);
+ const optional=items.filter(item=>item.optional);
+ return {
+  required,
+  optional,
+  completedRequired:required.filter(item=>item.completed).length,
+  completedOptional:optional.filter(item=>item.completed).length,
+  next:items.find(item=>!item.optional&&!item.completed)||items.find(item=>!item.completed)||null
+ };
+}
+
+function updateWorkoutFlow(){
+ const flow=workoutFlowState();
+ const total=flow.required.length;
+ const complete=flow.completedRequired;
+ const allRequired=total>0&&complete===total;
+ $('workoutFlowTitle').textContent=allRequired?'Required work complete':`${complete} of ${total} required complete`;
+ $('workoutFlowProgress').max=Math.max(1,total);
+ $('workoutFlowProgress').value=complete;
+ $('workoutFlowNext').textContent=flow.next
+  ?`Up next: ${flow.next.definition.name} · ${flow.next.definition.prescription}`
+  :(total?'Everything on this workout is marked done.':'No exercises in this session.');
+ $('workoutFlowOptional').textContent=flow.optional.length
+  ?`${flow.completedOptional} of ${flow.optional.length} optional exercises complete`
+  :'Complete each card in order, then finish the session details.';
+ $('nextExerciseButton').disabled=!flow.next?.card;
+ $('nextExerciseButton').textContent=flow.next?.card?'Go to next':'All done';
+ document.querySelectorAll('.exercise-card').forEach((card,index)=>{
+  const completed=Boolean(card.querySelector('.exercise-complete')?.checked);
+  const status=card.querySelector('[data-exercise-status]');
+  if(status){
+   status.textContent=completed?'Done':'To do';
+   status.classList.toggle('is-complete',completed);
+  }
+  const completionLabel=card.querySelector('[data-completion-label]');
+  if(completionLabel)completionLabel.textContent=completed?'Completed':'Mark done';
+ });
+}
+
+function scrollToNextExercise(){
+ const next=workoutFlowState().next?.card;
+ if(!next)return;
+ next.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function findSavedExercise(definition,savedExercises,index){
@@ -533,17 +591,15 @@ function prescriptionAdherence(definition,result){
 function adherenceResultMarkup(definition,state){
  const hasResult=Boolean(state&&(state.completed||hasMeaningfulResultData(state)));
  const value=prescriptionAdherence(definition,state);
- const label=!hasResult&&!isOptionalExercise(definition)?'Not assessed yet':ADHERENCE_LABELS[value];
- return `<div class="adherence-result adherence-${attr(value)}" data-adherence-result>
-  <span>Prescription result</span><strong>${esc(label)}</strong>
- </div>`;
+ return `<span class="adherence-result adherence-${attr(value)} ${hasResult?'':'hidden'}" data-adherence-result>
+  <span>Prescription</span><strong>${esc(ADHERENCE_LABELS[value])}</strong>
+ </span>`;
 }
 
 function exercisePainFields(state){
  const pain=state?.exercisePain||{};
- const hasPain=hasExercisePainData(pain);
- return `<details class="exercise-pain" ${hasPain?'open':''}>
-  <summary>Exercise-specific pain (optional)</summary>
+ return `<section class="exercise-pain" aria-label="Exercise-specific pain">
+  <p class="exercise-extra-title">Pain during this exercise</p>
   <div class="form-grid">
    <label>Severity (0–10)<input data-pain-field="severity" type="number" min="0" max="10" step="1" inputmode="numeric" value="${attr(pain.severity)}"></label>
    <label>Laterality<select data-pain-field="laterality">
@@ -556,7 +612,7 @@ function exercisePainFields(state){
    </select></label>
   </div>
   <label>Pain note<textarea data-pain-field="note" rows="2" placeholder="What did it feel like and when?">${esc(pain.note)}</textarea></label>
- </details>`;
+ </section>`;
 }
 
 function hasExercisePainData(pain){
@@ -578,6 +634,14 @@ function defaultExerciseState(definition){
  return state;
 }
 
+function exerciseExtraSummary(state){
+ const details=[];
+ if(String(state?.notes||'').trim())details.push('Notes added');
+ const pain=state?.exercisePain||{};
+ if(hasExercisePainData(pain))details.push(pain.severity!==''&&pain.severity!=null?`Pain ${pain.severity}/10`:'Pain added');
+ return details.join(' · ')||'Optional';
+}
+
 function exerciseCard(definition,index,state,{showPrevious=false}={}){
  const setPlan=getSetPlan(definition);
  const currentVariation=state.variation||exerciseVariationLabel(state)||definition.defaultVariation||'';
@@ -586,14 +650,16 @@ function exerciseCard(definition,index,state,{showPrevious=false}={}){
   ?grid(select('variation','Variation / equipment',currentVariation,definition.variations))
   :'';
  const previous=showPrevious?previousResultReference(definition,currentVariation):'';
- return `<section class="card exercise-card ${state.completed?'completed':''}" data-i="${index}" data-exercise-id="${attr(definition.id)}">
+ const optional=isOptionalExercise(definition);
+ const hasExtras=Boolean(String(state.notes||'').trim()||hasExercisePainData(state.exercisePain));
+ return `<section class="card exercise-card ${state.completed?'completed':''}" data-i="${index}" data-exercise-id="${attr(definition.id)}" data-optional="${optional}">
   <div class="exercise-heading">
    <div>
-    <p class="exercise-order">Exercise ${index+1} · Today's prescription</p>
+    <p class="exercise-order">Exercise ${index+1}${optional?' · Optional':''}</p>
     <h2>${esc(definition.name)}</h2>
     <p>${esc(definition.prescription)}</p>
    </div>
-   <label class="check-label"><input class="exercise-complete" type="checkbox" ${state.completed?'checked':''}>Done</label>
+   <span class="exercise-status" data-exercise-status>${state.completed?'Done':'To do'}</span>
   </div>
   ${definition.targetRpe?`<p class="target-rpe">Target RPE ${esc(definition.targetRpe)}</p>`:''}
   ${definition.coachingNotes?`<p class="coaching-note">${esc(definition.coachingNotes)}</p>`:''}
@@ -601,9 +667,17 @@ function exerciseCard(definition,index,state,{showPrevious=false}={}){
   <div data-result-reference>${previous}</div>
   <p class="today-result-label">Today's result</p>
   ${variation}${fields(definition,renderState,setPlan)}
-  ${adherenceResultMarkup(definition,renderState)}
-  ${exercisePainFields(renderState)}
-  <label>Exercise notes<textarea data-field="notes" rows="3" placeholder="Technique, pain, substitutions...">${esc(state.notes)}</textarea></label>
+  <details class="exercise-extras" ${hasExtras?'open':''}>
+   <summary><span>Notes &amp; pain</span><span data-exercise-extra-status>${esc(exerciseExtraSummary(renderState))}</span></summary>
+   <div class="exercise-extras-body">
+    <label>Exercise notes<textarea data-field="notes" rows="3" placeholder="Technique, pain, substitutions...">${esc(state.notes)}</textarea></label>
+    ${exercisePainFields(renderState)}
+   </div>
+  </details>
+  <div class="exercise-card-footer">
+   ${adherenceResultMarkup(definition,renderState)}
+   <label class="check-label"><input class="exercise-complete" type="checkbox" ${state.completed?'checked':''}><span data-completion-label>${state.completed?'Completed':'Mark done'}</span></label>
+  </div>
  </section>`;
 }
 
@@ -704,6 +778,7 @@ function weightedFields(definition,state,setPlan){
 function bindExerciseControls(){
  document.querySelectorAll('.exercise-complete').forEach(input=>input.onchange=()=>{
   input.closest('.exercise-card').classList.toggle('completed',input.checked);
+  updateWorkoutFlow();
   scheduleDraft();
  });
  bindSetControls();
@@ -974,35 +1049,59 @@ function bindCustomRepControls(root){
 }
 
 function runFields(type,state){
- const common=[
-  runStageSelect(state.runStage),
-  num('walkMinutes','Walk / easy interval (min)',state.walkMinutes,0,null,.25),
-  num('runMinutes','Run interval (min)',state.runMinutes,0,null,.25),
-  num('rounds','Planned walk/run rounds',state.rounds),
-  num('completedRounds','Walk/run rounds completed',state.completedRounds),
-  num('continuousMinutes','Continuous run (min)',state.continuousMinutes),
-  `<label>Programmed interval time<input data-field="programmedIntervalTime" value="${attr(state.programmedIntervalTime)}" readonly aria-readonly="true"></label>`,
-  text('totalTime','Total elapsed time',state.totalTime,'24:00'),
-  num('distance','Total distance (mi)',state.distance,0,null,.01),
-  text('deviceReportedPace','Device-reported average pace',state.deviceReportedPace,'14:16'),
-  num('rpe','Run effort (RPE)',state.rpe,1,10),
-  num('runPain','Run discomfort (0–10)',state.runPain,0,10),
-  num('warmupMinutes','Warm-up duration (min)',state.warmupMinutes,0,null,.25),
-  num('cooldownMinutes','Cooldown duration (min)',state.cooldownMinutes,0,null,.25),
-  num('walkSpeed','Walking speed (mph)',state.walkSpeed,0,null,.1),
-  num('runSpeed','Running speed (mph)',state.runSpeed,0,null,.1),
-  select('runEnvironment','Run setting',state.runEnvironment,['Indoor treadmill','Outdoor']),
-  `<label data-incline-wrap class="${state.runEnvironment==='Indoor treadmill'?'':'hidden'}">Treadmill incline (%)<input data-field="treadmillIncline" type="number" value="${attr(state.treadmillIncline)}" min="0" step=".1" inputmode="decimal"></label>`,
-  num('avgHr','Average HR',state.avgHr),
-  num('maxHr','Maximum HR',state.maxHr)
- ];
- return grid(...common)+`<p class="run-plan-summary" data-run-plan-summary></p><section class="pace-calculation" aria-live="polite">
+ const hasAdvanced=['deviceReportedPace','warmupMinutes','cooldownMinutes','walkSpeed','runSpeed','runEnvironment','treadmillIncline','avgHr','maxHr']
+  .some(field=>state[field]!==''&&state[field]!=null)
+  ||(String(state.runStage)==='manual'&&String(state.structure||'').trim()!=='');
+ return `<section class="run-log-section">
+  <div class="logging-section-heading"><span>1</span><div><strong>Set the interval plan</strong><small>The coach-prescribed stage is prefilled.</small></div></div>
+  ${grid(
+   runStageSelect(state.runStage),
+   num('walkMinutes','Walk / easy interval (min)',state.walkMinutes,0,null,.25),
+   num('runMinutes','Run interval (min)',state.runMinutes,0,null,.25),
+   num('rounds','Planned walk/run rounds',state.rounds),
+   num('continuousMinutes','Continuous run (min)',state.continuousMinutes)
+  )}
+  <input data-field="programmedIntervalTime" type="hidden" value="${attr(state.programmedIntervalTime)}">
+  <p class="run-plan-summary" data-run-plan-summary></p>
+ </section>
+ <section class="run-log-section">
+  <div class="logging-section-heading"><span>2</span><div><strong>Run the workout</strong><small>The timer begins with the walk segment.</small></div></div>
+  ${runTimerMarkup()}
+ </section>
+ <section class="run-log-section">
+  <div class="logging-section-heading"><span>3</span><div><strong>Record the result</strong><small>Rounds, time, distance, effort, and discomfort.</small></div></div>
+  ${grid(
+   num('completedRounds','Walk/run rounds completed',state.completedRounds),
+   text('totalTime','Total elapsed time',state.totalTime,'24:00'),
+   num('distance','Total distance (mi)',state.distance,0,null,.01),
+   num('rpe','Run effort (RPE)',state.rpe,1,10),
+   num('runPain','Run discomfort (0–10)',state.runPain,0,10)
+  )}
+ </section>
+ <section class="pace-calculation" aria-live="polite">
   <div><span>Calculated average pace</span><strong data-calculated-pace>—</strong></div>
   <small data-pace-basis>Enter elapsed time and distance to calculate pace.</small>
   <input data-field="calculatedPace" type="hidden" value="${attr(state.calculatedPace)}">
   <input data-field="paceBasis" type="hidden" value="${attr(state.paceBasis)}">
   <p class="pace-warning hidden" data-pace-warning>Device-reported pace differs from pace calculated from total time and distance. Both values will be saved.</p>
- </section>`+runTimerMarkup()+`<label>Run/walk structure or splits<input data-field="structure" value="${attr(state.structure)}" placeholder="Use the prescribed stage or record a manual structure"></label>`;
+ </section>
+ <details class="exercise-inline-details" ${hasAdvanced?'open':''}>
+  <summary><span>More run details</span><span>${hasAdvanced?'Data added':'Device, speeds &amp; splits'}</span></summary>
+  <div class="exercise-inline-details-body">
+   ${grid(
+    select('runEnvironment','Run setting',state.runEnvironment,['Indoor treadmill','Outdoor']),
+    `<label data-incline-wrap class="${state.runEnvironment==='Indoor treadmill'?'':'hidden'}">Treadmill incline (%)<input data-field="treadmillIncline" type="number" value="${attr(state.treadmillIncline)}" min="0" step=".1" inputmode="decimal"></label>`,
+    text('deviceReportedPace','Device-reported average pace',state.deviceReportedPace,'14:16'),
+    num('warmupMinutes','Warm-up duration (min)',state.warmupMinutes,0,null,.25),
+    num('cooldownMinutes','Cooldown duration (min)',state.cooldownMinutes,0,null,.25),
+    num('walkSpeed','Walking speed (mph)',state.walkSpeed,0,null,.1),
+    num('runSpeed','Running speed (mph)',state.runSpeed,0,null,.1),
+    num('avgHr','Average HR',state.avgHr),
+    num('maxHr','Maximum HR',state.maxHr)
+   )}
+   <label>Run/walk structure or splits<input data-field="structure" value="${attr(state.structure)}" placeholder="Use the prescribed stage or record a manual structure"></label>
+  </div>
+ </details>`;
 }
 
 function runStageSelect(value){
@@ -1582,6 +1681,21 @@ function refreshAdherenceForEvent(target){
  if(card)updateCardAdherence(card);
 }
 
+function refreshExerciseExtraForEvent(target){
+ const card=target?.closest?.('.exercise-card');
+ if(!card)return;
+ const notes=String(card.querySelector('[data-field="notes"]')?.value||'').trim();
+ const painFields=[...card.querySelectorAll('[data-pain-field]')];
+ const hasPain=painFields.some(input=>String(input.value||'').trim()!=='');
+ const severity=String(card.querySelector('[data-pain-field="severity"]')?.value||'').trim();
+ const summary=card.querySelector('[data-exercise-extra-status]');
+ const details=[];
+ if(notes)details.push('Notes added');
+ if(hasPain)details.push(severity?`Pain ${severity}/10`:'Pain added');
+ if(summary)summary.textContent=details.join(' · ')||'Optional';
+ card.querySelector('.exercise-extras')?.classList.toggle('has-data',Boolean(details.length));
+}
+
 function updateCardAdherence(card){
  const cards=[...document.querySelectorAll('.exercise-card')];
  const index=cards.indexOf(card);
@@ -1592,9 +1706,8 @@ function updateCardAdherence(card){
  const result=collectExerciseCard(card,definition,index,prior);
  const value=prescriptionAdherence(definition,result);
  const hasResult=result.completed||hasMeaningfulResultData(result);
- const label=!hasResult&&!isOptionalExercise(definition)?'Not assessed yet':ADHERENCE_LABELS[value];
- display.className=`adherence-result adherence-${value}`;
- display.querySelector('strong').textContent=label;
+ display.className=`adherence-result adherence-${value}${hasResult?'':' hidden'}`;
+ display.querySelector('strong').textContent=ADHERENCE_LABELS[value];
 }
 
 function collectWorkoutItem({draft=false}={}){
@@ -1782,7 +1895,7 @@ function isComparableResult(definition,variation,exercise){
 
 function previousResultReference(definition,variation){
  const data=previousResultData(definition,variation);
- if(!data.selected)return `<div class="previous-result previous-empty"><strong>Last result</strong><p>No previous result logged.</p></div>`;
+ if(!data.selected)return `<p class="previous-result previous-empty"><strong>Previous:</strong> none logged</p>`;
  const {entry,exercise,comparable}=data.selected;
  const variationLabel=exerciseVariationLabel(exercise);
  const isRun=['interval','run'].includes(definition.type);
@@ -1794,13 +1907,17 @@ function previousResultReference(definition,variation){
   :!comparable&&isRun?`<p class="comparison-warning">Most recent run used Stage ${esc(exercise.runStage||'unknown')}. Pace is not directly comparable with today's stage.</p>`:'';
  const canReuseLoad=comparable&&['weighted','carry'].includes(definition.type)&&exercise.load!==''&&exercise.load!=null;
  const recent=data.recent.map(item=>`<li>${esc(shortDateFmt(item.entry.date))} · ${esc(resultContext(item.exercise))}${resultContext(item.exercise)?' · ':''}${esc(compactResultSummary(definition,item.exercise))}${item.comparable?'':' · not directly comparable'}</li>`).join('');
- return `<div class="previous-result">
-  <div class="previous-result-heading"><strong>${esc(label)}</strong><span>${esc(shortDateFmt(entry.date))}</span></div>
-  <p>${esc(compactResultSummary(definition,exercise))}</p>
-  ${fallback}
-  ${canReuseLoad?'<button class="secondary subtle use-last-load" type="button" data-use-last-load>Use last load</button>':''}
-  <details class="recent-results"><summary>Recent results</summary><ul>${recent}</ul></details>
- </div>`;
+ return `<details class="previous-result">
+  <summary>
+   <span class="previous-result-heading"><strong>${esc(label)}</strong><small>${esc(shortDateFmt(entry.date))}</small></span>
+   <span class="previous-result-summary">${esc(compactResultSummary(definition,exercise))}</span>
+  </summary>
+  <div class="previous-result-body">
+   ${fallback}
+   ${canReuseLoad?'<button class="secondary subtle use-last-load" type="button" data-use-last-load>Use last load</button>':''}
+   <details class="recent-results"><summary>Recent results</summary><ul>${recent}</ul></details>
+  </div>
+ </details>`;
 }
 
 function resultContext(exercise){

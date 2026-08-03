@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=21">
+  <link rel="stylesheet" href="styles.css?v=22">
   <title>AFT Workout Tracker</title>
 </head>
 <body>
@@ -50,6 +50,18 @@
         <p id="runStageStatus" class="muted"></p>
       </section>
       <form id="workoutForm">
+        <section id="workoutFlowCard" class="card workout-flow-card" aria-labelledby="workoutFlowTitle">
+          <div class="workout-flow-heading">
+            <div>
+              <p class="eyebrow">WORKOUT PROGRESS</p>
+              <h2 id="workoutFlowTitle">Ready to begin</h2>
+              <p id="workoutFlowNext" class="muted"></p>
+            </div>
+            <button id="nextExerciseButton" class="secondary subtle" type="button">Go to next</button>
+          </div>
+          <progress id="workoutFlowProgress" value="0" max="1"></progress>
+          <p id="workoutFlowOptional" class="workout-flow-optional muted"></p>
+        </section>
         <div id="exerciseList"></div>
         <section class="card session-timer-card">
           <div class="session-timer-heading">
@@ -189,7 +201,7 @@
     <button id="reloadUpdateButton" class="primary subtle" type="button">Reload update</button>
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="program-config.js?v=21"></script>
-  <script src="app.js?v=21"></script>
+  <script src="program-config.js?v=22"></script>
+  <script src="app.js?v=22"></script>
 </body>
 </html>

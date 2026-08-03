@@ -10,9 +10,12 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 - A read-only current run stage with per-session logging of the stage actually completed
 - A built-in walk-first interval timer with live phase, round, next-segment, sound/vibration cues, pause, skip, and reset controls
 - Separate programmed interval time, total elapsed time, calculated pace, and device-reported pace
+- A three-step run flow for interval setup, the live timer, and post-run result entry
 - Indoor/outdoor, treadmill incline, speed, warm-up/cooldown, heart-rate, and run-discomfort logging
 - An optional total-session timer with pause/resume, reload recovery, automatic duration, and manual override
 - Numbered exercise order and a day-specific active warm-up shown before Exercise 1
+- Guided required/optional workout progress with a one-tap jump to the next unfinished exercise
+- Streamlined cards with compact previous results, collapsible notes/pain, and completion controls after the live logging fields
 - Exercise and equipment variants for normal commercial-gym substitutions
 - Trap-bar plate-per-side logging with 45/55/60/custom bar weights and a live total
 - Combined-plate and direct-total modes for other barbell and machine variations

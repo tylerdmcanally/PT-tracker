@@ -70,9 +70,12 @@ assert.equal(evaluate(`prescriptionAdherence({type:'cardio',prescription:'25–3
 assert.equal(evaluate(`prescriptionAdherence({type:'timed',prescription:'3 × 25–30 sec',sets:3},{type:'timed',completed:true,times:'25, 30, 25'})`),'met');
 assert.equal(evaluate(`prescriptionAdherence({type:'timed',prescription:'3 × 25–30 sec',sets:3},{type:'timed',completed:true,times:'25, 20, 25'})`),'below_target');
 assert.equal(evaluate(`prescriptionAdherence({type:'weighted',prescription:'3 × 8',sets:3,optional:true},{type:'weighted',completed:false})`),'not_applicable');
-assert.equal(evaluate(`prescriptionAdherence({type:'weighted',prescription:'95 lb total for 2 × 8',sets:2,targetLoad:95,targetLoadVariation:'Barbell',variations:['Barbell','Dumbbells']},{type:'weighted',completed:true,variation:'Dumbbells',load:'30',sets:'2',reps:'8, 8'})`),'met','allowed substitutions are assessed on explicit comparable targets only');
+assert.equal(evaluate(`prescriptionAdherence({type:'weighted',prescription:'95 lb total for 2 × 8',sets:2,targetLoad:95,targetLoadVariation:'Barbell',variations:['Barbell','Dumbbells']},{type:'weighted',completed:true,variation:'Dumbbells',load:'30',sets:'2',reps:'8, 8'})`),'modified','a substitution is recorded explicitly instead of being treated as the targeted load');
 assert.equal(evaluate(`prescriptionAdherence(SESSIONS.day3.exercises.find(exercise=>exercise.id==='romanianDeadlift'),{type:'weighted',completed:true,variation:'Barbell',load:'50',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8'})`),'met');
-assert.equal(evaluate(`prescriptionAdherence(SESSIONS.day3.exercises.find(exercise=>exercise.id==='romanianDeadlift'),{type:'weighted',completed:true,variation:'Barbell',load:'40',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8'})`),'below_target');
+assert.equal(evaluate(`prescriptionAdherence(SESSIONS.day3.exercises.find(exercise=>exercise.id==='romanianDeadlift'),{type:'weighted',completed:true,variation:'Barbell',load:'40',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8'})`),'modified');
+const aboveTargetLoad=JSON.parse(evaluate(`JSON.stringify(prescriptionAdherenceDetail(SESSIONS.day3.exercises.find(exercise=>exercise.id==='romanianDeadlift'),{type:'weighted',completed:true,variation:'Barbell',load:'70',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8'}))`));
+assert.equal(aboveTargetLoad.value,'modified');
+assert.ok(aboveTargetLoad.reasons.some(reason=>reason.code==='load_above_target'));
 assert.equal(evaluate(`prescriptionAdherence({type:'carry',prescription:'Carry with good posture'},{type:'carry',completed:true,load:'45'})`),'not_assessable');
 assert.equal(evaluate(`prescriptionAdherence({type:'weighted',prescription:'3 × 8',sets:3},{type:'weighted',completed:true,reps:'',load:'50'})`),'partial');
 assert.equal(evaluate(`prescriptionAdherence({type:'weighted',prescription:'3 × 8',sets:3},{type:'weighted',completed:true,reps:'1',adherenceOverride:{value:'met',reason:'Coach-approved modified set'}})`),'met');
@@ -101,10 +104,86 @@ assert.equal(evaluate(`nextWorkoutDay([
  {id:'aug-1',dayKey:'day1',sessionType:'primary',date:'2026-08-01',updatedAt:'2026-08-01T18:00:00Z'},
  {id:'aug-3',dayKey:'day2',sessionType:'primary',date:'2026-08-03',updatedAt:'2026-08-03T18:00:00Z'}
 ])`),'day3','the August 3 rotation state advances to Day 3');
+assert.equal(evaluate(`nextWorkoutDay([
+ {id:'aug-5',dayKey:'day3',sessionType:'primary',date:'2026-08-05',updatedAt:'2026-08-05T19:00:00Z'}
+])`),'day4','the corrected August 5 workout still advances to unchanged Day 4');
 
 assert.equal(evaluate(`totalLoadValue({load:'35',loadMode:'platesPerSide',barWeight:'45'})`),115);
 assert.equal(evaluate(`totalLoadValue({load:'70',loadMode:'plates',barWeight:'45'})`),115);
 assert.equal(evaluate(`totalLoadValue({load:'115'})`),115,'a legacy load without a mode remains a total');
+
+evaluate(`entries=[];august5Fixture=normalizeEntry({
+ id:'august-5-day-3',date:'2026-08-05',updatedAt:'2026-08-05T19:00:00.000Z',dayKey:'day3',
+ dayLabel:SESSIONS.day3.label,sessionType:'primary',programId:PROGRAM.id,programName:PROGRAM.name,
+ programVersion:'1.3',programEffectiveDate:'2026-08-01',duration:'60',sessionRpe:'7',preSoreness:'1',readiness:'4',sleepQuality:'fair',painDuring:'0',
+ prescriptionSnapshot:snapshotSession(SESSIONS.day3),
+ exercises:[
+  {exerciseId:'romanianDeadlift',name:'Romanian deadlift',prescription:'95 lb total for 2 × 8',type:'weighted',variation:'Barbell',load:'70',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8',rpe:'6',completed:true},
+  {exerciseId:'gymConditioningCircuit',name:'Gym conditioning circuit',type:'circuit',circuitVersion:'foundation-1.2',rounds:'2',carryLoad:'45',carrySeconds:'30',stepReps:'6',modality:'Bike',intervalSeconds:'45',restSeconds:'150',rpe:'7',completed:true}
+ ]
+})`);
+const august5Fixture=JSON.parse(evaluate('JSON.stringify(august5Fixture)'));
+const august5Circuit=august5Fixture.exercises.find(exercise=>exercise.exerciseId==='gymConditioningCircuit');
+assert.deepEqual(august5Circuit.components.map(component=>component.id),['farmerCarry','lateralStepUps','hardCardio','backwardSledDrag','forwardSledPush','rest']);
+assert.equal(august5Circuit.components.find(component=>component.id==='hardCardio').sharedResult.durationSeconds,'30');
+assert.equal(august5Circuit.components.find(component=>component.id==='hardCardio').sharedResult.modality,'Bike','the selected historical modality is preserved');
+assert.equal(august5Circuit.components.find(component=>component.id==='backwardSledDrag').sharedResult.distanceMode,'unknown');
+assert.equal(august5Circuit.components.find(component=>component.id==='backwardSledDrag').sharedResult.loadMode,'unknown');
+assert.equal(august5Circuit.components.find(component=>component.id==='forwardSledPush').sharedResult.direction,'forward_push');
+assert.equal(august5Circuit.historicalCorrections.filter(value=>value==='august5-day3-sled-components-v1').length,1);
+const august5Twice=JSON.parse(evaluate('JSON.stringify(normalizeEntry(august5Fixture))'));
+assert.equal(august5Twice.exercises.find(exercise=>exercise.exerciseId==='gymConditioningCircuit').components.length,6,'historical correction is idempotent');
+assert.equal(august5Twice.exercises.find(exercise=>exercise.exerciseId==='gymConditioningCircuit').historicalCorrections.length,1);
+const preMigrationStored=structuredClone(august5Fixture);
+const preMigrationCircuit=preMigrationStored.exercises.find(exercise=>exercise.exerciseId==='gymConditioningCircuit');
+delete preMigrationCircuit.components;
+delete preMigrationCircuit.historicalCorrections;
+storage.set('aftWorkoutEntries.v1',JSON.stringify([preMigrationStored]));
+evaluate('entries=[august5Fixture]');
+assert.equal(evaluate('persistKnownHistoricalCorrections()'),true);
+assert.ok(JSON.parse(storage.get('aftWorkoutEntries.v1'))[0].exercises.find(exercise=>exercise.exerciseId==='gymConditioningCircuit').historicalCorrections.includes('august5-day3-sled-components-v1'));
+storage.delete('aftWorkoutEntries.v1');
+const august5CircuitAdherence=JSON.parse(evaluate(`JSON.stringify(prescriptionAdherenceDetail(SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit'),august5Fixture.exercises.find(exercise=>exercise.exerciseId==='gymConditioningCircuit')))`));
+assert.equal(august5CircuitAdherence.value,'modified');
+assert.ok(august5CircuitAdherence.reasons.some(reason=>reason.code==='duration_below_minimum'));
+assert.equal(august5CircuitAdherence.reasons.filter(reason=>reason.code==='unplanned_component_added').length,2);
+assert.equal(evaluate(`circuitComponentAdherence(CIRCUIT_TEMPLATES['foundation-1.2'].components.find(component=>component.id==='rest'),august5Fixture.exercises.find(exercise=>exercise.exerciseId==='gymConditioningCircuit').components.find(component=>component.id==='rest')).value`),'met','150 seconds matches 2:30');
+assert.equal(evaluate(`prescriptionAdherence(SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit'),{type:'circuit',circuitVersion:'foundation-1.2',completed:true,rounds:'2',carryLoad:'45',carrySeconds:'30',stepReps:'6',modality:'Bike',intervalSeconds:'45',restSeconds:'150'})`),'met','the fully matched legacy circuit compatibility path remains assessable');
+assert.equal(evaluate(`prescriptionAdherence(SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit'),{type:'circuit',circuitVersion:'foundation-1.2',completed:true,rounds:'3',carryLoad:'45',carrySeconds:'30',stepReps:'6',modality:'Bike',intervalSeconds:'45',restSeconds:'150'})`),'modified','exceeding the exact circuit round cap is a modification');
+assert.equal(evaluate(`sledTotalDistance({distanceMode:'known',trips:'2',distancePerTrip:'20',distanceUnit:'yd'})`),40);
+assert.equal(evaluate(`sledTotalSystemWeight({loadMode:'added_plus_sled',addedPlateWeight:'90',emptySledWeight:'70'})`),160);
+const perRoundCircuit=JSON.parse(evaluate(`JSON.stringify(normalizeCircuitComponent({id:'backwardSledDrag',name:'Backward sled drag',type:'sled',resultMode:'per_round',roundResults:[
+ {round:1,performed:true,direction:'backward_drag',distanceMode:'known',trips:'1',distancePerTrip:'20',distanceUnit:'yd',surface:'turf'},
+ {round:2,performed:true,direction:'backward_drag',distanceMode:'lane_unknown',distanceLabel:'one gym lane',surface:'turf'}
+]}))`));
+assert.equal(perRoundCircuit.roundResults.length,2);
+assert.equal(perRoundCircuit.roundResults[0].totalDistance,'20');
+
+evaluate(`entries=[];activeProgramContext=currentProgramMeta();activeSessionDefinition=SESSIONS.day3;activeWorkoutDate='2026-08-06'`);
+assert.equal(evaluate(`activeCoachOverlay('1.3','day3','gymConditioningCircuit','2026-08-06').scope`),'next_occurrence');
+const circuitCard=evaluate(`exerciseCard(SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit'),8,defaultExerciseState(SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit')))`);
+assert.ok(circuitCard.indexOf('Farmer carry')<circuitCard.indexOf('Backward sled drag'));
+assert.ok(circuitCard.indexOf('Backward sled drag')<circuitCard.indexOf('Forward sled push'));
+assert.match(circuitCard,/Performed as directed/);
+assert.match(circuitCard,/data-circuit-field="addedPlateWeight"/);
+assert.match(circuitCard,/data-circuit-field="emptySledWeight"/);
+assert.match(circuitCard,/data-circuit-field="distancePerTrip"/);
+evaluate(`{
+ const directive=activeCoachOverlay('1.3','day3','gymConditioningCircuit','2026-08-06');
+ const components=directive.circuitDirective.components.map((component,index)=>normalizeCircuitComponent({
+  ...component,planned:null,directivePlanned:component.planned,resultMode:'shared',
+  sharedResult:{...component.planned,performed:true,modality:component.type==='cardio'?'Bike':undefined,rpe:component.type==='sled'?'6':undefined,loadMode:component.type==='sled'?'unknown':undefined}
+ },index));
+ directiveFixture=normalizeEntry({id:'next-day-3',date:'2026-08-12',dayKey:'day3',dayLabel:SESSIONS.day3.label,sessionType:'primary',programVersion:'1.3',
+  prescriptionSnapshot:snapshotSession(SESSIONS.day3),exercises:[{exerciseId:'gymConditioningCircuit',name:'Gym conditioning circuit',type:'circuit',circuitVersion:'foundation-1.2',completed:true,rounds:'2',rpe:'7',components,appliedCoachDirective:directive}]
+ });
+}`);
+assert.equal(evaluate(`circuitDirectiveAdherenceDetail(SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit'),directiveFixture.exercises[0]).value`),'met');
+assert.equal(evaluate(`circuitAdherenceDetail(SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit'),directiveFixture.exercises[0]).value`),'modified','baseline prescription and directive adherence remain separate');
+evaluate(`entries=[directiveFixture]`);
+assert.equal(evaluate(`activeCoachOverlay('1.3','day3','gymConditioningCircuit','2026-08-12')`),null,'a saved completed occurrence consumes the directive');
+assert.equal(evaluate('PROGRAM.version'),'1.3','consuming the directive does not create a new program version');
+evaluate('entries=[]');
 
 const fakeCard={
  querySelector(selector){
@@ -254,6 +333,7 @@ assert.equal(reviewIssues.filter(issue=>issue.type==='completion').length,2);
 assert.equal(reviewIssues.filter(issue=>issue.type==='reps').length,2,'partial and entirely missing reps are reviewed');
 assert.equal(reviewIssues.filter(issue=>issue.type==='times').length,1,'entirely missing timed sets are reviewed');
 assert.equal(evaluate(`hasData({type:'weighted',sets:'3',variation:'Dumbbell bench press',variationId:'dumbbellBenchPress'})`),false,'variation metadata alone is not a result');
+assert.equal(evaluate(`hasMeaningfulResultData({exerciseId:'gymConditioningCircuit',type:'circuit',circuitVersion:'foundation-1.2'})`),false,'a blank circuit plan is not mistaken for performed work');
 
 const elements={
  exportFrom:{value:'2026-07-01'},
@@ -263,6 +343,36 @@ const elements={
 context.document={
  getElementById:id=>elements[id]||{value:'',classList:{add(){},remove(){},toggle(){}}}
 };
+
+elements.exportFrom.value='2026-08-05';
+elements.exportTo.value='2026-08-05';
+evaluate('entries=[august5Fixture]');
+const august5Markdown=evaluate('buildMd()');
+assert.match(august5Markdown,/Romanian deadlift[\s\S]*Prescription adherence: Modified[\s\S]*Load above target: 115 lb completed vs 95 lb prescribed/);
+assert.ok(august5Markdown.indexOf('**Farmer carry**')<august5Markdown.indexOf('**Backward sled drag**'));
+assert.ok(august5Markdown.indexOf('**Backward sled drag**')<august5Markdown.indexOf('**Forward sled push**'));
+assert.match(august5Markdown,/Direction: Backward drag/);
+assert.match(august5Markdown,/Distance: Unknown \/ not recorded/);
+assert.match(august5Markdown,/Load: Unknown \/ not recorded/);
+assert.match(august5Markdown,/Backward sled drag was added outside the versioned prescription/);
+assert.match(august5Markdown,/Forward sled push was added outside the versioned prescription/);
+assert.match(august5Markdown,/Felt much better this week/);
+const august5Csv=evaluate('buildCsv()');
+assert.match(august5Csv,/"adherence_reasons"/);
+assert.match(august5Csv,/"circuit_components_json"/);
+assert.match(august5Csv,/"backwardSledDrag"/);
+assert.match(august5Csv,/""loadMode"":""unknown""/);
+assert.match(august5Csv,/"Load above target: 115 lb completed vs 95 lb prescribed"/);
+elements.exportFrom.value='2026-08-12';
+elements.exportTo.value='2026-08-12';
+evaluate('entries=[directiveFixture]');
+const directiveMarkdown=evaluate('buildMd()');
+assert.match(directiveMarkdown,/Applied coach directive: Next Day 3 only/);
+assert.match(directiveMarkdown,/Coach-directive adherence: Met/);
+assert.match(directiveMarkdown,/Prescription adherence: Modified/);
+const directiveCsv=evaluate('buildCsv()');
+assert.match(directiveCsv,/"day3-sled-exposure-after-2026-08-05"/);
+assert.match(directiveCsv,/"met"/);
 
 elements.exportFrom.value='2026-07-01';
 elements.exportTo.value='2026-08-03';
@@ -329,7 +439,7 @@ assert.match(august3Section,/Previous comparable result:[\s\S]*Load: 25 lb\/hand
 assert.doesNotMatch(august3Section,/Load: 30 lb\/hand/,'future workouts are never selected as previous results');
 assert.doesNotMatch(august3Section,/Load: 20 lb\/hand/,'incompatible lateral-raise equipment is omitted');
 const august3Json=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
-assert.equal(august3Json.version,9);
+assert.equal(august3Json.version,10);
 assert.equal(august3Json.entries.find(entry=>entry.id==='august-3-day-2').sleepQuality,'poor');
 assert.equal(august3Json.entries.find(entry=>entry.id==='august-3-day-2').exercises.find(exercise=>exercise.exerciseId==='lateralRaise').exercisePain.laterality,'right');
 const august3Csv=evaluate('buildCsv()');
@@ -398,7 +508,7 @@ assert.match(csv,/"12:54"/);
 assert.match(csv,/"14:16"/);
 assert.match(csv,/"Relaxed pace\.\nNo pain\."/);
 const jsonBackup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
-assert.equal(jsonBackup.version,9);
+assert.equal(jsonBackup.version,10);
 assert.equal(jsonBackup.currentProgram.version,'1.3');
 assert.equal(jsonBackup.currentProgram.runStage,2);
 assert.equal(jsonBackup.entries[0].exercises[0].deviceReportedPace,'14:16');
@@ -429,9 +539,9 @@ const indexHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const appSource=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 assert.match(appSource,/Exercise notes<textarea[^>]+data-field="notes"/,'exercise notes must support detailed multiline comments');
-assert.ok(indexHtml.indexOf('program-config.js?v=22')<indexHtml.indexOf('app.js?v=22'));
-assert.match(serviceWorker,/aft-workout-tracker-v22/);
-assert.match(serviceWorker,/program-config\.js\?v=22/);
+assert.ok(indexHtml.indexOf('program-config.js?v=23')<indexHtml.indexOf('app.js?v=23'));
+assert.match(serviceWorker,/aft-workout-tracker-v23/);
+assert.match(serviceWorker,/program-config\.js\?v=23/);
 const htmlIds=[...indexHtml.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]);
 assert.equal(new Set(htmlIds).size,htmlIds.length,'HTML IDs must be unique');
 const referencedIds=[...appSource.matchAll(/\$\('([^']+)'\)/g)].map(match=>match[1]);

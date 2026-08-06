@@ -24,7 +24,10 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 - Variation-aware last results plus a collapsed three-result history on every exercise card
 - Optional **Use last load** actions that copy only compatible load fields
 - Coach-controlled, exercise-specific note overlays that can be resolved without changing the program version or historical prescriptions
-- A separate derived prescription-adherence result for met, below-target, partial, not-assessable, and optional work
+- One-occurrence coach directives that remain separate from immutable program prescriptions and are consumed only by a saved completed workout
+- A separate derived prescription-adherence result for met, below-target, modified, partial, not-assessable, and optional work, with structured reasons
+- Ordered circuit logging with a fast shared-across-rounds result and optional per-round differences
+- Separate backward-drag and forward-push sled records with trip, distance, load-basis, duration, equipment, surface, RPE, and note fields
 - A pre-save review for unchecked result data and incomplete or entirely missing rep/time set logs when other results were entered
 - Strength, running, standard-gym conditioning, and calisthenics logging
 - Separate readiness, sleep quality, muscle soreness, session pain, and optional structured exercise-specific pain tracking
@@ -34,7 +37,7 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 - Five rolling local restore points, protected-storage status, and backup reminders
 - Edit/delete saved sessions
 - Progress summary
-- Detailed Markdown export for the coach chat, including adherence, one prior comparable result, active coach notes, and full exercise/session notes
+- Detailed Markdown export for the coach chat, including adherence reasons, ordered circuit components, explicit unknown sled values, one prior comparable result, active coach notes/directives, and full exercise/session notes
 - JSON backup/import and CSV export
 - PWA manifest, offline service worker, and iPhone home-screen icon
 
@@ -79,9 +82,11 @@ node tests/app-model.test.cjs
 
 ## Equipment assumptions
 
-The default program is designed for a normal commercial gym. It uses free weights, dumbbells, common resistance machines, cardio machines, and open floor space when available. It does not require a weighted sled, turf lane, or dedicated Army testing equipment.
+The default versioned program is designed for a normal commercial gym. It uses free weights, dumbbells, common resistance machines, cardio machines, and open floor space when available. Its baseline prescription does not require a weighted sled, turf lane, or dedicated Army testing equipment.
 
 Day 3 uses a coach-capped two-round conditioning circuit: a 45 lb-per-hand farmer carry, lateral step-ups, 45 seconds of hard bike/rower/elliptical work, and 2:30 rest.
+
+After the August 5 workout, the app carries a next-Day-3-only coach directive for approximately 30 seconds of hard cardio followed by one controlled backward sled drag and one forward sled push per round. The original version 1.3 prescription remains unchanged. The directive is for measuring the actual setup—not automatic progression—and disappears from future new workouts after a completed workout using it is saved.
 
 Program v1.3 displays the synchronized Day 3 Romanian-deadlift target as 95 lb total for 2 × 8. The load is a visible target and is not prefilled as if it had already been performed.
 
@@ -95,7 +100,7 @@ Calculated pace uses total elapsed time divided by distance. A plain elapsed-tim
 
 Exercise cards keep the coach prescription, previous results, and today's result visually separate. Last-result lookup uses saved workout date and `updatedAt`, accepts meaningful data even when an older Completed box was missed, excludes the workout currently being edited, and derives compatibility IDs without rewriting history. Different machine variations are labeled as not directly comparable. **Use last load** appears only for an exact compatible variation and never copies completion, sets, reps, RPE, notes, or pain.
 
-Prescription adherence is derived conservatively from explicit set, rep, timed-set, cardio-duration, and load targets. It never changes programming automatically. The coach export also reuses the same comparability rules to include at most one chronologically prior compatible result per completed exercise.
+Prescription adherence is derived conservatively from explicit set, rep, timed-set, cardio-duration, circuit-component, round-count, and load targets. A completed load above or below an explicit load target is **Modified**, not automatically considered met. Multiple structured reasons remain visible in the workout, history, Markdown, and CSV. Adherence never changes programming automatically. The coach export also reuses the same comparability rules to include at most one chronologically prior compatible result per completed exercise.
 
 The full Day 1 walk/run interval block remains after the primary strength work because it is conditioning, not the warm-up. Every workout displays a separate 5–10 minute active warm-up. Day 4 starts with its primary run after that warm-up, and every walk/run timer begins with the walk segment before progressing to the run segment.
 

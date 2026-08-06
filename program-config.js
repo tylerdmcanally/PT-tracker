@@ -33,12 +33,40 @@ window.AFT_PROGRAM_CONFIG={
    instruction:'Perform curls and pressdowns back-to-back, then rest 60–90 seconds.'
   }
  },
+ circuitTemplates:{
+  'foundation-1.2':{
+   plannedRounds:2,
+   components:[
+    {id:'farmerCarry',order:1,exerciseId:'loadedCarry',name:'Farmer carry',type:'carry',prescription:'45 lb per hand for approximately 30 seconds',planned:{load:'45',loadUnit:'lb per hand',durationSeconds:'30',durationApproximate:true}},
+    {id:'lateralStepUps',order:2,exerciseId:'lateralStepUps',name:'Lateral step-ups',type:'reps',prescription:'6 repetitions per side',planned:{repsPerSide:'6'}},
+    {id:'hardCardio',order:3,exerciseId:'hardCardio',name:'Hard cardio',type:'cardio',prescription:'45 seconds hard',planned:{durationSeconds:'45'},modalities:['Bike','Rower','Elliptical','Short safe sprint']},
+    {id:'rest',order:4,exerciseId:'circuitRest',name:'Rest',type:'rest',prescription:'2 minutes 30 seconds',planned:{durationSeconds:'150'}}
+   ]
+  }
+ },
  coachNoteOverlays:[
   {
    id:'day2-lateral-raise-right-elbow-2026-08-03',programVersion:'1.3',workoutDayId:'day2',exerciseId:'lateralRaise',
    effectiveDate:'2026-08-03',status:'active',
    text:'Right medial-elbow discomfort occurred with the dumbbell variation. Use a pain-free machine or cuffed-cable variation, or omit this exercise. Stop if discomfort increases.',
    reason:'Right medial-elbow twinge rated 1/10 during the August 3 workout.'
+  },
+  {
+   id:'day3-sled-exposure-after-2026-08-05',programVersion:'1.3',workoutDayId:'day3',exerciseId:'gymConditioningCircuit',
+   effectiveDate:'2026-08-06',status:'active',scope:'next_occurrence',
+   text:'Next Day 3 only: keep exactly two rounds, use approximately 30 seconds of hard cardio, then complete one controlled backward sled drag and one controlled forward sled push per round. Use the same approximate sled setup as August 5 when identifiable; do not race or intentionally increase the load.',
+   reason:'The August 5 sled-enhanced circuit was tolerated at session and circuit RPE 7 with no pain. The next exposure is for measurement, not progression.',
+   circuitDirective:{
+    plannedRounds:2,overallTargetRpe:'7–8',
+    components:[
+     {id:'farmerCarry',order:1,exerciseId:'loadedCarry',name:'Farmer carry',type:'carry',prescription:'45 lb per hand for approximately 30 seconds',planned:{load:'45',loadUnit:'lb per hand',durationSeconds:'30',durationApproximate:true}},
+     {id:'lateralStepUps',order:2,exerciseId:'lateralStepUps',name:'Lateral step-ups',type:'reps',prescription:'6 repetitions per side',planned:{repsPerSide:'6'}},
+     {id:'hardCardio',order:3,exerciseId:'hardCardio',name:'Hard cardio',type:'cardio',prescription:'Approximately 30 seconds hard',planned:{durationSeconds:'30',durationApproximate:true},modalities:['Bike','Rower','Elliptical','Short safe sprint']},
+     {id:'backwardSledDrag',order:4,exerciseId:'backwardSledDrag',name:'Backward sled drag',type:'sled',prescription:'One controlled gym-lane trip · target component RPE 6–7',planned:{trips:'1',distanceMode:'lane_unknown',distanceLabel:'One gym lane',targetRpe:'6–7',direction:'backward_drag'}},
+     {id:'forwardSledPush',order:5,exerciseId:'forwardSledPush',name:'Forward sled push',type:'sled',prescription:'One controlled gym-lane trip · target component RPE 6–7',planned:{trips:'1',distanceMode:'lane_unknown',distanceLabel:'One gym lane',targetRpe:'6–7',direction:'forward_push'}},
+     {id:'rest',order:6,exerciseId:'circuitRest',name:'Rest',type:'rest',prescription:'2 minutes 30 seconds',planned:{durationSeconds:'150'}}
+    ]
+   }
   }
  ],
  sessions:{
@@ -94,7 +122,7 @@ window.AFT_PROGRAM_CONFIG={
     {id:'sidePlank',name:'Side plank',prescription:'3 × 25 sec each side',type:'timed',sets:3},
     {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'3 × 4',type:'body',sets:3,group:'testSkillPractice',optional:true},
     {id:'plank',name:'Front plank',prescription:'2 × 20–25 sec',type:'timed',sets:2,group:'testSkillPractice',optional:true},
-    {id:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, 45-sec hard cardio, then 2:30 rest',type:'circuit',circuitVersion:'foundation-1.2',defaults:{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'45',restSeconds:'150'},coachingNotes:'Current block limit: two rounds. Do not extend the hard interval beyond 45 seconds.'},
+    {id:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, 45-sec hard cardio, then 2:30 rest',type:'circuit',circuitVersion:'foundation-1.2',defaults:{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'45',restSeconds:'150'},modalities:['Bike','Rower','Elliptical','Short safe sprint'],coachingNotes:'Current block limit: two rounds. Do not extend the hard interval beyond 45 seconds.'},
     {id:'dumbbellCurl',name:'Dumbbell curls',prescription:'2 × 10–12',type:'weighted',unit:'lb per hand',sets:2,group:'armSuperset',optional:true},
     {id:'tricepsPressdown',name:'Cable triceps pressdowns',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,group:'armSuperset',optional:true}
    ]

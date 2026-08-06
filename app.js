@@ -2,6 +2,7 @@ const PROGRAM=window.AFT_PROGRAM_CONFIG;
 const RUN_STAGES=PROGRAM.runStages;
 const SESSIONS=PROGRAM.sessions;
 const ROTATION=PROGRAM.rotation;
+const CIRCUIT_TEMPLATES=PROGRAM.circuitTemplates||{};
 
 const KEY='aftWorkoutEntries.v1';
 const DRAFT_KEY='aftWorkoutDraft.v1';
@@ -9,7 +10,7 @@ const SNAPSHOT_KEY='aftWorkoutSnapshots.v1';
 const TIMER_KEY='aftSessionTimer.v1';
 const BACKUP_META_KEY='aftBackupMeta.v1';
 const DATA_VERSION_KEY='aftDataVersion.v1';
-const DATA_VERSION=9;
+const DATA_VERSION=10;
 const MAX_SNAPSHOTS=5;
 
 const EXERCISE_NAME_IDS={
@@ -35,6 +36,8 @@ const EXERCISE_NAME_IDS={
  'One-arm row':'oneArmRow','One-arm dumbbell row':'oneArmRow',
  'Single-leg strength':'singleLegStrength','Split squat or step-up':'singleLegStrength','Split squat':'singleLegStrength',
  'Side plank':'sidePlank','Gym conditioning circuit':'gymConditioningCircuit',
+ 'Lateral step-ups':'lateralStepUps','Hard cardio':'hardCardio','Rest':'circuitRest',
+ 'Backward sled drag':'backwardSledDrag','Forward sled push':'forwardSledPush',
  'Primary run':'primaryRun','Mobility':'mobility',
  'Easy stationary bike or walk':'recoveryCardio','Gentle mobility':'recoveryMobility'
 };
@@ -85,6 +88,7 @@ if(typeof document!=='undefined')document.addEventListener('DOMContentLoaded',in
 function init(){
  ensureMigrationSnapshot();
  entries=loadEntries();
+ persistKnownHistoricalCorrections();
  populateSessionSelect();
  setExportDates();
  bind();
@@ -487,6 +491,12 @@ function exerciseVariationId(exercise){
  return exercise?.variationId||variationIdFor(exerciseVariationLabel(exercise));
 }
 
+function coachDirectiveConsumed(directiveId){
+ return entries.some(entry=>(entry.exercises||[]).some(exercise=>
+  exercise.completed&&exercise.appliedCoachDirective?.id===directiveId
+ ));
+}
+
 function activeCoachOverlay(programVersion,workoutDayId,exerciseId,date=''){
  return (PROGRAM.coachNoteOverlays||[]).find(overlay=>
   overlay.status==='active'
@@ -494,26 +504,71 @@ function activeCoachOverlay(programVersion,workoutDayId,exerciseId,date=''){
   &&overlay.workoutDayId===workoutDayId
   &&canonicalExerciseId(overlay.exerciseId)===canonicalExerciseId(exerciseId)
   &&(!date||!overlay.effectiveDate||overlay.effectiveDate<=date)
+  &&(overlay.scope!=='next_occurrence'||!coachDirectiveConsumed(overlay.id))
  )||null;
 }
 
-function coachOverlayMarkup(definition){
- const overlay=activeCoachOverlay(
+function applicableCoachOverlay(definition,state={}){
+ if(state?.appliedCoachDirective?.id)return state.appliedCoachDirective;
+ return activeCoachOverlay(
   activeProgramContext?.version||PROGRAM.version,
   activeSessionDefinition?.key,
   definition.id,
   activeWorkoutDate
  );
+}
+
+function coachOverlayMarkup(definition,state={}){
+ const overlay=applicableCoachOverlay(definition,state);
  if(!overlay)return '';
  return `<aside class="coach-overlay" data-coach-overlay="${attr(overlay.id)}">
-  <p class="eyebrow">ACTIVE COACH NOTE</p>
+  <p class="eyebrow">${overlay.scope==='next_occurrence'?'NEXT-OCCURRENCE COACH DIRECTIVE':'ACTIVE COACH NOTE'}</p>
   <p>${esc(overlay.text)}</p>
+  ${overlay.circuitDirective?.overallTargetRpe?`<p class="coach-overlay-target">Circuit target RPE ${esc(overlay.circuitDirective.overallTargetRpe)}</p>`:''}
  </aside>`;
 }
 
 const ADHERENCE_LABELS={
- met:'Met',below_target:'Below target',partial:'Partial',not_assessable:'Not assessable',not_applicable:'Not applicable'
+ met:'Met',below_target:'Below target',modified:'Modified',partial:'Partial',not_assessable:'Not assessable',not_applicable:'Not applicable'
 };
+
+const ADHERENCE_REASON_LABELS={
+ load_above_target:'Load above target',load_below_target:'Load below target',reps_below_minimum:'Repetitions below minimum',
+ sets_below_target:'Sets below target',duration_below_minimum:'Duration below target',duration_above_target:'Duration above target',
+ unplanned_component_added:'Unplanned component added',exercise_substituted:'Exercise substituted',coach_directed_change:'Coach-directed change',
+ component_not_recorded:'Component not recorded',other:'Other modification'
+};
+
+function adherenceReason(code,details={}){
+ return {code,...details};
+}
+
+function normalizeAdherenceReasons(value){
+ const reasons=Array.isArray(value)?value:value?[value]:[];
+ return reasons.map(reason=>{
+  if(typeof reason==='string')return adherenceReason('other',{message:reason});
+  if(!reason||typeof reason!=='object')return null;
+  return {code:reason.code||'other',...reason};
+ }).filter(Boolean);
+}
+
+function formatAdherenceReason(reason){
+ if(!reason)return '';
+ if(reason.message)return reason.message;
+ if(reason.code==='load_above_target'||reason.code==='load_below_target'){
+  return `${ADHERENCE_REASON_LABELS[reason.code]}: ${formatLoad(reason.actual)} lb completed vs ${formatLoad(reason.expected)} lb prescribed`;
+ }
+ if(reason.code==='reps_below_minimum')return `${reason.componentName?`${reason.componentName}: `:''}${reason.actual} reps vs ${reason.expected} minimum`;
+ if(reason.code==='sets_below_target')return `${reason.actual} sets recorded vs ${reason.expected} prescribed`;
+ if(reason.code==='duration_below_minimum'||reason.code==='duration_above_target'){
+  return `${reason.componentName?`${reason.componentName}: `:''}${reason.actual} sec completed vs ${reason.expected} sec prescribed`;
+ }
+ if(reason.code==='unplanned_component_added')return `${reason.componentName||'Circuit component'} was added outside the versioned prescription`;
+ if(reason.code==='exercise_substituted')return `${reason.actual||'A different exercise variation'} was used instead of ${reason.expected||'the targeted variation'}`;
+ if(reason.code==='coach_directed_change')return reason.componentName?`${reason.componentName}: coach-directed change from the versioned prescription`:'Coach-directed change from the versioned prescription';
+ if(reason.code==='component_not_recorded')return `${reason.componentName||'Circuit component'} was not recorded`;
+ return ADHERENCE_REASON_LABELS[reason.code]||ADHERENCE_REASON_LABELS.other;
+}
 
 function adherenceTarget(definition){
  if(definition?.adherenceTarget)return clone(definition.adherenceTarget);
@@ -546,54 +601,90 @@ function isOptionalExercise(definition){
  return Boolean(definition?.optional||PROGRAM.groups?.[definition?.group]?.optional);
 }
 
-function prescriptionAdherence(definition,result){
+function prescriptionAdherenceDetail(definition,result){
  const override=result?.adherenceOverride?.value;
- if(Object.prototype.hasOwnProperty.call(ADHERENCE_LABELS,override))return override;
+ if(Object.prototype.hasOwnProperty.call(ADHERENCE_LABELS,override)){
+  const reasons=normalizeAdherenceReasons(result.adherenceOverride.reasons||result.adherenceOverride.reason);
+  return {value:override,reasons};
+ }
  const hasResult=Boolean(result&&(result.completed||hasMeaningfulResultData(result)));
- if(isOptionalExercise(definition)&&!hasResult)return 'not_applicable';
- if(!hasResult)return 'not_assessable';
+ if(isOptionalExercise(definition)&&!hasResult)return {value:'not_applicable',reasons:[]};
+ if(!hasResult)return {value:'not_assessable',reasons:[]};
+ if(definition?.type==='circuit')return circuitAdherenceDetail(definition,result);
  const target=adherenceTarget(definition);
- if(!target)return 'not_assessable';
+ if(!target)return {value:'not_assessable',reasons:[]};
  if(target.kind==='reps'){
+  const reasons=[];
   const reps=parseSetValues(result.reps).filter(value=>value!=='').map(Number);
-  if(reps.some(value=>!Number.isFinite(value)))return 'not_assessable';
-  if(reps.length<target.sets)return 'partial';
-  if(reps.some(value=>value<target.minReps))return 'below_target';
+  if(reps.some(value=>!Number.isFinite(value)))return {value:'not_assessable',reasons:[]};
+  if(reps.length<target.sets)reasons.push(adherenceReason('sets_below_target',{actual:reps.length,expected:target.sets}));
+  const lowest=reps.length?Math.min(...reps):0;
+  if(reps.some(value=>value<target.minReps))reasons.push(adherenceReason('reps_below_minimum',{actual:lowest,expected:target.minReps}));
   if(definition.targetLoad!=null){
    const targetVariation=variationIdFor(definition.targetLoadVariation||'');
    const resultVariation=exerciseVariationId(result);
-   if(!targetVariation||!resultVariation||targetVariation===resultVariation){
+   if(targetVariation&&resultVariation&&targetVariation!==resultVariation){
+    reasons.push(adherenceReason('exercise_substituted',{expected:definition.targetLoadVariation,actual:exerciseVariationLabel(result)}));
+   }else{
     const total=totalLoadValue(result);
-    if(total==null)return 'partial';
-    if(total<Number(definition.targetLoad))return 'below_target';
+    if(total==null)reasons.push(adherenceReason('component_not_recorded',{componentName:'Load'}));
+    else{
+     const expected=Number(definition.targetLoad);
+     const tolerance=Number(definition.loadTolerance??.5);
+     if(total>expected+tolerance)reasons.push(adherenceReason('load_above_target',{actual:total,expected}));
+     if(total<expected-tolerance)reasons.push(adherenceReason('load_below_target',{actual:total,expected}));
+    }
    }
   }
-  return 'met';
+  if(reasons.some(reason=>['load_above_target','load_below_target','exercise_substituted'].includes(reason.code)))return {value:'modified',reasons};
+  if(reasons.some(reason=>reason.code==='reps_below_minimum'))return {value:'below_target',reasons};
+  if(reasons.length)return {value:'partial',reasons};
+  return {value:'met',reasons:[]};
  }
  if(target.kind==='timed'){
   const times=parseSetValues(result.times).filter(value=>value!=='').map(parseTime);
-  if(times.length<target.sets)return 'partial';
-  if(times.some((value,index)=>value<(target.minSecondsBySet?.[index]??target.minSeconds)))return 'below_target';
-  return 'met';
+  if(times.length<target.sets)return {value:'partial',reasons:[adherenceReason('sets_below_target',{actual:times.length,expected:target.sets})]};
+  const below=times.findIndex((value,index)=>value<(target.minSecondsBySet?.[index]??target.minSeconds));
+  if(below>=0)return {value:'below_target',reasons:[adherenceReason('duration_below_minimum',{actual:times[below],expected:target.minSecondsBySet?.[below]??target.minSeconds})]};
+  return {value:'met',reasons:[]};
  }
  if(target.kind==='cardio'){
-  if(result.minutes===''||result.minutes==null)return 'partial';
-  return Number(result.minutes)>=target.minMinutes?'met':'below_target';
+  if(result.minutes===''||result.minutes==null)return {value:'partial',reasons:[adherenceReason('component_not_recorded',{componentName:'Duration'})]};
+  return Number(result.minutes)>=target.minMinutes
+   ?{value:'met',reasons:[]}
+   :{value:'below_target',reasons:[adherenceReason('duration_below_minimum',{actual:Number(result.minutes)*60,expected:target.minMinutes*60})]};
  }
  if(target.kind==='duration'){
   const seconds=parseTime(result.times);
-  if(!seconds)return 'partial';
-  return seconds>=target.minSeconds?'met':'below_target';
+  if(!seconds)return {value:'partial',reasons:[adherenceReason('component_not_recorded',{componentName:'Duration'})]};
+  return seconds>=target.minSeconds
+   ?{value:'met',reasons:[]}
+   :{value:'below_target',reasons:[adherenceReason('duration_below_minimum',{actual:seconds,expected:target.minSeconds})]};
  }
- return 'not_assessable';
+ return {value:'not_assessable',reasons:[]};
+}
+
+function prescriptionAdherence(definition,result){
+ return prescriptionAdherenceDetail(definition,result).value;
 }
 
 function adherenceResultMarkup(definition,state){
  const hasResult=Boolean(state&&(state.completed||hasMeaningfulResultData(state)));
- const value=prescriptionAdherence(definition,state);
- return `<span class="adherence-result adherence-${attr(value)} ${hasResult?'':'hidden'}" data-adherence-result>
-  <span>Prescription</span><strong>${esc(ADHERENCE_LABELS[value])}</strong>
+ const detail=prescriptionAdherenceDetail(definition,state);
+ const title=detail.reasons.map(formatAdherenceReason).join('; ');
+ return `<span class="adherence-result adherence-${attr(detail.value)} ${hasResult?'':'hidden'}" data-adherence-result title="${attr(title)}">
+  <span>Prescription</span><strong>${esc(ADHERENCE_LABELS[detail.value])}</strong>
  </span>`;
+}
+
+function adherenceDetailMarkup(definition,state){
+ const hasResult=Boolean(state&&(state.completed||hasMeaningfulResultData(state)));
+ const detail=prescriptionAdherenceDetail(definition,state);
+ if(!hasResult||!detail.reasons.length)return '<details class="adherence-detail hidden" data-adherence-detail></details>';
+ return `<details class="adherence-detail" data-adherence-detail>
+  <summary>Why this result is ${esc(ADHERENCE_LABELS[detail.value].toLowerCase())}</summary>
+  <ul>${detail.reasons.map(reason=>`<li>${esc(formatAdherenceReason(reason))}</li>`).join('')}</ul>
+ </details>`;
 }
 
 function exercisePainFields(state){
@@ -626,7 +717,7 @@ function defaultExerciseState(definition){
  const state={};
  if(definition.defaultVariation)state.variation=definition.defaultVariation;
  if(definition.prescribedLoad!=null)state.load=String(definition.prescribedLoad);
- if(definition.defaults)Object.assign(state,clone(definition.defaults));
+ if(definition.defaults&&definition.type!=='circuit')Object.assign(state,clone(definition.defaults));
  if(definition.type==='interval'||definition.type==='run'){
   const stageId=definition.runStage||PROGRAM.currentRunStage;
   Object.assign(state,runDefaults(stageId),{runStage:String(stageId)});
@@ -652,6 +743,7 @@ function exerciseCard(definition,index,state,{showPrevious=false}={}){
  const previous=showPrevious?previousResultReference(definition,currentVariation):'';
  const optional=isOptionalExercise(definition);
  const hasExtras=Boolean(String(state.notes||'').trim()||hasExercisePainData(state.exercisePain));
+ const directive=definition.type==='circuit'?applicableCoachOverlay(definition,renderState):null;
  return `<section class="card exercise-card ${state.completed?'completed':''}" data-i="${index}" data-exercise-id="${attr(definition.id)}" data-optional="${optional}">
   <div class="exercise-heading">
    <div>
@@ -663,10 +755,11 @@ function exerciseCard(definition,index,state,{showPrevious=false}={}){
   </div>
   ${definition.targetRpe?`<p class="target-rpe">Target RPE ${esc(definition.targetRpe)}</p>`:''}
   ${definition.coachingNotes?`<p class="coaching-note">${esc(definition.coachingNotes)}</p>`:''}
-  ${coachOverlayMarkup(definition)}
+  ${coachOverlayMarkup(definition,renderState)}
   <div data-result-reference>${previous}</div>
   <p class="today-result-label">Today's result</p>
-  ${variation}${fields(definition,renderState,setPlan)}
+  ${variation}${fields(definition,renderState,setPlan,directive)}
+  ${adherenceDetailMarkup(definition,renderState)}
   <details class="exercise-extras" ${hasExtras?'open':''}>
    <summary><span>Notes &amp; pain</span><span data-exercise-extra-status>${esc(exerciseExtraSummary(renderState))}</span></summary>
    <div class="exercise-extras-body">
@@ -681,7 +774,7 @@ function exerciseCard(definition,index,state,{showPrevious=false}={}){
  </section>`;
 }
 
-function fields(definition,state,setPlan){
+function fields(definition,state,setPlan,directive=null){
  const {type,unit}=definition;
  if(type==='weighted')return weightedFields(definition,state,setPlan);
  if(type==='body')return grid(setCountSelect(state.sets,setPlan),num('rpe','Exercise RPE',state.rpe,1,10))+setRepLogger(state,setPlan,type);
@@ -700,18 +793,423 @@ function fields(definition,state,setPlan){
   select('outputUnit','Distance / output unit',state.outputUnit,['mi','km','m','calories']),
   num('avgHr','Average HR',state.avgHr),num('rpe','Exercise RPE',state.rpe,1,10)
  );
- if(type==='circuit')return grid(
-  select('rounds','Rounds completed',state.rounds||'2',circuitRoundOptions(state.rounds)),
-  num('carryLoad','Farmer-carry load per hand (lb)',state.carryLoad),
-  num('carrySeconds','Farmer-carry duration (sec)',state.carrySeconds),
-  num('stepReps','Lateral step-ups each side',state.stepReps),
-  select('modality','Hard-cardio modality',state.modality,['Bike','Rower','Elliptical']),
-  num('intervalSeconds','Hard interval duration (sec)',state.intervalSeconds),
-  num('restSeconds','Rest between rounds (sec)',state.restSeconds),
-  text('totalTime','Total circuit time',state.totalTime,'8:30'),
-  num('rpe','Circuit RPE',state.rpe,1,10)
- );
+ if(type==='circuit')return circuitFields(definition,state,directive);
  return '';
+}
+
+function circuitTemplate(definition){
+ return clone(CIRCUIT_TEMPLATES[definition?.circuitVersion]||{plannedRounds:2,components:[]});
+}
+
+function normalizeCircuitPerformance(performance){
+ if(!performance||typeof performance!=='object')return {};
+ const normalized={...performance,performed:Boolean(performance.performed)};
+ const trips=numberOrNull(normalized.trips);
+ const distance=numberOrNull(normalized.distancePerTrip);
+ if(normalized.distanceMode==='known'&&trips!=null&&distance!=null)normalized.totalDistance=String(trips*distance);
+ return normalized;
+}
+
+function normalizeCircuitComponent(component,index=0){
+ if(!component||typeof component!=='object')return null;
+ const normalized={
+  ...component,
+  id:String(component.id||component.exerciseId||`component-${index+1}`),
+  order:Number(component.order)||index+1,
+  exerciseId:String(component.exerciseId||component.id||`component-${index+1}`),
+  resultMode:component.resultMode==='per_round'?'per_round':'shared',
+  planned:component.planned&&typeof component.planned==='object'?{...component.planned}:null,
+  directivePlanned:component.directivePlanned&&typeof component.directivePlanned==='object'?{...component.directivePlanned}:null,
+  sharedResult:normalizeCircuitPerformance(component.sharedResult),
+  roundResults:Array.isArray(component.roundResults)
+   ?component.roundResults.map((result,roundIndex)=>({round:Number(result?.round)||roundIndex+1,...normalizeCircuitPerformance(result)}))
+   :[]
+ };
+ return normalized;
+}
+
+function circuitComponentPerformance(component){
+ if(!component)return [];
+ if(component.resultMode==='per_round')return (component.roundResults||[]).map(result=>normalizeCircuitPerformance(result));
+ return [normalizeCircuitPerformance(component.sharedResult)];
+}
+
+function hasCircuitPerformance(performance){
+ if(!performance||typeof performance!=='object')return false;
+ if(performance.performed)return true;
+ return Object.entries(performance).some(([field,value])=>
+  !['performed','round','direction','durationApproximate'].includes(field)&&value!==''&&value!=null&&value!==false
+ );
+}
+
+function hasCircuitComponentResult(component){
+ return circuitComponentPerformance(component).some(hasCircuitPerformance);
+}
+
+function legacyCircuitComponents(definition,result={}){
+ const template=circuitTemplate(definition);
+ return template.components.map((planned,index)=>{
+  const performance={};
+  if(planned.id==='farmerCarry')Object.assign(performance,{load:result.carryLoad||'',durationSeconds:result.carrySeconds||'',durationApproximate:true});
+  if(planned.id==='lateralStepUps')performance.repsPerSide=result.stepReps||'';
+  if(planned.id==='hardCardio')Object.assign(performance,{modality:result.modality||'',durationSeconds:result.intervalSeconds||''});
+  if(planned.id==='rest')performance.durationSeconds=result.restSeconds||'';
+  performance.performed=Object.entries(performance).some(([field,value])=>field!=='durationApproximate'&&value!==''&&value!=null)
+   ||Boolean(result.completed&&['farmerCarry','lateralStepUps','hardCardio','rest'].includes(planned.id));
+  return normalizeCircuitComponent({
+   id:planned.id,order:planned.order||index+1,exerciseId:planned.exerciseId,name:planned.name,type:planned.type,
+   prescription:planned.prescription,planned:clone(planned.planned||{}),resultMode:'shared',sharedResult:performance
+  },index);
+ });
+}
+
+function circuitResultComponents(definition,result={}){
+ const components=Array.isArray(result.components)&&result.components.length
+  ?result.components.map(normalizeCircuitComponent).filter(Boolean)
+  :legacyCircuitComponents(definition,result);
+ return components.sort((a,b)=>a.order-b.order);
+}
+
+function circuitComponentsForRender(definition,state,directive){
+ const template=circuitTemplate(definition);
+ const baselineById=new Map(template.components.map(component=>[component.id,component]));
+ const directiveComponents=directive?.circuitDirective?.components||[];
+ const displayPlan=directiveComponents.length?directiveComponents:template.components;
+ const saved=circuitResultComponents(definition,state);
+ const savedById=new Map(saved.filter(hasCircuitComponentResult).map(component=>[component.id,component]));
+ const rendered=displayPlan.map((component,index)=>{
+  const prior=savedById.get(component.id);
+  savedById.delete(component.id);
+  const baseline=baselineById.get(component.id);
+  return normalizeCircuitComponent({
+   ...component,
+   ...(prior||{}),
+   id:component.id,
+   order:component.order||index+1,
+   exerciseId:component.exerciseId,
+   name:component.name,
+   type:component.type,
+   prescription:component.prescription,
+   planned:baseline?clone(baseline.planned||{}):prior?.planned||null,
+   directivePlanned:directiveComponents.length?clone(component.planned||{}):prior?.directivePlanned||null
+  },index);
+ });
+ savedById.forEach(component=>rendered.push(normalizeCircuitComponent(component,rendered.length)));
+ return rendered.sort((a,b)=>a.order-b.order);
+}
+
+function circuitInput(field,label,value,{type='number',min=0,max=null,step='.5',placeholder='',className=''}={}){
+ return `<label class="${attr(className)}">${label}<input data-circuit-field="${attr(field)}" type="${attr(type)}" value="${attr(value)}" ${type==='number'&&min!=null?`min="${min}"`:''} ${type==='number'&&max!=null?`max="${max}"`:''} ${type==='number'?`step="${step}" inputmode="decimal"`:''} placeholder="${attr(placeholder)}"></label>`;
+}
+
+function circuitSelect(field,label,value,options,{className=''}={}){
+ const normalized=options.map(option=>typeof option==='object'?option:{value:String(option),label:String(option)});
+ return `<label class="${attr(className)}">${label}<select data-circuit-field="${attr(field)}"><option value="">Select…</option>${normalized.map(option=>
+  `<option value="${attr(option.value)}" ${String(option.value)===String(value??'')?'selected':''}>${esc(option.label)}</option>`
+ ).join('')}</select></label>`;
+}
+
+function circuitCheckbox(field,label,checked){
+ return `<label class="circuit-checkbox"><input data-circuit-field="${attr(field)}" type="checkbox" ${checked?'checked':''}><span>${esc(label)}</span></label>`;
+}
+
+function circuitPerformanceFields(component,performance={}){
+ const type=component.type;
+ const commonNotes=type==='sled'?circuitInput('notes','Component notes',performance.notes,{type:'text',min:null,placeholder:'Technique, setup, or anything unusual'}):'';
+ if(type==='carry')return grid(
+  circuitInput('load','Load per hand (lb)',performance.load),
+  circuitInput('durationSeconds','Duration (sec)',performance.durationSeconds,{step:'1'}),
+  circuitCheckbox('durationApproximate','Approximate duration',Boolean(performance.durationApproximate)),
+  circuitInput('rpe','Component RPE',performance.rpe,{min:1,max:10,step:'1'})
+ );
+ if(type==='reps')return grid(
+  circuitInput('repsPerSide','Repetitions per side',performance.repsPerSide,{step:'1'}),
+  circuitInput('rpe','Component RPE',performance.rpe,{min:1,max:10,step:'1'})
+ );
+ if(type==='cardio')return grid(
+  circuitSelect('modality','Modality',performance.modality,component.modalities||['Bike','Rower','Elliptical','Short safe sprint']),
+  circuitInput('durationSeconds','Hard interval (sec)',performance.durationSeconds,{step:'1'}),
+  circuitCheckbox('durationApproximate','Approximate duration',Boolean(performance.durationApproximate)),
+  circuitInput('rpe','Component RPE',performance.rpe,{min:1,max:10,step:'1'})
+ );
+ if(type==='rest')return grid(
+  circuitInput('durationSeconds','Rest duration (sec)',performance.durationSeconds,{step:'1'})
+ );
+ if(type==='sled'){
+  const loadMode=performance.loadMode||'';
+  const distanceMode=performance.distanceMode||'';
+  const direction=performance.direction||component.directivePlanned?.direction||component.planned?.direction||'';
+  return `<input data-circuit-field="direction" type="hidden" value="${attr(direction)}">${grid(
+   circuitInput('trips','Trips',performance.trips,{step:'1'}),
+   circuitSelect('distanceMode','Distance recorded as',distanceMode,[
+    {value:'known',label:'Known distance per trip'},{value:'lane_unknown',label:'Gym lane · length unknown'},{value:'unknown',label:'Unknown distance'}
+   ]),
+   circuitInput('distancePerTrip','Distance per trip',performance.distancePerTrip,{className:distanceMode==='known'?'':'hidden'}),
+   circuitSelect('distanceUnit','Distance unit',performance.distanceUnit,['yd','m'],{className:distanceMode==='known'?'':'hidden'}),
+   circuitInput('distanceLabel','Lane / distance label',performance.distanceLabel,{type:'text',min:null,placeholder:'One gym lane',className:distanceMode==='lane_unknown'?'':'hidden'}),
+   circuitSelect('loadMode','Weight recorded as',loadMode,[
+    {value:'added_only',label:'Added plates only · sled weight unknown'},
+    {value:'added_plus_sled',label:'Added plates + known sled weight'},
+    {value:'total',label:'Known total system weight'},
+    {value:'unknown',label:'Weight unknown'}
+   ]),
+   circuitInput('addedPlateWeight','Added plate weight (lb)',performance.addedPlateWeight,{className:['added_only','added_plus_sled'].includes(loadMode)?'':'hidden'}),
+   circuitInput('emptySledWeight','Empty sled weight (lb)',performance.emptySledWeight,{className:loadMode==='added_plus_sled'?'':'hidden'}),
+   circuitInput('totalSystemWeight','Total system weight (lb)',performance.totalSystemWeight,{className:loadMode==='total'?'':'hidden'}),
+   circuitInput('durationSeconds','Duration (sec)',performance.durationSeconds,{step:'1'}),
+   circuitInput('equipmentLabel','Sled / equipment label',performance.equipmentLabel,{type:'text',min:null,placeholder:'Same sled as Aug 5'}),
+   circuitInput('surface','Surface',performance.surface,{type:'text',min:null,placeholder:'Turf, rubber floor, etc.'}),
+   circuitInput('rpe','Component RPE',performance.rpe,{min:1,max:10,step:'1'})
+  )}<p class="calculated-sled" data-sled-calculation><span data-sled-total-distance>Total distance: —</span><span data-sled-total-load>Total system weight: —</span></p>${commonNotes}`;
+ }
+ return commonNotes;
+}
+
+function effectiveComponentPlan(component){
+ return component.directivePlanned||component.planned||null;
+}
+
+function circuitPerformanceSummary(component,performance={}){
+ if(!hasCircuitPerformance(performance))return 'Not logged';
+ const parts=[];
+ if(component.type==='carry'){
+  if(performance.load)parts.push(`${performance.load} lb/hand`);
+  if(performance.durationSeconds)parts.push(`${performance.durationApproximate?'~':''}${performance.durationSeconds} sec`);
+ }else if(component.type==='reps'){
+  if(performance.repsPerSide)parts.push(`${performance.repsPerSide}/side`);
+ }else if(['cardio','rest'].includes(component.type)){
+  if(performance.modality)parts.push(performance.modality);
+  if(performance.durationSeconds)parts.push(`${performance.durationApproximate?'~':''}${performance.durationSeconds} sec`);
+ }else if(component.type==='sled'){
+  if(performance.trips)parts.push(`${performance.trips} trip${Number(performance.trips)===1?'':'s'}`);
+  if(performance.distanceMode==='known'&&performance.distancePerTrip){
+   parts.push(`${performance.distancePerTrip} ${performance.distanceUnit||''}/trip`.trim());
+   const totalDistance=sledTotalDistance(performance);
+   if(totalDistance!=null&&Number(performance.trips)>1)parts.push(`${formatLoad(totalDistance)} ${performance.distanceUnit||''} total`.trim());
+  }
+  else if(performance.distanceMode==='lane_unknown')parts.push(performance.distanceLabel||'gym lane');
+  else parts.push('distance unknown');
+  if(performance.loadMode==='added_only'&&performance.addedPlateWeight)parts.push(`${performance.addedPlateWeight} lb added · total unknown`);
+  else if(performance.loadMode==='added_plus_sled')parts.push(`${sledTotalSystemWeight(performance)??'unknown'} lb total`);
+  else if(performance.loadMode==='total'&&performance.totalSystemWeight)parts.push(`${performance.totalSystemWeight} lb total`);
+  else parts.push('weight unknown');
+  if(performance.durationSeconds)parts.push(`${performance.durationSeconds} sec`);
+  if(performance.equipmentLabel)parts.push(performance.equipmentLabel);
+  if(performance.surface)parts.push(performance.surface);
+ }
+ if(performance.rpe)parts.push(`RPE ${performance.rpe}`);
+ return parts.join(' · ')||'Performed · details not recorded';
+}
+
+function circuitComponentSummary(component){
+ const performances=circuitComponentPerformance(component).filter(hasCircuitPerformance);
+ if(!performances.length)return 'Not logged';
+ if(component.resultMode==='per_round')return performances.map(performance=>`R${performance.round}: ${circuitPerformanceSummary(component,performance)}`).join(' · ');
+ return circuitPerformanceSummary(component,performances[0]);
+}
+
+function componentAdherenceValue(detail){
+ return ADHERENCE_LABELS[detail?.value]||ADHERENCE_LABELS.not_assessable;
+}
+
+function circuitComponentMarkup(component,rounds){
+ const shared=normalizeCircuitPerformance(component.sharedResult);
+ const roundResults=Array.from({length:Math.max(1,Number(rounds)||2)},(_,index)=>{
+  const prior=(component.roundResults||[]).find(result=>Number(result.round)===index+1)||{round:index+1};
+  return {round:index+1,...normalizeCircuitPerformance(prior)};
+ });
+ const plan=effectiveComponentPlan(component);
+ const effectivePlan=effectiveComponentPlan(component);
+ const adherence=hasCircuitComponentResult(component)
+  ?circuitComponentAdherence(effectivePlan?{...component,planned:effectivePlan}:null,component)
+  :{value:'not_assessable',reasons:[]};
+ return `<details class="circuit-component" data-component-id="${attr(component.id)}" data-component-config="${attr(JSON.stringify({
+  id:component.id,order:component.order,exerciseId:component.exerciseId,name:component.name,type:component.type,prescription:component.prescription,
+  modalities:component.modalities||[],planned:component.planned,directivePlanned:component.directivePlanned
+ }))}">
+  <summary>
+   <span class="circuit-component-order">${component.order}</span>
+   <span><strong>${esc(component.name)}</strong><small>${esc(component.prescription||'Record the completed component')}</small></span>
+   <span class="circuit-component-status" data-component-status>${esc(circuitComponentSummary(component))}</span>
+  </summary>
+  <div class="circuit-component-body">
+   <div class="circuit-component-controls">
+    <label class="check-label" data-component-performed-wrap><input data-component-performed type="checkbox" ${circuitComponentPerformance(component).some(performance=>performance.performed)?'checked':''}><span>Performed</span></label>
+    <label>Result applies to<select data-component-mode><option value="shared" ${component.resultMode!=='per_round'?'selected':''}>Both rounds</option><option value="per_round" ${component.resultMode==='per_round'?'selected':''}>Different by round</option></select></label>
+   </div>
+   <div data-component-shared class="${component.resultMode==='per_round'?'hidden':''}">${circuitPerformanceFields(component,shared)}</div>
+   <div data-component-rounds class="circuit-round-results ${component.resultMode==='per_round'?'':'hidden'}">
+    ${roundResults.map(result=>`<fieldset data-component-round="${result.round}"><legend>Round ${result.round}</legend>${circuitCheckbox('performed','Performed this round',Boolean(result.performed))}${circuitPerformanceFields(component,result)}</fieldset>`).join('')}
+   </div>
+   ${plan?.targetRpe?`<p class="muted circuit-component-target">Target component RPE ${esc(plan.targetRpe)}</p>`:''}
+   <p class="circuit-component-adherence adherence-${attr(adherence.value)}" data-component-adherence>${esc(componentAdherenceValue(adherence))}</p>
+  </div>
+ </details>`;
+}
+
+function circuitFields(definition,state,directive){
+ const template=circuitTemplate(definition);
+ const applied=directive?.circuitDirective?directive:null;
+ const rounds=state.rounds||applied?.circuitDirective?.plannedRounds||template.plannedRounds||2;
+ const components=circuitComponentsForRender(definition,state,applied);
+ const directiveSnapshot=applied?{
+  id:applied.id,scope:applied.scope||'next_occurrence',effectiveDate:applied.effectiveDate||'',text:applied.text||'',reason:applied.reason||'',
+  circuitDirective:clone(applied.circuitDirective)
+ }:null;
+ return `<section class="circuit-logger" data-circuit-version="${attr(definition.circuitVersion||'')}" data-planned-rounds="${attr(applied?.circuitDirective?.plannedRounds||template.plannedRounds||2)}" ${directiveSnapshot?`data-circuit-directive="${attr(JSON.stringify(directiveSnapshot))}"`:''}>
+  <div class="circuit-overall">
+   ${grid(
+    select('rounds','Rounds completed',state.rounds,circuitRoundOptions(state.rounds)),
+    text('totalTime','Total circuit time',state.totalTime,'8:30'),
+    num('rpe','Overall circuit RPE',state.rpe,1,10,1)
+   )}
+   <button class="secondary subtle" type="button" data-fill-circuit-plan>${applied?'Performed as directed':'Performed as planned'}</button>
+   <p class="muted">This applies the known targets to both rounds. Sled weight, timing, surface, and RPE remain blank until you record them.</p>
+  </div>
+  <div class="circuit-component-list">
+   ${components.map(component=>circuitComponentMarkup(component,rounds)).join('')}
+  </div>
+  ${applied?'<div class="directive-adherence" data-directive-adherence>Directive result: not assessed yet</div>':''}
+ </section>`;
+}
+
+function sledTotalSystemWeight(performance){
+ if(performance?.loadMode==='total')return numberOrNull(performance.totalSystemWeight);
+ if(performance?.loadMode!=='added_plus_sled')return null;
+ const added=numberOrNull(performance.addedPlateWeight);
+ const sled=numberOrNull(performance.emptySledWeight);
+ return added==null||sled==null?null:added+sled;
+}
+
+function sledTotalDistance(performance){
+ if(performance?.distanceMode!=='known')return null;
+ const trips=numberOrNull(performance.trips);
+ const perTrip=numberOrNull(performance.distancePerTrip);
+ return trips==null||perTrip==null?null:trips*perTrip;
+}
+
+function plannedValueMatches(actual,expected,tolerance=0){
+ if(actual===''||actual==null)return false;
+ return Math.abs(Number(actual)-Number(expected))<=tolerance;
+}
+
+function circuitPerformanceAdherence(plannedComponent,component,performance){
+ if(!hasCircuitPerformance(performance))return {value:'partial',reasons:[adherenceReason('component_not_recorded',{componentName:component.name})]};
+ if(!plannedComponent)return {value:'modified',reasons:[adherenceReason('unplanned_component_added',{componentName:component.name})]};
+ const planned=plannedComponent.planned||plannedComponent;
+ const reasons=[];
+ let partial=false,below=false,modified=false;
+ const name=component.name;
+ if(planned.load!==''&&planned.load!=null){
+  if(performance.load===''||performance.load==null)partial=true;
+  else if(!plannedValueMatches(performance.load,planned.load,.5)){
+   const code=Number(performance.load)>Number(planned.load)?'load_above_target':'load_below_target';
+   reasons.push(adherenceReason(code,{componentName:name,actual:Number(performance.load),expected:Number(planned.load)}));
+   modified=true;
+  }
+ }
+ if(planned.repsPerSide!==''&&planned.repsPerSide!=null){
+  if(performance.repsPerSide===''||performance.repsPerSide==null)partial=true;
+  else if(Number(performance.repsPerSide)<Number(planned.repsPerSide)){
+   reasons.push(adherenceReason('reps_below_minimum',{componentName:name,actual:Number(performance.repsPerSide),expected:Number(planned.repsPerSide)}));
+   below=true;
+  }
+ }
+ if(planned.durationSeconds!==''&&planned.durationSeconds!=null){
+  if(performance.durationSeconds===''||performance.durationSeconds==null)partial=true;
+  else{
+   const tolerance=planned.durationApproximate?5:2;
+   const actual=Number(performance.durationSeconds),expected=Number(planned.durationSeconds);
+   if(actual<expected-tolerance){
+    reasons.push(adherenceReason('duration_below_minimum',{componentName:name,actual,expected}));
+    below=true;
+   }else if(actual>expected+tolerance){
+    reasons.push(adherenceReason('duration_above_target',{componentName:name,actual,expected}));
+    modified=true;
+   }
+  }
+ }
+ if(planned.trips!==''&&planned.trips!=null){
+  if(performance.trips===''||performance.trips==null)partial=true;
+  else if(Number(performance.trips)<Number(planned.trips)){
+   reasons.push(adherenceReason('reps_below_minimum',{componentName:name,actual:Number(performance.trips),expected:Number(planned.trips)}));
+   below=true;
+  }
+ }
+ if(planned.targetRpe){
+  if(performance.rpe===''||performance.rpe==null)partial=true;
+  else{
+   const range=String(planned.targetRpe).match(/(\d+(?:\.\d+)?)\s*[–—-]\s*(\d+(?:\.\d+)?)/);
+   if(range&&(Number(performance.rpe)<Number(range[1])||Number(performance.rpe)>Number(range[2]))){
+    reasons.push(adherenceReason('other',{componentName:name,message:`${name}: RPE ${performance.rpe} was outside the ${planned.targetRpe} directive target`}));
+    modified=true;
+   }
+  }
+ }
+ if(partial)reasons.push(adherenceReason('component_not_recorded',{componentName:name}));
+ if(modified)return {value:'modified',reasons};
+ if(below)return {value:'below_target',reasons};
+ if(partial)return {value:'partial',reasons};
+ return {value:'met',reasons:[]};
+}
+
+function combineComponentAdherence(details,{coachDirected=false}={}){
+ const reasons=details.flatMap(detail=>detail.reasons||[]);
+ if(coachDirected)reasons.push(adherenceReason('coach_directed_change'));
+ const unique=[];
+ const seen=new Set();
+ reasons.forEach(reason=>{
+  const key=JSON.stringify([reason.code,reason.componentName,reason.round,reason.actual,reason.expected,reason.message]);
+  if(!seen.has(key)){seen.add(key);unique.push(reason)}
+ });
+ if(coachDirected||details.some(detail=>detail.value==='modified'))return {value:'modified',reasons:unique};
+ if(details.some(detail=>detail.value==='below_target'))return {value:'below_target',reasons:unique};
+ if(details.some(detail=>detail.value==='partial'))return {value:'partial',reasons:unique};
+ if(details.length&&details.every(detail=>detail.value==='met'))return {value:'met',reasons:[]};
+ return {value:'not_assessable',reasons:unique};
+}
+
+function circuitComponentAdherence(plannedComponent,component){
+ const performances=circuitComponentPerformance(component);
+ const details=performances.map(performance=>circuitPerformanceAdherence(plannedComponent,component,performance));
+ return combineComponentAdherence(details);
+}
+
+function circuitRoundAdherence(result,plannedRounds){
+ if(plannedRounds==null)return {value:'not_assessable',reasons:[]};
+ const actual=numberOrNull(result?.rounds);
+ if(actual==null)return {value:'partial',reasons:[adherenceReason('component_not_recorded',{componentName:'Completed circuit rounds'})]};
+ if(actual<Number(plannedRounds))return {value:'below_target',reasons:[adherenceReason('other',{message:`${formatLoad(actual)} rounds completed vs exactly ${formatLoad(plannedRounds)} prescribed`})]};
+ if(actual>Number(plannedRounds))return {value:'modified',reasons:[adherenceReason('other',{message:`${formatLoad(actual)} rounds completed vs exactly ${formatLoad(plannedRounds)} prescribed`})]};
+ return {value:'met',reasons:[]};
+}
+
+function circuitAdherenceAgainstComponents(definition,result,plannedComponents,{coachDirected=false,plannedRounds=null}={}){
+ const actual=circuitResultComponents(definition,result);
+ const actualById=new Map(actual.map(component=>[component.id,component]));
+ const details=[];
+ plannedComponents.forEach(planned=>{
+  const component=actualById.get(planned.id)||normalizeCircuitComponent({...planned,planned:planned.planned,sharedResult:{}},details.length);
+  actualById.delete(planned.id);
+  details.push(circuitComponentAdherence(planned,component));
+ });
+ actualById.forEach(component=>{
+  if(hasCircuitComponentResult(component))details.push(circuitComponentAdherence(null,component));
+ });
+ if(plannedRounds!=null)details.push(circuitRoundAdherence(result,plannedRounds));
+ return combineComponentAdherence(details,{coachDirected});
+}
+
+function circuitAdherenceDetail(definition,result){
+ const template=circuitTemplate(definition);
+ if(!template.components.length)return {value:'not_assessable',reasons:[]};
+ return circuitAdherenceAgainstComponents(definition,result,template.components,{coachDirected:Boolean(result?.appliedCoachDirective?.id),plannedRounds:template.plannedRounds});
+}
+
+function circuitDirectiveAdherenceDetail(definition,result){
+ const directive=result?.appliedCoachDirective?.circuitDirective;
+ if(!directive?.components?.length)return {value:'not_assessable',reasons:[]};
+ return circuitAdherenceAgainstComponents(definition,result,directive.components,{plannedRounds:directive.plannedRounds});
 }
 
 function circuitRoundOptions(savedRounds){
@@ -783,6 +1281,7 @@ function bindExerciseControls(){
  });
  bindSetControls();
  bindWeightedLoadControls();
+ bindCircuitControls();
  bindPreviousResultControls();
  document.querySelectorAll('[data-field="runStage"]').forEach(selectInput=>selectInput.onchange=()=>{
  const card=selectInput.closest('.exercise-card');
@@ -794,6 +1293,154 @@ function bindExerciseControls(){
  });
  bindRunTimers();
  bindRunCalculations();
+}
+
+function readCircuitPerformance(container){
+ const performance={};
+ container?.querySelectorAll('[data-circuit-field]').forEach(input=>{
+  const field=input.dataset.circuitField;
+  if(input.type==='checkbox'){
+   performance[field]=input.checked;
+   return;
+  }
+  const value=String(input.value??'').trim();
+  if(value!=='')performance[field]=value;
+ });
+ return normalizeCircuitPerformance(performance);
+}
+
+function readCircuitComponents(card,definition){
+ const logger=card.querySelector('.circuit-logger');
+ if(!logger)return circuitResultComponents(definition,{});
+ const rounds=Math.max(1,Number(card.querySelector('[data-field="rounds"]')?.value)||Number(logger.dataset.plannedRounds)||2);
+ return [...logger.querySelectorAll('.circuit-component')].map((article,index)=>{
+  let config={};
+  try{config=JSON.parse(article.dataset.componentConfig||'{}')}catch{}
+  const resultMode=article.querySelector('[data-component-mode]')?.value==='per_round'?'per_round':'shared';
+  const sharedResult=readCircuitPerformance(article.querySelector('[data-component-shared]'));
+  sharedResult.performed=Boolean(article.querySelector('[data-component-performed]')?.checked);
+  const roundResults=[...article.querySelectorAll('[data-component-round]')]
+   .filter(fieldset=>Number(fieldset.dataset.componentRound)<=rounds)
+   .map(fieldset=>({round:Number(fieldset.dataset.componentRound),...readCircuitPerformance(fieldset)}));
+  return normalizeCircuitComponent({...config,index,resultMode,sharedResult,roundResults},index);
+ }).filter(Boolean);
+}
+
+function readCircuitDirective(card){
+ const raw=card.querySelector('.circuit-logger')?.dataset.circuitDirective;
+ if(!raw)return null;
+ try{return JSON.parse(raw)}catch{return null}
+}
+
+function updateCircuitSledVisibility(container){
+ const loadMode=container.querySelector('[data-circuit-field="loadMode"]')?.value||'';
+ const distanceMode=container.querySelector('[data-circuit-field="distanceMode"]')?.value||'';
+ const toggle=(field,show)=>container.querySelector(`[data-circuit-field="${field}"]`)?.closest('label')?.classList.toggle('hidden',!show);
+ toggle('distancePerTrip',distanceMode==='known');
+ toggle('distanceUnit',distanceMode==='known');
+ toggle('distanceLabel',distanceMode==='lane_unknown');
+ toggle('addedPlateWeight',['added_only','added_plus_sled'].includes(loadMode));
+ toggle('emptySledWeight',loadMode==='added_plus_sled');
+ toggle('totalSystemWeight',loadMode==='total');
+ const performance=readCircuitPerformance(container);
+ const totalDistance=sledTotalDistance(performance);
+ const totalLoad=sledTotalSystemWeight(performance);
+ const distanceDisplay=container.querySelector('[data-sled-total-distance]');
+ const loadDisplay=container.querySelector('[data-sled-total-load]');
+ if(distanceDisplay)distanceDisplay.textContent=totalDistance==null?'Total distance: —':`Total distance: ${formatLoad(totalDistance)} ${performance.distanceUnit||''}`.trim();
+ if(loadDisplay){
+  loadDisplay.textContent=performance.loadMode==='added_only'
+   ?'Total system weight: unknown'
+   :totalLoad==null?'Total system weight: —':`Total system weight: ${formatLoad(totalLoad)} lb`;
+ }
+}
+
+function copyCircuitPerformance(source,target){
+ source.querySelectorAll('[data-circuit-field]').forEach(input=>{
+  const match=target.querySelector(`[data-circuit-field="${input.dataset.circuitField}"]`);
+  if(!match)return;
+  if(input.type==='checkbox')match.checked=input.checked;
+  else match.value=input.value;
+ });
+ updateCircuitSledVisibility(target);
+}
+
+function updateCircuitRoundVisibility(logger){
+ const card=logger.closest('.exercise-card');
+ const rounds=Math.max(1,Number(card.querySelector('[data-field="rounds"]')?.value)||Number(logger.dataset.plannedRounds)||2);
+ logger.querySelectorAll('[data-component-round]').forEach(fieldset=>{
+  fieldset.classList.toggle('hidden',Number(fieldset.dataset.componentRound)>rounds);
+ });
+}
+
+function fillCircuitPlan(logger){
+ const card=logger.closest('.exercise-card');
+ const rounds=String(logger.dataset.plannedRounds||'2');
+ const roundSelect=card.querySelector('[data-field="rounds"]');
+ if(roundSelect)roundSelect.value=rounds;
+ logger.querySelectorAll('.circuit-component').forEach(article=>{
+  let config={};
+  try{config=JSON.parse(article.dataset.componentConfig||'{}')}catch{}
+  const planned=config.directivePlanned||config.planned||{};
+  const mode=article.querySelector('[data-component-mode]');
+  if(mode)mode.value='shared';
+  article.querySelector('[data-component-shared]')?.classList.remove('hidden');
+  article.querySelector('[data-component-rounds]')?.classList.add('hidden');
+  article.querySelector('[data-component-performed-wrap]')?.classList.remove('hidden');
+  const performed=article.querySelector('[data-component-performed]');
+  if(performed)performed.checked=true;
+  const shared=article.querySelector('[data-component-shared]');
+  Object.entries(planned).forEach(([field,value])=>{
+   const input=shared?.querySelector(`[data-circuit-field="${field}"]`);
+   if(!input||['targetRpe','loadUnit','direction'].includes(field))return;
+   if(input.type==='checkbox')input.checked=Boolean(value);
+   else input.value=String(value??'');
+  });
+  updateCircuitSledVisibility(shared);
+ });
+ updateCircuitRoundVisibility(logger);
+ updateCardAdherence(card);
+ scheduleDraft();
+ toast('Known circuit targets applied to both rounds. Add the actual effort and sled details.');
+}
+
+function bindCircuitControls(){
+ document.querySelectorAll('.circuit-logger').forEach(logger=>{
+  const card=logger.closest('.exercise-card');
+  logger.querySelector('[data-fill-circuit-plan]')?.addEventListener('click',()=>fillCircuitPlan(logger));
+  logger.querySelectorAll('.circuit-component').forEach(article=>{
+   const mode=article.querySelector('[data-component-mode]');
+   const shared=article.querySelector('[data-component-shared]');
+   const rounds=article.querySelector('[data-component-rounds]');
+   const performedWrap=article.querySelector('[data-component-performed-wrap]');
+   mode?.addEventListener('change',()=>{
+    const perRound=mode.value==='per_round';
+    shared.classList.toggle('hidden',perRound);
+    rounds.classList.toggle('hidden',!perRound);
+    performedWrap?.classList.toggle('hidden',perRound);
+    if(perRound){
+     const performed=article.querySelector('[data-component-performed]')?.checked;
+     article.querySelectorAll('[data-component-round]').forEach(fieldset=>{
+      if(!hasCircuitPerformance(readCircuitPerformance(fieldset)))copyCircuitPerformance(shared,fieldset);
+      const roundPerformed=fieldset.querySelector('[data-circuit-field="performed"]');
+      if(roundPerformed)roundPerformed.checked=performed;
+     });
+    }
+    updateCardAdherence(card);
+    scheduleDraft();
+   });
+   article.querySelectorAll('[data-component-shared],[data-component-round]').forEach(updateCircuitSledVisibility);
+   article.querySelectorAll('[data-component-shared],[data-component-round]').forEach(container=>{
+    container.querySelectorAll('[data-circuit-field]').forEach(input=>{
+     input.addEventListener('input',()=>updateCircuitSledVisibility(container));
+     input.addEventListener('change',()=>updateCircuitSledVisibility(container));
+    });
+   });
+  });
+  card.querySelector('[data-field="rounds"]')?.addEventListener('change',()=>updateCircuitRoundVisibility(logger));
+  updateCircuitRoundVisibility(logger);
+  updateCardAdherence(card);
+ });
 }
 
 function bindPreviousResultControls(){
@@ -918,7 +1565,8 @@ function numberOrNull(value){
 }
 
 function formatLoad(value){
- return Number(value).toFixed(2).replace(/\.?0+$/,'');
+ const number=Number(value);
+ return Number.isFinite(number)?number.toFixed(2).replace(/\.?0+$/,''):String(value??'—');
 }
 
 function totalLoadValue(exercise){
@@ -1673,6 +2321,13 @@ function collectExerciseCard(card,definition,index,prior={}){
  if(['interval','run'].includes(exercise.type)&&Number(exercise.runStage)){
   exercise.runTarget=getRunStage(exercise.runStage).label;
  }
+ if(exercise.type==='circuit'){
+  exercise.circuitVersion=definition.circuitVersion||exercise.circuitVersion||'';
+  exercise.components=readCircuitComponents(card,definition);
+  const directive=readCircuitDirective(card);
+  if(directive)exercise.appliedCoachDirective=directive;
+  else delete exercise.appliedCoachDirective;
+ }
  return exercise;
 }
 
@@ -1704,10 +2359,48 @@ function updateCardAdherence(card){
  if(index<0||!definition||!display)return;
  const prior=findSavedExercise(definition,activeSavedExercises,index)||{};
  const result=collectExerciseCard(card,definition,index,prior);
- const value=prescriptionAdherence(definition,result);
+ const detail=prescriptionAdherenceDetail(definition,result);
  const hasResult=result.completed||hasMeaningfulResultData(result);
- display.className=`adherence-result adherence-${value}${hasResult?'':' hidden'}`;
- display.querySelector('strong').textContent=ADHERENCE_LABELS[value];
+ display.className=`adherence-result adherence-${detail.value}${hasResult?'':' hidden'}`;
+ display.querySelector('strong').textContent=ADHERENCE_LABELS[detail.value];
+ display.title=detail.reasons.map(formatAdherenceReason).join('; ');
+ const reasonPanel=card.querySelector('[data-adherence-detail]');
+ if(reasonPanel){
+  reasonPanel.classList.toggle('hidden',!hasResult||!detail.reasons.length);
+  if(hasResult&&detail.reasons.length){
+   reasonPanel.innerHTML=`<summary>Why this result is ${esc(ADHERENCE_LABELS[detail.value].toLowerCase())}</summary><ul>${detail.reasons.map(reason=>`<li>${esc(formatAdherenceReason(reason))}</li>`).join('')}</ul>`;
+  }else reasonPanel.innerHTML='';
+ }
+ if(definition.type==='circuit')updateCircuitAdherenceUi(card,definition,result);
+}
+
+function updateCircuitAdherenceUi(card,definition,result){
+ const actual=circuitResultComponents(definition,result);
+ const actualById=new Map(actual.map(component=>[component.id,component]));
+ const directiveComponents=result.appliedCoachDirective?.circuitDirective?.components||[];
+ const baseline=circuitTemplate(definition).components;
+ const effective=directiveComponents.length?directiveComponents:baseline;
+ const plannedById=new Map(effective.map(component=>[component.id,component]));
+ card.querySelectorAll('.circuit-component').forEach(article=>{
+  const component=actualById.get(article.dataset.componentId);
+  const planned=plannedById.get(article.dataset.componentId)||null;
+  const detail=component&&hasCircuitComponentResult(component)?circuitComponentAdherence(planned,component):{value:'not_assessable',reasons:[]};
+  const status=article.querySelector('[data-component-status]');
+  if(status&&component)status.textContent=circuitComponentSummary(component);
+  const adherence=article.querySelector('[data-component-adherence]');
+  if(adherence){
+   adherence.className=`circuit-component-adherence adherence-${detail.value}`;
+   adherence.textContent=componentAdherenceValue(detail);
+   adherence.title=detail.reasons.map(formatAdherenceReason).join('; ');
+  }
+ });
+ const directiveDisplay=card.querySelector('[data-directive-adherence]');
+ if(directiveDisplay){
+  const directiveDetail=circuitDirectiveAdherenceDetail(definition,result);
+  directiveDisplay.className=`directive-adherence adherence-${directiveDetail.value}`;
+  directiveDisplay.textContent=`Coach directive: ${ADHERENCE_LABELS[directiveDetail.value]}`;
+  directiveDisplay.title=directiveDetail.reasons.map(formatAdherenceReason).join('; ');
+ }
 }
 
 function collectWorkoutItem({draft=false}={}){
@@ -1999,8 +2692,10 @@ function renderHistory(){
   const done=(entry.exercises||[]).filter(exercise=>exercise.completed||hasData(exercise)).map(exercise=>{
    const planned=definition.exercises.find(item=>canonicalExerciseId(item.id)===exerciseIdentity(exercise))
     ||definition.exercises.find(item=>item.name===exercise.name);
-   const adherence=planned?prescriptionAdherence(planned,exercise):'not_assessable';
-   return `<li><strong>${esc(exercise.name)}:</strong> ${esc(summary(exercise))}<span class="history-adherence adherence-${attr(adherence)}">Prescription: ${esc(ADHERENCE_LABELS[adherence])}</span>${exercise.notes?`<span class="history-exercise-note"><strong>Exercise notes:</strong> ${esc(exercise.notes).replaceAll('\n','<br>')}</span>`:''}</li>`;
+   const adherence=planned?prescriptionAdherenceDetail(planned,exercise):{value:'not_assessable',reasons:[]};
+   const reasons=adherence.reasons.length
+    ?`<span class="history-adherence-reasons">${adherence.reasons.map(formatAdherenceReason).map(esc).join(' · ')}</span>`:'';
+   return `<li><strong>${esc(exercise.name)}:</strong> ${esc(summary(exercise))}<span class="history-adherence adherence-${attr(adherence.value)}">Prescription: ${esc(ADHERENCE_LABELS[adherence.value])}</span>${reasons}${exercise.notes?`<span class="history-exercise-note"><strong>Exercise notes:</strong> ${esc(exercise.notes).replaceAll('\n','<br>')}</span>`:''}</li>`;
   }).join('');
   const program=entry.programVersion
    ?`${entry.programName||'AFT program'} · v${entry.programVersion}`
@@ -2265,6 +2960,7 @@ function bestTime(exerciseId){
 }
 
 function summary(exercise){
+ if(exercise?.type==='circuit')return circuitSummary(exercise);
  const parts=[];
  const pace=['run','interval'].includes(exercise.type)?calculatedPaceDetails(exercise):{value:'',basis:''};
  if(exercise.variation)parts.push(exercise.variation);
@@ -2325,6 +3021,23 @@ function summary(exercise){
   if(pain.causedExerciseToStop===true)painParts.push('stopped exercise');
   parts.push(`exercise pain ${painParts.join(' ')||'recorded'}`);
  }
+ return parts.join(' · ')||(exercise.completed?'completed':exercise.prescription);
+}
+
+function circuitDefinitionForResult(exercise){
+ return Object.values(SESSIONS).flatMap(session=>session.exercises||[]).find(definition=>
+  definition.type==='circuit'&&canonicalExerciseId(definition.id)===exerciseIdentity(exercise)
+ )||{...exercise,circuitVersion:exercise.circuitVersion};
+}
+
+function circuitSummary(exercise){
+ const definition=circuitDefinitionForResult(exercise);
+ const components=circuitResultComponents(definition,exercise).filter(hasCircuitComponentResult);
+ const parts=[];
+ if(exercise.rounds)parts.push(`${exercise.rounds} rounds completed`);
+ components.forEach(component=>parts.push(`${component.order}. ${component.name}: ${circuitComponentSummary(component)}`));
+ if(exercise.totalTime)parts.push(`elapsed ${exercise.totalTime}`);
+ if(exercise.rpe)parts.push(`overall RPE ${exercise.rpe}`);
  return parts.join(' · ')||(exercise.completed?'completed':exercise.prescription);
 }
 
@@ -2395,7 +3108,7 @@ function markdownExercise(planned,completed,entry){
  const target=planned.targetRpe?` · target RPE ${planned.targetRpe}`:'';
  const coaching=planned.coachingNotes?` · ${planned.coachingNotes}`:'';
  const overlay=activeCoachOverlay(entry?.programVersion,entry?.dayKey,planned.id,entry?.date);
- const adherence=prescriptionAdherence(planned,completed);
+ const adherence=prescriptionAdherenceDetail(planned,completed);
  let output=`- **${planned.name}**\n`;
  output+=`  - Planned: ${planned.prescription}${target}${coaching}\n`;
  if(overlay){
@@ -2403,18 +3116,90 @@ function markdownExercise(planned,completed,entry){
   if(overlay.reason)output+=`  - Coach-note reason: ${overlay.reason}\n`;
  }
  output+=`  - Status: ${completed?.completed?'Completed':'Not marked complete'}\n`;
- output+=`  - Prescription adherence: ${ADHERENCE_LABELS[adherence]}\n`;
+ output+=`  - Prescription adherence: ${ADHERENCE_LABELS[adherence.value]}\n`;
+ if(adherence.reasons.length)output+=`  - Adherence details: ${adherence.reasons.map(formatAdherenceReason).join('; ')}\n`;
  if(completed&&['interval','run'].includes(completed.type)){
   output+=markdownRunResult(completed);
+ }else if(completed?.type==='circuit'){
+  output+=markdownCircuitResult(planned,completed);
  }else{
   output+=`  - Completed result: ${completed&&(completed.completed||hasData(completed))?summary(completed):'No result recorded'}\n`;
  }
+ if(completed?.appliedCoachDirective?.id)output+=markdownAppliedCircuitDirective(planned,completed);
  if(hasExercisePainData(completed?.exercisePain))output+=markdownExercisePain(completed.exercisePain);
  if(completed?.completed){
   const previous=previousComparableForExport(entry,planned,completed);
   if(previous)output+=markdownPreviousComparable(planned,previous);
  }
  if(completed?.notes)output+=markdownTextBlock('Exercise notes',completed.notes,'  ');
+ return output;
+}
+
+function markdownCircuitResult(definition,result){
+ const components=circuitResultComponents(definition,result).filter(hasCircuitComponentResult);
+ const baselineById=new Map(circuitTemplate(definition).components.map(component=>[component.id,component]));
+ let output='  - Completed circuit:\n';
+ output+=`    - Rounds completed: ${result.rounds||'Not recorded'}\n`;
+ output+=`    - Total circuit time: ${result.totalTime||'Not recorded'}\n`;
+ output+=`    - Overall circuit RPE: ${result.rpe?`${result.rpe}/10`:'Not recorded'}\n`;
+ output+='    - Ordered components:\n';
+ if(!components.length)return output+'      - No component results recorded\n';
+ components.forEach(component=>{
+  const baseline=baselineById.get(component.id)||null;
+  const detail=circuitComponentAdherence(baseline,component);
+  output+=`      ${component.order}. **${component.name}**\n`;
+  output+=`         - Versioned prescription: ${baseline?.prescription||'Not part of the versioned circuit'}\n`;
+  output+=`         - Result format: ${component.resultMode==='per_round'?'Recorded separately by round':'Shared across both rounds'}\n`;
+  const performances=circuitComponentPerformance(component).filter(hasCircuitPerformance);
+  if(!performances.length){
+   output+='         - Result: Not recorded\n';
+  }else{
+   performances.forEach(performance=>{
+    const prefix=component.resultMode==='per_round'?`Round ${performance.round}`:'Result';
+    output+=`         - ${prefix}: ${circuitPerformanceSummary(component,performance)}\n`;
+    if(component.type==='sled')output+=markdownSledPerformance(performance,'           ');
+   });
+  }
+  output+=`         - Component prescription adherence: ${ADHERENCE_LABELS[detail.value]}\n`;
+  if(detail.reasons.length)output+=`         - Adherence details: ${detail.reasons.map(formatAdherenceReason).join('; ')}\n`;
+ });
+ return output;
+}
+
+function markdownSledPerformance(performance,indent=''){
+ const distance=performance.distanceMode==='known'&&performance.distancePerTrip
+  ?`${performance.distancePerTrip} ${performance.distanceUnit||'unit'} per trip`
+  :performance.distanceMode==='lane_unknown'?`${performance.distanceLabel||'Gym lane'} (length unknown)`:'Unknown / not recorded';
+ let load='Unknown / not recorded';
+ if(performance.loadMode==='added_only')load=performance.addedPlateWeight?`${performance.addedPlateWeight} lb added; empty sled and total system weight unknown`:'Added-plate mode selected; weight not recorded';
+ if(performance.loadMode==='added_plus_sled')load=sledTotalSystemWeight(performance)!=null
+  ?`${performance.addedPlateWeight} lb added + ${performance.emptySledWeight} lb sled = ${sledTotalSystemWeight(performance)} lb total`
+  :'Added plates + sled mode selected; complete weights not recorded';
+ if(performance.loadMode==='total')load=performance.totalSystemWeight?`${performance.totalSystemWeight} lb total system weight`:'Total-weight mode selected; weight not recorded';
+ let output='';
+ output+=`${indent}- Direction: ${formatSledDirection(performance.direction)}\n`;
+ output+=`${indent}- Trips: ${performance.trips||'Unknown / not recorded'}\n`;
+ output+=`${indent}- Distance: ${distance}\n`;
+ output+=`${indent}- Load: ${load}\n`;
+ output+=`${indent}- Duration: ${performance.durationSeconds?`${performance.durationSeconds} sec`:'Unknown / not recorded'}\n`;
+ output+=`${indent}- Equipment: ${performance.equipmentLabel||'Not recorded'}\n`;
+ output+=`${indent}- Surface: ${performance.surface||'Not recorded'}\n`;
+ output+=`${indent}- Component RPE: ${performance.rpe?`${performance.rpe}/10`:'Not recorded'}\n`;
+ if(performance.notes)output+=`${indent}- Component notes: ${performance.notes}\n`;
+ return output;
+}
+
+function formatSledDirection(direction){
+ return ({backward_drag:'Backward drag',forward_push:'Forward push'})[direction]||direction||'Not recorded';
+}
+
+function markdownAppliedCircuitDirective(definition,result){
+ const directive=result.appliedCoachDirective;
+ const detail=circuitDirectiveAdherenceDetail(definition,result);
+ let output=`  - Applied coach directive: ${directive.text||directive.id}\n`;
+ if(directive.reason)output+=`  - Coach-directive reason: ${directive.reason}\n`;
+ output+=`  - Coach-directive adherence: ${ADHERENCE_LABELS[detail.value]}\n`;
+ if(detail.reasons.length)output+=`  - Coach-directive adherence details: ${detail.reasons.map(formatAdherenceReason).join('; ')}\n`;
  return output;
 }
 
@@ -2556,7 +3341,9 @@ function buildCsv(){
   'programmed_interval_time','total_elapsed_time','distance_miles','calculated_average_pace','pace_calculation_basis',
   'device_reported_pace','warmup_minutes','cooldown_minutes','walking_speed_mph','running_speed_mph',
   'run_environment','treadmill_incline_percent','average_hr','maximum_hr','run_rpe','run_discomfort','rounds_planned','rounds_completed',
-  'completed','prescription_adherence','adherence_override','adherence_override_reason',
+  'completed','prescription_adherence','adherence_reasons','adherence_override','adherence_override_reason',
+  'applied_coach_directive_id','coach_directive_adherence','coach_directive_adherence_reasons',
+  'circuit_component_summary','circuit_components_json',
   'exercise_pain_severity','exercise_pain_location','exercise_pain_laterality','exercise_pain_note','exercise_pain_stopped_exercise',
   'completed_result','exercise_notes','session_notes'
  ];
@@ -2568,13 +3355,18 @@ function buildCsv(){
    const pace=isRun?calculatedPaceDetails(exercise):{value:'',basis:''};
    const planned=definition.exercises.find(item=>canonicalExerciseId(item.id)===exerciseIdentity(exercise))
     ||definition.exercises.find(item=>item.name===exercise.name)||{};
-   const adherence=prescriptionAdherence(planned,exercise);
+   const adherence=prescriptionAdherenceDetail(planned,exercise);
+   const directiveAdherence=exercise.appliedCoachDirective?.id?circuitDirectiveAdherenceDetail(planned,exercise):{value:'',reasons:[]};
+   const plannedRounds=exercise.type==='circuit'
+    ?exercise.appliedCoachDirective?.circuitDirective?.plannedRounds||circuitTemplate(planned).plannedRounds||''
+    :exercise.rounds||'';
+   const completedRounds=exercise.type==='circuit'?exercise.rounds||'':exercise.completedRounds||'';
    const pain=exercise.exercisePain||{};
    rows.push([
     entry.date,entry.sessionType||'primary',entry.dayLabel,entry.programId||'',entry.programName||'',
     entry.programVersion||'',entry.programEffectiveDate||'',entry.activeRunStage??'',entry.targetSessionRpe||'',entry.duration,
     entry.sessionRpe,entry.bodyWeight,entry.preSoreness,entry.readiness,entry.sleepQuality,entry.painDuring,entry.painLocation,
-    entry.painScore,entry.postSoreness,exerciseIdentity(exercise),exercise.name,exercise.prescription,
+    entry.painScore,entry.postSoreness,exerciseIdentity(exercise),exercise.name,planned.prescription||exercise.prescription,
     exercise.targetRpe||'',exercise.variation||'',exerciseVariationId(exercise),exercise.load||'',exercise.loadMode||'',
     exercise.loadMode==='platesPerSide'?exercise.load||'':'',exercise.barWeight||'',totalLoadValue(exercise)??'',
     exercise.sets||'',exercise.reps||'',exercise.times||'',exercise.runStage||'',isRun?exercise.structure||exercise.runTarget||'':'',
@@ -2583,8 +3375,10 @@ function buildCsv(){
     isRun?exercise.deviceReportedPace||'':'',isRun?exercise.warmupMinutes||'':'',isRun?exercise.cooldownMinutes||'':'',
     isRun?exercise.walkSpeed||'':'',isRun?exercise.runSpeed||'':'',isRun?exercise.runEnvironment||'':'',
     isRun?exercise.treadmillIncline||'':'',isRun?exercise.avgHr||'':'',isRun?exercise.maxHr||'':'',
-    isRun?exercise.rpe||'':'',isRun?exercise.runPain||'':'',exercise.rounds||'',exercise.completedRounds||'',
-    exercise.completed?'yes':'no',adherence,exercise.adherenceOverride?.value||'',exercise.adherenceOverride?.reason||'',
+    isRun?exercise.rpe||'':'',isRun?exercise.runPain||'':'',plannedRounds,completedRounds,
+    exercise.completed?'yes':'no',adherence.value,adherence.reasons.map(formatAdherenceReason).join('; '),exercise.adherenceOverride?.value||'',exercise.adherenceOverride?.reason||'',
+    exercise.appliedCoachDirective?.id||'',directiveAdherence.value||'',directiveAdherence.reasons.map(formatAdherenceReason).join('; '),
+    exercise.type==='circuit'?circuitSummary(exercise):'',exercise.type==='circuit'?JSON.stringify(exercise.components||[]):'',
     pain.severity??'',pain.location||'',pain.laterality||'',pain.note||'',pain.causedExerciseToStop==null?'':pain.causedExerciseToStop?'yes':'no',
     summary(exercise),exercise.notes||'',entry.notes||''
    ]);
@@ -2631,13 +3425,69 @@ function normalizeExercise(exercise){
  const normalized={...exercise};
  if(exercise.exercisePain&&typeof exercise.exercisePain==='object')normalized.exercisePain={...exercise.exercisePain};
  else delete normalized.exercisePain;
+ if(Array.isArray(exercise.components))normalized.components=exercise.components.map(normalizeCircuitComponent).filter(Boolean);
+ else delete normalized.components;
+ if(exercise.appliedCoachDirective&&typeof exercise.appliedCoachDirective==='object')normalized.appliedCoachDirective=clone(exercise.appliedCoachDirective);
+ else delete normalized.appliedCoachDirective;
+ if(exercise.adherenceOverride&&typeof exercise.adherenceOverride==='object'){
+  normalized.adherenceOverride={...exercise.adherenceOverride};
+  if(Array.isArray(exercise.adherenceOverride.reasons))normalized.adherenceOverride.reasons=normalizeAdherenceReasons(exercise.adherenceOverride.reasons);
+ }
  return normalized;
+}
+
+const AUGUST5_CIRCUIT_CORRECTION='august5-day3-sled-components-v1';
+
+function applyKnownHistoricalCorrections(entry){
+ if(entry.date!=='2026-08-05'||entry.dayKey!=='day3'||String(entry.programVersion)!=='1.3')return entry;
+ const circuit=(entry.exercises||[]).find(exercise=>exerciseIdentity(exercise)==='gymConditioningCircuit');
+ if(!circuit)return entry;
+ const definition=SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit');
+ const components=circuitResultComponents(definition,circuit);
+ const byId=new Map(components.map(component=>[component.id,component]));
+ const cardio=byId.get('hardCardio');
+ if(cardio){
+  cardio.order=3;
+  cardio.sharedResult={...cardio.sharedResult,performed:true,durationSeconds:'30',durationApproximate:true,modality:cardio.sharedResult?.modality||circuit.modality||''};
+ }
+ const rest=byId.get('rest');
+ if(rest)rest.order=6;
+ const sledDefinitions=[
+  {id:'backwardSledDrag',order:4,exerciseId:'backwardSledDrag',name:'Backward sled drag',direction:'backward_drag'},
+  {id:'forwardSledPush',order:5,exerciseId:'forwardSledPush',name:'Forward sled push',direction:'forward_push'}
+ ];
+ sledDefinitions.forEach(sled=>{
+  const existing=byId.get(sled.id);
+  if(existing){
+   existing.order=sled.order;
+   existing.exerciseId=sled.exerciseId;
+   existing.name=sled.name;
+   existing.type='sled';
+   existing.sharedResult={...existing.sharedResult,performed:true,direction:sled.direction,
+    distanceMode:existing.sharedResult?.distanceMode||'unknown',loadMode:existing.sharedResult?.loadMode||'unknown'};
+   return;
+  }
+  const component=normalizeCircuitComponent({
+   ...sled,type:'sled',prescription:'Added during the August 5 circuit · measurements not recorded',planned:null,resultMode:'shared',
+   sharedResult:{performed:true,direction:sled.direction,distanceMode:'unknown',loadMode:'unknown'}
+  },sled.order-1);
+  components.push(component);
+  byId.set(sled.id,component);
+ });
+ circuit.components=components.sort((a,b)=>a.order-b.order);
+ circuit.rounds='2';
+ circuit.intervalSeconds='30';
+ const correctionNote='Felt much better this week. Used approximately 30 seconds of hard cardio, then a backward sled drag and forward sled push.';
+ if(!String(circuit.notes||'').includes('backward sled drag'))circuit.notes=[circuit.notes,correctionNote].filter(Boolean).join('\n');
+ const applied=Array.isArray(circuit.historicalCorrections)?circuit.historicalCorrections:[];
+ circuit.historicalCorrections=[...new Set([...applied,AUGUST5_CIRCUIT_CORRECTION])];
+ return entry;
 }
 
 function normalizeEntry(entry){
  if(!entry||typeof entry!=='object'||typeof entry.id!=='string'||!entry.id||typeof entry.date!=='string'||!entry.date||!SESSIONS[entry.dayKey])return null;
  const current=SESSIONS[entry.dayKey];
- return {
+ const normalized={
   ...entry,
   dayLabel:typeof entry.dayLabel==='string'&&entry.dayLabel?entry.dayLabel:current.label,
   sessionType:entry.sessionType||current.sessionType||'primary',
@@ -2655,6 +3505,7 @@ function normalizeEntry(entry){
   updatedAt:typeof entry.updatedAt==='string'&&entry.updatedAt?entry.updatedAt:`${entry.date}T12:00:00.000Z`,
   exercises:Array.isArray(entry.exercises)?entry.exercises.map(normalizeExercise).filter(Boolean):[]
  };
+ return applyKnownHistoricalCorrections(normalized);
 }
 
 function loadEntries(){
@@ -2663,6 +3514,29 @@ function loadEntries(){
   return Array.isArray(parsed)?parsed.map(normalizeEntry).filter(Boolean).sort(compareEntries):[];
  }catch{
   return [];
+ }
+}
+
+function persistKnownHistoricalCorrections(){
+ const corrected=entries.filter(entry=>(entry.exercises||[]).some(exercise=>
+  Array.isArray(exercise.historicalCorrections)&&exercise.historicalCorrections.includes(AUGUST5_CIRCUIT_CORRECTION)
+ ));
+ if(!corrected.length)return false;
+ try{
+  const stored=JSON.parse(localStorage.getItem(KEY)||'[]');
+  const storedById=new Map((Array.isArray(stored)?stored:[]).map(entry=>[entry.id,entry]));
+  const needsWrite=corrected.some(entry=>{
+   const original=storedById.get(entry.id);
+   return !(original?.exercises||[]).some(exercise=>
+    Array.isArray(exercise.historicalCorrections)&&exercise.historicalCorrections.includes(AUGUST5_CIRCUIT_CORRECTION)
+   );
+  });
+  if(!needsWrite)return false;
+  localStorage.setItem(KEY,JSON.stringify(entries));
+  return true;
+ }catch(error){
+  console.warn('Unable to persist the historical circuit correction',error);
+  return false;
  }
 }
 
@@ -2719,6 +3593,7 @@ function restoreLatestSnapshot(){
   createSnapshot('Before restoring previous data');
   localStorage.setItem(KEY,snapshot.raw);
   entries=loadEntries();
+  persistKnownHistoricalCorrections();
   editing=null;
   clearDraft();
   resetSessionTimer();
@@ -2818,6 +3693,10 @@ function backupReminder(meta){
 
 function hasData(exercise){
  if(!exercise)return false;
+ if(exercise.type==='circuit'){
+  return Boolean(exercise.completed||exercise.notes||exercise.totalTime||exercise.rpe||
+   circuitResultComponents(circuitDefinitionForResult(exercise),exercise).some(hasCircuitComponentResult));
+ }
  if(['run','interval'].includes(exercise.type)&&!exercise.completed){
   return ['completedRounds','distance','totalTime','deviceReportedPace','warmupMinutes','cooldownMinutes','walkSpeed','runSpeed','runEnvironment','treadmillIncline','avgHr','maxHr','rpe','runPain','notes'].some(field=>exercise[field]);
  }
@@ -2833,10 +3712,13 @@ function hasData(exercise){
 function hasMeaningfulResultData(exercise){
  if(!exercise)return false;
  if(hasExercisePainData(exercise.exercisePain))return true;
+ if(exercise.type==='circuit'){
+  return ['totalTime','modality','rpe','carryLoad','carrySeconds','stepReps','intervalSeconds','restSeconds'].some(field=>exercise[field]!==''&&exercise[field]!=null)
+   ||circuitResultComponents(circuitDefinitionForResult(exercise),exercise).some(hasCircuitComponentResult);
+ }
  const fieldsByType={
   weighted:['load','reps','rpe'],body:['reps','rpe'],timed:['times','rpe'],
   carry:['load','distance','carrySeconds','rpe'],cardio:['minutes','distance','modality','avgHr','rpe'],
-  circuit:['totalTime','modality','rpe'],
   interval:['completedRounds','totalTime','distance','deviceReportedPace','warmupMinutes','cooldownMinutes','walkSpeed','runSpeed','runEnvironment','treadmillIncline','avgHr','maxHr','rpe','runPain'],
   run:['completedRounds','totalTime','distance','deviceReportedPace','warmupMinutes','cooldownMinutes','walkSpeed','runSpeed','runEnvironment','treadmillIncline','avgHr','maxHr','rpe','runPain']
  };

@@ -4,7 +4,7 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 
 ## Included
 
-- Four primary workout days plus an optional recovery session
+- Four primary workout days plus separate optional recovery and AFT Skill Microdose sessions
 - Coach-controlled, versioned workout prescriptions in `program-config.js`
 - Saved prescription snapshots so later program changes do not rewrite old workouts, while current logging/equipment choices remain available when editing history
 - A read-only current run stage with per-session logging of the stage actually completed
@@ -20,7 +20,10 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 - Trap-bar plate-per-side logging with 45/55/60/custom bar weights and a live total
 - Combined-plate and direct-total modes for other barbell and machine variations
 - Mobile-friendly set and per-set rep selectors prefilled from each prescription
-- Automatic Day 1 → Day 4 rotation that ignores recovery sessions
+- Automatic Day 1 → Day 4 rotation that ignores recovery and skill-microdose sessions
+- An independently versioned, once-weekly AFT Skill Microdose with 3 × 4 hand-release push-ups, 3 × 20-second front planks, and optional gentle mobility
+- A shared Monday–Sunday skill-dose rule: completing the standalone microdose suppresses Day 3’s matching optional bundle, and completing the full Day 3 bundle closes the standalone slot
+- A deliberate coach-directed override for additional weekly skill work, recorded in history, Markdown, JSON, and CSV
 - Variation-aware last results plus a collapsed three-result history on every exercise card
 - Optional **Use last load** actions that copy only compatible load fields
 - Coach-controlled, exercise-specific note overlays that can be resolved without changing the program version or historical prescriptions
@@ -92,7 +95,9 @@ Program v1.3 displays the synchronized Day 3 Romanian-deadlift target as 95 lb t
 
 Day 1 deadlifts can be logged separately with a trap/hex bar, conventional barbell, sumo barbell, or dumbbells. Exercises with realistic commercial-gym substitutions include an explicit variation selector, and coach notes come directly from the current program configuration.
 
-New workouts use the device-local calendar date and default to the day following the most recent saved primary session. Optional recovery sessions appear in history and exports but do not advance that rotation. The **New Workout** action returns to the suggested primary day without affecting saved history.
+New workouts use the device-local calendar date and default to the day following the most recent saved primary session. Optional recovery and skill-microdose sessions appear separately in history and exports but do not advance that rotation. The **New Workout** action returns to the suggested primary day without affecting saved history.
+
+The separately versioned **AFT Skill Microdose v1.0** is available at most once per Monday–Sunday week under normal use. It adds low-fatigue hand-release push-up and front-plank practice without changing Foundation Block 1 v1.3 or Run Stage 2. A complete standalone microdose and the complete Day 3 optional skill bundle share the same weekly dose; partial Day 3 practice produces a warning and requires an explicit override before another session. Completed microdose reps and front-plank seconds count only as AFT-event practice volume, never as benchmark results.
 
 Run progression is coach-directed rather than automatically advanced. Program v1.3 uses Stage 2—one minute walking followed by 1:30 running for eight rounds—on Days 1 and 4. The timer starts every interval round with walking, automatically logs completed rounds and programmed interval time, and marks the run exercise done. Total elapsed time remains a separate user-entered value.
 

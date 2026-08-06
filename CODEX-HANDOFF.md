@@ -21,7 +21,7 @@ The version 1.3 Day 3 Romanian-deadlift prescription is **95 lb total for 2 × 8
 
 ## Current program model
 
-`program-config.js` is the single source of truth for program metadata, daily prescriptions, stable exercise IDs, target RPEs, coaching notes, run stage, and recovery work. The active program is **AFT Foundation Block 1**, version **1.3**, effective **2026-08-01**.
+`program-config.js` is the single source of truth for program metadata, daily prescriptions, stable exercise IDs, target RPEs, coaching notes, run stage, recovery work, and auxiliary templates. The active primary program is **AFT Foundation Block 1**, version **1.3**, effective **2026-08-01**. The independent auxiliary template is **AFT Skill Microdose**, version **1.0**, effective **2026-08-06**; it does not create Foundation Block version 1.4.
 
 Do not add an automatic coaching or load-progression algorithm. ChatGPT is the coach; Codex updates `program-config.js` after the user reviews recommendations.
 
@@ -49,9 +49,11 @@ The nonblocking pre-save review flags meaningful data on unchecked exercises and
 
 An optional Recovery Session logs modality, duration, RPE, pre/post soreness, and notes. It appears in history and exports but is ignored by next-day rotation and primary-workout counts.
 
+The optional AFT Skill Microdose prescribes hand-release push-ups 3 × 4, front plank 3 × 20 seconds, and up to five minutes of gentle optional mobility at session RPE 3–4. It shares the `aft_pushup_plank_microdose` Monday–Sunday dose with Day 3’s optional push-up/plank bundle. A full session from either source satisfies the week; partial work warns but does not rewrite either prescription. An additional session requires explicit acknowledgement and stores `weeklyFrequencyOverride` plus its reason. Saved microdoses are classified as `skill_microdose`, remain outside primary/recovery counts, never alter Run Stage 2, and contribute only to weekly practice volume. There are no air squats, automatic scheduling, automatic progression, or medical/recovery recommendations.
+
 Every day displays a specific active warm-up and exercises are numbered in intended completion order. Day 1 keeps its full walk/run block after strength work because it is conditioning rather than the warm-up. Day 4 begins with its walk/run session after a separate walking and dynamic warm-up. Air squats are not in the current block.
 
-Blank primary workouts select the day after the most recent primary workout using session date and then `updatedAt`; recovery is ignored. Dates use device-local components. **New Workout** and the post-save reset apply these defaults. Editing preserves the saved date, day, and prescription.
+Blank primary workouts select the day after the most recent primary workout using session date and then `updatedAt`; recovery and skill microdoses are ignored. Dates use device-local components. **New Workout** and the post-save reset apply these defaults. Editing preserves the saved date, day, and prescription.
 
 Session tracking separates pre-session soreness, readiness, pain during training, pain location, and post-session notes. Recovery also records post-session soreness. The old `painScore` field remains explicitly labeled as legacy pain/discomfort and is never reinterpreted.
 
@@ -87,6 +89,6 @@ The canonical workout array stays under the existing `aftWorkoutEntries.v1` loca
 - `aftBackupMeta.v1` — last downloaded JSON backup metadata
 - `aftDataVersion.v1` — app data migration marker
 
-Data schema version 10 adds optional ordered `components`, `appliedCoachDirective`, structured multi-reason adherence, and the targeted idempotent August 5 Day 3 circuit correction. The correction preserves the prescription snapshot, keeps the selected hard-cardio modality, records the two sled directions separately, and leaves unknown sled measurements explicitly unknown. Prescription adherence is derived at display/export time whenever explicit snapshot metadata or a safely parseable saved prescription is available; otherwise it is `not_assessable`. Version 9 sleep/pain/override values, version 8 variation IDs, and version 7 run fields remain compatible. A safety snapshot is created before the version marker advances.
+Data schema version 11 adds optional auxiliary-template metadata, the `skill_microdose` category, shared weekly skill-dose metadata, and an explicit weekly-frequency override record. Version 10 adds optional ordered `components`, `appliedCoachDirective`, structured multi-reason adherence, and the targeted idempotent August 5 Day 3 circuit correction. The correction preserves the prescription snapshot, keeps the selected hard-cardio modality, records the two sled directions separately, and leaves unknown sled measurements explicitly unknown. Prescription adherence is derived at display/export time whenever explicit snapshot metadata or a safely parseable saved prescription is available; otherwise it is `not_assessable`. Version 9 sleep/pain/override values, version 8 variation IDs, and version 7 run fields remain compatible. A safety snapshot is created before the version marker advances.
 
 The app requests persistent browser storage on demand. This reduces eviction risk but does not sync across devices. JSON backup/import remains the only portable, device-loss-safe copy.

@@ -22,6 +22,8 @@ window.AFT_PROGRAM_CONFIG={
  groups:{
   testSkillPractice:{
    optional:true,
+   weeklySkillDoseGroupId:'aft_pushup_plank_microdose',
+   frequency:'once_per_monday_sunday_week',
    eyebrow:'OPTIONAL LOW-FATIGUE WORK',
    label:'Test Skill Practice',
    instruction:'These sets should remain easy and technically clean. They are not maximal attempts.'
@@ -109,6 +111,7 @@ window.AFT_PROGRAM_CONFIG={
   day3:{
    key:'day3',
    sessionType:'primary',
+   weeklySkillDoseGroupId:'aft_pushup_plank_microdose',
    label:'Day 3 — Lower Strength and Gym Conditioning',
    focus:'Reduced lower-body volume and a capped two-round conditioning circuit.',
    targetSessionRpe:'7–8',
@@ -152,6 +155,29 @@ window.AFT_PROGRAM_CONFIG={
    exercises:[
     {id:'recoveryCardio',name:'Easy stationary bike or walk',prescription:'20–30 minutes',type:'cardio',modalities:['Stationary bike','Walk'],targetRpe:'2–3'},
     {id:'recoveryMobility',name:'Gentle mobility',prescription:'Optional · 5–10 minutes',type:'timed',optional:true}
+   ]
+  },
+  skillMicrodose:{
+   key:'skillMicrodose',
+   sessionType:'skill_microdose',
+   optional:true,
+   advancesPrimaryRotation:false,
+   templateId:'aft-skill-microdose',
+   templateName:'AFT Skill Microdose',
+   templateVersion:'1.0',
+   templateEffectiveDate:'2026-08-06',
+   weeklySkillDoseGroupId:'aft_pushup_plank_microdose',
+   frequency:'once_per_monday_sunday_week',
+   label:'Optional AFT Skill Microdose',
+   focus:'Low-fatigue hand-release push-up and front-plank technique practice that does not advance the primary rotation.',
+   targetDuration:'Approximately 10–15 minutes',
+   targetSessionRpe:'3–4',
+   warmup:'No separate warm-up is required. Begin with comfortable movement and keep every repetition technically clean.',
+   coachInstructions:'This is low-fatigue technique practice, not a hard workout. Keep the session at RPE 3–4, stop each push-up set with several good repetitions remaining, and end plank sets before severe shaking or form breakdown. Skip the session if pain is present or soreness is affecting normal movement.',
+   exercises:[
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'3 × 4',type:'body',sets:3,skippedSessionNotApplicable:true,coachingNotes:'Rest 60–90 seconds. Use technically clean, repeatable repetitions; stop well before failure with approximately 3–4 repetitions in reserve. Do not intentionally exceed the prescription.'},
+    {id:'plank',name:'Front plank',prescription:'3 × 20 sec',type:'timed',sets:3,skippedSessionNotApplicable:true,coachingNotes:'Rest 60–90 seconds. Use controlled bracing and stop before severe shaking or form breakdown. Do not intentionally exceed the prescription.'},
+    {id:'mobility',name:'Optional gentle mobility',prescription:'Up to 5 minutes · gentle only',type:'timed',optional:true,adherenceNotApplicable:true,coachingNotes:'There is no required mobility prescription.'}
    ]
   }
  }

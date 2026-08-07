@@ -3937,10 +3937,16 @@ function saveDraftNow(){
  if(suppressDraft||!activeSessionDefinition||!$('workoutForm'))return;
  clearTimeout(draftTimer);
  try{
+  const item=collectWorkoutItem({draft:true});
+  if(!editing&&!draftHasMeaningfulProgress(item,sessionTimerElapsed())){
+   localStorage.removeItem(DRAFT_KEY);
+   persistSessionTimer();
+   return;
+  }
   localStorage.setItem(DRAFT_KEY,JSON.stringify({
    savedAt:new Date().toISOString(),
    editingId:editing,
-   item:collectWorkoutItem({draft:true})
+   item
   }));
   persistSessionTimer();
  }catch{}
@@ -3949,9 +3955,39 @@ function saveDraftNow(){
 function loadDraft(){
  try{
   const parsed=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');
-  return parsed?.item&&SESSIONS[parsed.item.dayKey]?parsed:null;
+  if(!parsed?.item||!SESSIONS[parsed.item.dayKey])return null;
+  if(!parsed.editingId&&!draftHasMeaningfulProgress(parsed.item,storedSessionTimerElapsed())){
+   localStorage.removeItem(DRAFT_KEY);
+   return null;
+  }
+  return parsed;
  }catch{
   return null;
+ }
+}
+
+function draftHasMeaningfulProgress(item,timerElapsedMs=0){
+ if(!item||typeof item!=='object')return false;
+ if(Number(timerElapsedMs)>0)return true;
+ const sessionFields=[
+  'duration','sessionRpe','bodyWeight','preSoreness','readiness','sleepQuality','painDuring','painLocation',
+  'postSoreness','painScore','notes','postSessionNotes'
+ ];
+ if(sessionFields.some(field=>item[field]!==''&&item[field]!=null))return true;
+ if(item.weeklyFrequencyOverride)return true;
+ return (item.exercises||[]).some(exercise=>exercise.completed||hasData(exercise));
+}
+
+function storedSessionTimerElapsed(){
+ try{
+  const parsed=JSON.parse(localStorage.getItem(TIMER_KEY)||'null');
+  if(!parsed||typeof parsed!=='object')return 0;
+  const elapsed=Math.max(0,Number(parsed.elapsedMs)||0);
+  if(!parsed.running)return elapsed;
+  const startedAt=Number(parsed.startedAt)||Date.now();
+  return elapsed+Math.max(0,Date.now()-startedAt);
+ }catch{
+  return 0;
  }
 }
 

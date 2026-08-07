@@ -437,6 +437,17 @@ assert.equal(reviewIssues.filter(issue=>issue.type==='reps').length,2,'partial a
 assert.equal(reviewIssues.filter(issue=>issue.type==='times').length,1,'entirely missing timed sets are reviewed');
 assert.equal(evaluate(`hasData({type:'weighted',sets:'3',variation:'Dumbbell bench press',variationId:'dumbbellBenchPress'})`),false,'variation metadata alone is not a result');
 assert.equal(evaluate(`hasMeaningfulResultData({exerciseId:'gymConditioningCircuit',type:'circuit',circuitVersion:'foundation-1.2'})`),false,'a blank circuit plan is not mistaken for performed work');
+assert.equal(evaluate(`draftHasMeaningfulProgress({date:'2026-08-05',dayKey:'day4',exercises:[{type:'weighted',sets:'3',variation:'Dumbbells'}]})`),false,'an untouched workout shell is not recovered as an active draft');
+assert.equal(evaluate(`draftHasMeaningfulProgress({date:'2026-08-05',dayKey:'day4',readiness:'4',exercises:[]})`),true,'pre-workout readiness preserves an in-progress draft');
+assert.equal(evaluate(`draftHasMeaningfulProgress({date:'2026-08-05',dayKey:'day4',exercises:[{type:'weighted',load:'45'}]})`),true,'logged exercise data preserves an in-progress draft');
+assert.equal(evaluate(`draftHasMeaningfulProgress({date:'2026-08-05',dayKey:'day4',exercises:[]},1000)`),true,'an active session timer preserves an in-progress draft');
+storage.delete('aftSessionTimer.v1');
+storage.set('aftWorkoutDraft.v1',JSON.stringify({savedAt:'2026-08-05T20:00:00.000Z',editingId:null,item:{date:'2026-08-05',dayKey:'day4',exercises:[{type:'weighted',sets:'3',variation:'Dumbbells'}]}}));
+assert.equal(evaluate('loadDraft()'),null,'startup discards a stale untouched draft so newWorkout can assign today');
+assert.equal(storage.has('aftWorkoutDraft.v1'),false,'the stale blank draft is removed from local storage');
+storage.set('aftWorkoutDraft.v1',JSON.stringify({savedAt:'2026-08-05T20:00:00.000Z',editingId:null,item:{date:'2026-08-05',dayKey:'day4',readiness:'4',exercises:[]}}));
+assert.equal(evaluate('loadDraft().item.date'),'2026-08-05','startup retains the original date for a genuinely in-progress draft');
+storage.delete('aftWorkoutDraft.v1');
 
 const elements={
  exportFrom:{value:'2026-07-01'},
@@ -731,9 +742,9 @@ const indexHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const appSource=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 assert.match(appSource,/Exercise notes<textarea[^>]+data-field="notes"/,'exercise notes must support detailed multiline comments');
-assert.ok(indexHtml.indexOf('program-config.js?v=25')<indexHtml.indexOf('app.js?v=25'));
-assert.match(serviceWorker,/aft-workout-tracker-v25/);
-assert.match(serviceWorker,/program-config\.js\?v=25/);
+assert.ok(indexHtml.indexOf('program-config.js?v=26')<indexHtml.indexOf('app.js?v=26'));
+assert.match(serviceWorker,/aft-workout-tracker-v26/);
+assert.match(serviceWorker,/program-config\.js\?v=26/);
 const htmlIds=[...indexHtml.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]);
 assert.equal(new Set(htmlIds).size,htmlIds.length,'HTML IDs must be unique');
 const referencedIds=[...appSource.matchAll(/\$\('([^']+)'\)/g)].map(match=>match[1]);

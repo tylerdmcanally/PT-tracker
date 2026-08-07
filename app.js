@@ -457,7 +457,10 @@ function skillDoseExerciseResult(entry,exerciseId){
 }
 
 function weeklySkillDoseEntryStatus(entry){
- const relevant=isSkillMicrodoseEntry(entry)||(entry?.dayKey==='day3'&&(!entry.weeklySkillDoseGroupId||entry.weeklySkillDoseGroupId===WEEKLY_SKILL_DOSE_GROUP_ID));
+ const legacyDay3=entry?.dayKey==='day3'
+  &&String(entry?.programVersion||'')!=='1.4'
+  &&(!entry.weeklySkillDoseGroupId||entry.weeklySkillDoseGroupId===WEEKLY_SKILL_DOSE_GROUP_ID);
+ const relevant=isSkillMicrodoseEntry(entry)||legacyDay3;
  if(!relevant)return null;
  const pushups=skillDoseExerciseResult(entry,'handReleasePushups');
  const plank=skillDoseExerciseResult(entry,'plank');
@@ -793,6 +796,61 @@ function isOptionalExercise(definition){
  return Boolean(definition?.optional||PROGRAM.groups?.[definition?.group]?.optional);
 }
 
+function runAdherenceDetail(definition,result){
+ const prescribedStage=numberOrNull(definition?.runStage);
+ const actualStage=numberOrNull(result?.runStage);
+ const stage=prescribedStage==null?null:getRunStage(prescribedStage);
+ const prescribedWalk=numberOrNull(stage?.walkMinutes);
+ const prescribedRun=numberOrNull(stage?.runMinutes);
+ const prescribedRounds=numberOrNull(stage?.rounds);
+ const actualWalk=numberOrNull(result?.walkMinutes);
+ const actualRun=numberOrNull(result?.runMinutes);
+ const actualRounds=numberOrNull(result?.rounds);
+ const completedRounds=numberOrNull(result?.completedRounds);
+ const missing=[];
+ if(prescribedStage==null)missing.push('Prescribed run stage');
+ if(actualStage==null)missing.push('Completed run stage');
+ if(prescribedWalk==null)missing.push('Prescribed walk duration');
+ if(actualWalk==null)missing.push('Completed walk duration');
+ if(prescribedRun==null)missing.push('Prescribed run duration');
+ if(actualRun==null)missing.push('Completed run duration');
+ if(prescribedRounds==null)missing.push('Prescribed rounds');
+ if(actualRounds==null)missing.push('Completed interval plan');
+ if(completedRounds==null)missing.push('Completed rounds');
+ if(missing.length)return {
+  value:'not_assessable',
+  reasons:missing.map(componentName=>adherenceReason('component_not_recorded',{componentName}))
+ };
+ const reasons=[];
+ let modified=false,below=false;
+ if(actualStage!==prescribedStage){
+  reasons.push(adherenceReason('other',{message:`Stage ${formatLoad(actualStage)} completed vs Stage ${formatLoad(prescribedStage)} prescribed`}));
+  modified=true;
+ }
+ if(Math.abs(actualWalk-prescribedWalk)>.001){
+  reasons.push(adherenceReason('other',{message:`${formatRunDurationValue(actualWalk)} walk intervals completed vs ${formatRunDurationValue(prescribedWalk)} prescribed`}));
+  modified=true;
+ }
+ if(Math.abs(actualRun-prescribedRun)>.001){
+  reasons.push(adherenceReason('other',{message:`${formatRunDurationValue(actualRun)} run intervals completed vs ${formatRunDurationValue(prescribedRun)} prescribed`}));
+  modified=true;
+ }
+ if(actualRounds!==prescribedRounds){
+  reasons.push(adherenceReason('other',{message:`${formatLoad(actualRounds)} rounds in the completed interval plan vs ${formatLoad(prescribedRounds)} prescribed`}));
+  modified=true;
+ }
+ if(completedRounds<prescribedRounds){
+  reasons.push(adherenceReason('other',{message:`${formatLoad(completedRounds)} rounds completed vs ${formatLoad(prescribedRounds)} prescribed`}));
+  below=true;
+ }else if(completedRounds>prescribedRounds){
+  reasons.push(adherenceReason('other',{message:`${formatLoad(completedRounds)} rounds completed vs ${formatLoad(prescribedRounds)} prescribed`}));
+  modified=true;
+ }
+ if(modified)return {value:'modified',reasons};
+ if(below)return {value:'below_target',reasons};
+ return {value:'met',reasons:[]};
+}
+
 function prescriptionAdherenceDetail(definition,result){
  const override=result?.adherenceOverride?.value;
  if(Object.prototype.hasOwnProperty.call(ADHERENCE_LABELS,override)){
@@ -805,6 +863,7 @@ function prescriptionAdherenceDetail(definition,result){
  if(isOptionalExercise(definition)&&!hasResult)return {value:'not_applicable',reasons:[]};
  if(!hasResult)return {value:'not_assessable',reasons:[]};
  if(definition?.type==='circuit')return circuitAdherenceDetail(definition,result);
+ if(['interval','run'].includes(definition?.type))return runAdherenceDetail(definition,result);
  const target=adherenceTarget(definition);
  if(!target)return {value:'not_assessable',reasons:[]};
  if(target.kind==='reps'){
@@ -849,7 +908,7 @@ function prescriptionAdherenceDetail(definition,result){
    :{value:'below_target',reasons:[adherenceReason('duration_below_minimum',{actual:Number(result.minutes)*60,expected:target.minMinutes*60})]};
  }
  if(target.kind==='duration'){
-  const seconds=parseTime(result.times);
+  const seconds=timedResultSeconds(definition,result.times);
   if(!seconds)return {value:'partial',reasons:[adherenceReason('component_not_recorded',{componentName:'Duration'})]};
   return seconds>=target.minSeconds
    ?{value:'met',reasons:[]}
@@ -2841,7 +2900,7 @@ function compactResultSummary(definition,exercise){
   if(pace.value)parts.push(`${pace.value}/mi${pace.basis==='programmedIntervalTime'?' (interval-time basis)':''}`);
   if(exercise.completedRounds)parts.push(`${exercise.completedRounds}/${exercise.rounds||'?'} rounds`);
  }else if(exercise.type==='timed'&&exercise.times){
-  parts.push(parseSetValues(exercise.times).filter(Boolean).map(formatCompletedTime).join(', '));
+  parts.push(parseSetValues(exercise.times).filter(Boolean).map(value=>formatCompletedTime(value,definition)).join(', '));
  }else{
   const load=compactLoadResult(definition,exercise);
   if(load)parts.push(load);
@@ -2877,8 +2936,21 @@ function compactSetsAndReps(exercise){
  return sets?`${sets} sets`:'';
 }
 
-function formatCompletedTime(value){
- const seconds=parseTime(value);
+function timedDefinitionUsesMinutes(definition){
+ return definition?.type==='timed'&&/\b(?:min|minutes?)\b/i.test(String(definition?.prescription||''));
+}
+
+function timedResultSeconds(definition,value){
+ const cleaned=String(value??'').trim();
+ if(!cleaned)return 0;
+ const explicit=cleaned.match(/^(\d+(?:\.\d+)?)\s*(seconds?|secs?|s|minutes?|mins?|m)$/i);
+ if(explicit)return Number(explicit[1])*(/^m/i.test(explicit[2])?60:1);
+ if(/^\d+(?:\.\d+)?$/.test(cleaned)&&timedDefinitionUsesMinutes(definition))return Number(cleaned)*60;
+ return parseTime(cleaned);
+}
+
+function formatCompletedTime(value,definition=null){
+ const seconds=timedResultSeconds(definition,value);
  if(!seconds)return value;
  return seconds<60?`${seconds} sec`:fmtSec(seconds);
 }
@@ -2908,7 +2980,7 @@ function renderHistory(){
    const adherence=planned?prescriptionAdherenceDetail(planned,exercise):{value:'not_assessable',reasons:[]};
    const reasons=adherence.reasons.length
     ?`<span class="history-adherence-reasons">${adherence.reasons.map(formatAdherenceReason).map(esc).join(' · ')}</span>`:'';
-   return `<li><strong>${esc(exercise.name)}:</strong> ${esc(summary(exercise))}<span class="history-adherence adherence-${attr(adherence.value)}">Prescription: ${esc(ADHERENCE_LABELS[adherence.value])}</span>${reasons}${exercise.notes?`<span class="history-exercise-note"><strong>Exercise notes:</strong> ${esc(exercise.notes).replaceAll('\n','<br>')}</span>`:''}</li>`;
+   return `<li><strong>${esc(exercise.name)}:</strong> ${esc(summary(exercise,planned))}<span class="history-adherence adherence-${attr(adherence.value)}">Prescription: ${esc(ADHERENCE_LABELS[adherence.value])}</span>${reasons}${exercise.notes?`<span class="history-exercise-note"><strong>Exercise notes:</strong> ${esc(exercise.notes).replaceAll('\n','<br>')}</span>`:''}</li>`;
   }).join('');
   const contextName=entry.templateName||entry.programName;
   const contextVersion=entry.templateVersion||entry.programVersion;
@@ -3064,6 +3136,11 @@ function weeklyMetrics(source){
  return [...groups.values()].filter(group=>group.pushups||group.plankSeconds).sort((a,b)=>b.week.localeCompare(a.week));
 }
 
+function weeklyMetricsForSelection(selected,source=entries){
+ const representedWeeks=new Set(selected.map(entry=>weekStart(entry.date)));
+ return weeklyMetrics(source).filter(group=>representedWeeks.has(group.week));
+}
+
 function weekStart(value){
  const date=new Date(`${value}T12:00:00`);
  const day=(date.getDay()+6)%7;
@@ -3181,7 +3258,7 @@ function bestTime(exerciseId){
  return values.length?fmtSec(Math.max(...values)):'—';
 }
 
-function summary(exercise){
+function summary(exercise,definition=null){
  if(exercise?.type==='circuit')return circuitSummary(exercise);
  const parts=[];
  const pace=['run','interval'].includes(exercise.type)?calculatedPaceDetails(exercise):{value:'',basis:''};
@@ -3201,7 +3278,7 @@ function summary(exercise){
  }
  if(exercise.sets)parts.push(`${exercise.sets} sets`);
  if(exercise.reps)parts.push(`reps ${exercise.reps}`);
- if(exercise.times)parts.push(`times ${exercise.times}`);
+ if(exercise.times)parts.push(`times ${parseSetValues(exercise.times).filter(Boolean).map(value=>formatCompletedTime(value,definition||exercise)).join(', ')}`);
  if(exercise.runMinutes||exercise.walkMinutes)parts.push(`${exercise.walkMinutes||0} min walk / ${exercise.runMinutes||0} min run`);
  if(exercise.continuousMinutes)parts.push(`${exercise.continuousMinutes} min continuous`);
  if(exercise.programmedIntervalTime)parts.push(`programmed ${['run','interval'].includes(exercise.type)?formatRunDurationValue(exercise.programmedIntervalTime):exercise.programmedIntervalTime}`);
@@ -3278,7 +3355,7 @@ function buildMd(){
  const rpes=selected.map(entry=>Number(entry.sessionRpe)).filter(Boolean);
  const averageRpe=rpes.length?(rpes.reduce((a,b)=>a+b,0)/rpes.length).toFixed(1):'not recorded';
  const stage=getRunStage(PROGRAM.currentRunStage);
- const weeks=weeklyMetrics(selected);
+ const weeks=weeklyMetricsForSelection(selected,entries);
  let output=`# AFT Training Update\n\n`;
  output+=`**Program:** ${PROGRAM.name} · version ${PROGRAM.version}  \n`;
  output+=`**Program effective date:** ${dateFmt(PROGRAM.effectiveDate)}  \n`;
@@ -3357,7 +3434,7 @@ function markdownExercise(planned,completed,entry){
  }else if(completed?.type==='circuit'){
   output+=markdownCircuitResult(planned,completed);
  }else{
-  output+=`  - Completed result: ${completed&&(completed.completed||hasData(completed))?summary(completed):'No result recorded'}\n`;
+  output+=`  - Completed result: ${completed&&(completed.completed||hasData(completed))?summary(completed,planned):'No result recorded'}\n`;
  }
  if(completed?.appliedCoachDirective?.id)output+=markdownAppliedCircuitDirective(planned,completed);
  if(hasExercisePainData(completed?.exercisePain))output+=markdownExercisePain(completed.exercisePain);
@@ -3463,7 +3540,7 @@ function markdownPreviousComparable(planned,item){
   output+=`    - Repetitions: ${reps.join(', ')}\n`;
   output+=`    - Total repetitions: ${reps.reduce((sum,value)=>sum+(Number(value)||0),0)}\n`;
  }
- if(times.length)output+=`    - Timed results: ${times.map(formatCompletedTime).join(', ')}\n`;
+ if(times.length)output+=`    - Timed results: ${times.map(value=>formatCompletedTime(value,planned)).join(', ')}\n`;
  if(exercise.minutes)output+=`    - Duration: ${exercise.minutes} minutes\n`;
  if(isRun){
   if(exercise.completedRounds)output+=`    - Completed rounds: ${exercise.completedRounds}${exercise.rounds?`/${exercise.rounds}`:''}\n`;
@@ -3619,7 +3696,7 @@ function buildCsv(){
     exercise.appliedCoachDirective?.id||'',directiveAdherence.value||'',directiveAdherence.reasons.map(formatAdherenceReason).join('; '),
     exercise.type==='circuit'?circuitSummary(exercise):'',exercise.type==='circuit'?JSON.stringify(exercise.components||[]):'',
     pain.severity??'',pain.location||'',pain.laterality||'',pain.note||'',pain.causedExerciseToStop==null?'':pain.causedExerciseToStop?'yes':'no',
-    summary(exercise),exercise.notes||'',entry.notes||''
+    summary(exercise,planned),exercise.notes||'',entry.notes||''
    ]);
   });
  });
@@ -3682,7 +3759,9 @@ function applyKnownHistoricalCorrections(entry){
  if(entry.date!=='2026-08-05'||entry.dayKey!=='day3'||String(entry.programVersion)!=='1.3')return entry;
  const circuit=(entry.exercises||[]).find(exercise=>exerciseIdentity(exercise)==='gymConditioningCircuit');
  if(!circuit)return entry;
- const definition=SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit');
+ const savedDefinition=definitionForSavedEntry(entry);
+ const definition=savedDefinition.exercises.find(exercise=>exercise.id==='gymConditioningCircuit')
+  ||SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit');
  const components=circuitResultComponents(definition,circuit);
  const byId=new Map(components.map(component=>[component.id,component]));
  const cardio=byId.get('hardCardio');

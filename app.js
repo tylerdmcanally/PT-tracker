@@ -730,6 +730,7 @@ const ADHERENCE_LABELS={
 const ADHERENCE_REASON_LABELS={
  load_above_target:'Load above target',load_below_target:'Load below target',reps_below_minimum:'Repetitions below minimum',
  sets_below_target:'Sets below target',duration_below_minimum:'Duration below target',duration_above_target:'Duration above target',
+ trips_below_target:'Trips below target',distance_below_target:'Distance below target',distance_above_target:'Distance above target',
  unplanned_component_added:'Unplanned component added',exercise_substituted:'Exercise substituted',coach_directed_change:'Coach-directed change',
  component_not_recorded:'Component not recorded',other:'Other modification'
 };
@@ -755,6 +756,13 @@ function formatAdherenceReason(reason){
  }
  if(reason.code==='reps_below_minimum')return `${reason.componentName?`${reason.componentName}: `:''}${reason.actual} reps vs ${reason.expected} minimum`;
  if(reason.code==='sets_below_target')return `${reason.actual} sets recorded vs ${reason.expected} prescribed`;
+ if(reason.code==='trips_below_target')return `${reason.actual} trips recorded vs ${reason.expected} prescribed`;
+ if(reason.code==='distance_below_target'||reason.code==='distance_above_target'){
+  const expected=reason.expectedMax!=null&&reason.expectedMax!==reason.expectedMin
+   ?`${formatLoad(reason.expectedMin)}–${formatLoad(reason.expectedMax)}`
+   :formatLoad(reason.expectedMin);
+  return `${formatLoad(reason.actual)} yd/trip completed vs ${expected} yd/trip prescribed`;
+ }
  if(reason.code==='duration_below_minimum'||reason.code==='duration_above_target'){
   return `${reason.componentName?`${reason.componentName}: `:''}${reason.actual} sec completed vs ${reason.expected} sec prescribed`;
  }
@@ -768,6 +776,32 @@ function formatAdherenceReason(reason){
 function adherenceTarget(definition){
  if(definition?.adherenceTarget)return clone(definition.adherenceTarget);
  const prescription=String(definition?.prescription||'');
+ if(definition?.type==='carry'){
+  const prescribedTrips=prescription.match(/(\d+)\s*trips?\b/i);
+  const distanceRange=prescription.match(/(\d+(?:\.\d+)?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*(?:yd|yards?)\b/i);
+  const fixedDistance=!distanceRange&&prescription.match(/(\d+(?:\.\d+)?)\s*(?:yd|yards?)\b/i);
+  const duration=prescription.match(/(\d+(?:\.\d+)?)\s*(?:sec|seconds?)\b/i);
+  const load=prescription.match(/(\d+(?:\.\d+)?)\s*lb(?:s)?(?:\s*(?:per|\/)\s*(hand|side))?\b/i);
+  const trips=prescribedTrips?Number(prescribedTrips[1]):numberOrNull(definition.sets);
+  const target={kind:'carry'};
+  if(trips!=null)target.trips=trips;
+  if(distanceRange){
+   target.minDistance=Number(distanceRange[1]);
+   target.maxDistance=Number(distanceRange[2]);
+  }else if(fixedDistance){
+   target.minDistance=Number(fixedDistance[1]);
+   target.maxDistance=Number(fixedDistance[1]);
+  }
+  if(duration){
+   target.durationSeconds=Number(duration[1]);
+   target.durationApproximate=/\b(?:approximately|about|approx\.?)/i.test(prescription);
+  }
+  if(load){
+   target.load=Number(load[1]);
+   target.loadUnit=load[2]?`lb per ${load[2].toLowerCase()}`:'lb';
+  }
+  return Object.keys(target).length>1?target:null;
+ }
  if(definition?.type==='cardio'){
   const duration=prescription.match(/(\d+(?:\.\d+)?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*(?:min|minutes?)/i)
    ||prescription.match(/(\d+(?:\.\d+)?)\s*(?:min|minutes?)/i);
@@ -790,6 +824,67 @@ function adherenceTarget(definition){
   if(fixed)return {kind:'reps',sets:Number(fixed[1]),minReps:Number(fixed[2])};
  }
  return null;
+}
+
+function carryAdherenceDetail(target,result){
+ const reasons=[];
+ let partial=false,below=false,modified=false;
+ const trips=numberOrNull(result?.sets);
+ if(target.trips!=null){
+  if(trips==null){
+   reasons.push(adherenceReason('component_not_recorded',{componentName:'Completed trips'}));
+   partial=true;
+  }else if(trips<target.trips){
+   reasons.push(adherenceReason('trips_below_target',{actual:trips,expected:target.trips}));
+   partial=true;
+  }
+ }
+ const distance=numberOrNull(result?.distance);
+ if(target.minDistance!=null){
+  if(distance==null){
+   reasons.push(adherenceReason('component_not_recorded',{componentName:'Distance per trip'}));
+   partial=true;
+  }else if(distance<target.minDistance){
+   reasons.push(adherenceReason('distance_below_target',{actual:distance,expectedMin:target.minDistance,expectedMax:target.maxDistance}));
+   below=true;
+  }else if(target.maxDistance!=null&&distance>target.maxDistance){
+   reasons.push(adherenceReason('distance_above_target',{actual:distance,expectedMin:target.minDistance,expectedMax:target.maxDistance}));
+   modified=true;
+  }
+ }
+ if(target.durationSeconds!=null){
+  const duration=numberOrNull(result?.carrySeconds);
+  if(duration==null){
+   reasons.push(adherenceReason('component_not_recorded',{componentName:'Duration per trip'}));
+   partial=true;
+  }else{
+   const tolerance=target.durationApproximate?5:2;
+   if(duration<target.durationSeconds-tolerance){
+    reasons.push(adherenceReason('duration_below_minimum',{actual:duration,expected:target.durationSeconds}));
+    below=true;
+   }else if(duration>target.durationSeconds+tolerance){
+    reasons.push(adherenceReason('duration_above_target',{actual:duration,expected:target.durationSeconds}));
+    modified=true;
+   }
+  }
+ }
+ if(target.load!=null){
+  const load=numberOrNull(result?.load);
+  if(load==null){
+   reasons.push(adherenceReason('component_not_recorded',{componentName:'Load'}));
+   partial=true;
+  }else if(load<target.load-.5){
+   reasons.push(adherenceReason('load_below_target',{actual:load,expected:target.load}));
+   modified=true;
+  }else if(load>target.load+.5){
+   reasons.push(adherenceReason('load_above_target',{actual:load,expected:target.load}));
+   modified=true;
+  }
+ }
+ if(modified)return {value:'modified',reasons};
+ if(below)return {value:'below_target',reasons};
+ if(partial)return {value:'partial',reasons};
+ return {value:'met',reasons:[]};
 }
 
 function isOptionalExercise(definition){
@@ -866,6 +961,7 @@ function prescriptionAdherenceDetail(definition,result){
  if(['interval','run'].includes(definition?.type))return runAdherenceDetail(definition,result);
  const target=adherenceTarget(definition);
  if(!target)return {value:'not_assessable',reasons:[]};
+ if(target.kind==='carry')return carryAdherenceDetail(target,result);
  if(target.kind==='reps'){
   const reasons=[];
   const reps=parseSetValues(result.reps).filter(value=>value!=='').map(Number);
@@ -2891,6 +2987,7 @@ function resultContext(exercise){
 }
 
 function compactResultSummary(definition,exercise){
+ if(exercise.type==='carry')return carryResultParts(definition,exercise).join(' · ')||'Result logged';
  const parts=[];
  if(['interval','run'].includes(exercise.type)){
   if(exercise.distance)parts.push(`${exercise.distance} mi`);
@@ -2904,16 +3001,44 @@ function compactResultSummary(definition,exercise){
  }else{
   const load=compactLoadResult(definition,exercise);
   if(load)parts.push(load);
-  if(exercise.type==='carry'&&exercise.distance){
-   parts.push(`${Number(exercise.sets)||'?'} × ${exercise.distance} yd`);
-  }else{
-   const sets=compactSetsAndReps(exercise);
-   if(sets)parts.push(sets);
-  }
+  const sets=compactSetsAndReps(exercise);
+  if(sets)parts.push(sets);
   if(exercise.minutes)parts.push(`${exercise.minutes} min`);
  }
  if(exercise.rpe)parts.push(`RPE ${exercise.rpe}`);
  return parts.join(' · ')||'Result logged';
+}
+
+function carryWorkUnit(definition,exercise={}){
+ const configured=String(definition?.workUnit||definition?.setUnit||exercise.workUnit||exercise.setUnit||'').toLowerCase();
+ if(configured.startsWith('trip'))return 'trip';
+ if(configured.startsWith('set'))return 'set';
+ return /\btrips?\b/i.test(definition?.prescription||exercise.prescription||'')?'trip':'set';
+}
+
+function carryResultParts(definition,exercise,{includeVariation=false}={}){
+ const parts=[];
+ const workUnit=carryWorkUnit(definition,exercise);
+ const trips=numberOrNull(exercise.sets);
+ const distance=numberOrNull(exercise.distance);
+ if(trips!=null){
+  const label=trips===1?workUnit:`${workUnit}s`;
+  parts.push(distance!=null
+   ?`${formatLoad(trips)} ${label} × ${formatLoad(distance)} yd`
+   :`${formatLoad(trips)} ${label}`);
+ }else if(distance!=null){
+  parts.push(`${formatLoad(distance)} yd/${workUnit}`);
+ }
+ if(exercise.carrySeconds!==''&&exercise.carrySeconds!=null){
+  parts.push(`approximately ${formatLoad(exercise.carrySeconds)} sec/${workUnit}`);
+ }
+ const load=compactLoadResult(definition||exercise,exercise);
+ if(load)parts.push(load);
+ if(includeVariation&&exercise.variation&&String(exercise.variation).toLowerCase()!==String(definition?.name||exercise.name||'').toLowerCase()){
+  parts.push(exercise.variation);
+ }
+ if(exercise.rpe)parts.push(`RPE ${exercise.rpe}`);
+ return parts;
 }
 
 function compactLoadResult(definition,exercise){
@@ -3260,6 +3385,11 @@ function bestTime(exerciseId){
 
 function summary(exercise,definition=null){
  if(exercise?.type==='circuit')return circuitSummary(exercise);
+ if(exercise?.type==='carry'){
+  const parts=carryResultParts(definition||exercise,exercise,{includeVariation:true});
+  appendExercisePainSummary(parts,exercise);
+  return parts.join(' · ')||(exercise.completed?'completed':exercise.prescription);
+ }
  const parts=[];
  const pace=['run','interval'].includes(exercise.type)?calculatedPaceDetails(exercise):{value:'',basis:''};
  if(exercise.variation)parts.push(exercise.variation);
@@ -3311,7 +3441,12 @@ function summary(exercise,definition=null){
  if(exercise.sledLoad)parts.push(`legacy sled ${exercise.sledLoad} lb`);
  if(exercise.structure)parts.push(exercise.structure);
  if(exercise.rpe)parts.push(`RPE ${exercise.rpe}`);
- const pain=exercise.exercisePain;
+ appendExercisePainSummary(parts,exercise);
+ return parts.join(' · ')||(exercise.completed?'completed':exercise.prescription);
+}
+
+function appendExercisePainSummary(parts,exercise){
+ const pain=exercise?.exercisePain;
  if(hasExercisePainData(pain)){
   const painParts=[];
   if(pain.severity!==''&&pain.severity!=null)painParts.push(`${pain.severity}/10`);
@@ -3320,7 +3455,6 @@ function summary(exercise,definition=null){
   if(pain.causedExerciseToStop===true)painParts.push('stopped exercise');
   parts.push(`exercise pain ${painParts.join(' ')||'recorded'}`);
  }
- return parts.join(' · ')||(exercise.completed?'completed':exercise.prescription);
 }
 
 function circuitDefinitionForResult(exercise){

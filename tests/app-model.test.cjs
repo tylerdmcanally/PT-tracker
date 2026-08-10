@@ -107,6 +107,19 @@ const aboveTargetLoad=JSON.parse(evaluate(`JSON.stringify(prescriptionAdherenceD
 assert.equal(aboveTargetLoad.value,'modified');
 assert.ok(aboveTargetLoad.reasons.some(reason=>reason.code==='load_above_target'));
 assert.equal(evaluate(`prescriptionAdherence({type:'carry',prescription:'Carry with good posture'},{type:'carry',completed:true,load:'45'})`),'not_assessable');
+const day1Carry=`SESSIONS.day1.exercises.find(exercise=>exercise.id==='loadedCarry')`;
+const august9Carry=`{exerciseId:'loadedCarry',name:'Farmer carry',type:'carry',unit:'lb per hand',variation:'Farmer carry',load:'45',sets:'4',distance:'40',carrySeconds:'30',rpe:'6',completed:true}`;
+assert.equal(evaluate(`prescriptionAdherence(${day1Carry},${august9Carry})`),'met','4 prescribed trips at 30–40 yd are met by 4 trips at 40 yd');
+assert.equal(evaluate(`prescriptionAdherence(${day1Carry},{...${august9Carry},sets:'3'})`),'partial','fewer completed trips produce partial adherence');
+assert.equal(evaluate(`prescriptionAdherence(${day1Carry},{...${august9Carry},distance:'25'})`),'below_target','a completed per-trip distance below the prescribed range is below target');
+assert.equal(evaluate(`prescriptionAdherence(${day1Carry},{...${august9Carry},carrySeconds:'90'})`),'met','carry duration is ignored when the prescription has no duration target');
+assert.equal(evaluate(`prescriptionAdherence(${day1Carry},{...${august9Carry},load:'5'})`),'met','carry load is ignored when the prescription has no load target');
+assert.equal(evaluate(`summary(${august9Carry},${day1Carry})`),'4 trips × 40 yd · approximately 30 sec/trip · 45 lb/hand · RPE 6');
+assert.equal(evaluate(`compactResultSummary(${day1Carry},${august9Carry})`),'4 trips × 40 yd · approximately 30 sec/trip · 45 lb/hand · RPE 6');
+const august9CarryMarkdown=evaluate(`markdownExercise(${day1Carry},${august9Carry},{id:'august-9-day-1',date:'2026-08-09',dayKey:'day1',programVersion:'1.4'})`);
+assert.match(august9CarryMarkdown,/Prescription adherence: Met/);
+assert.match(august9CarryMarkdown,/Completed result: 4 trips × 40 yd · approximately 30 sec\/trip · 45 lb\/hand · RPE 6/);
+assert.doesNotMatch(august9CarryMarkdown,/4 sets · 40 yd/,'chat export does not describe carry trips as sets');
 assert.equal(evaluate(`prescriptionAdherence({type:'weighted',prescription:'3 × 8',sets:3},{type:'weighted',completed:true,reps:'',load:'50'})`),'partial');
 assert.equal(evaluate(`prescriptionAdherence({type:'weighted',prescription:'3 × 8',sets:3},{type:'weighted',completed:true,reps:'1',adherenceOverride:{value:'met',reason:'Coach-approved modified set'}})`),'met');
 
@@ -408,12 +421,28 @@ assert.equal(summaryMap.deadlift,'135 lb total · 3 × 5 · RPE 7');
 assert.equal(summaryMap.squatOrLegPress,'100 lb · 3 × 8 · RPE 7');
 assert.equal(summaryMap.horizontalPress,'30 lb/hand · 3 × 10 · RPE 7');
 assert.equal(summaryMap.seatedRow,'77 lb · 3 × 10 · RPE 6');
-assert.equal(summaryMap.loadedCarry,'45 lb/hand · 4 × 40 yd · RPE 6');
+assert.equal(summaryMap.loadedCarry,'4 trips × 40 yd · 45 lb/hand · RPE 6');
 assert.equal(summaryMap.plank,'30 sec, 30 sec, 30 sec · RPE 7');
 assert.match(summaryMap.runWalkIntervals,/1\.55 mi · 20:00 · 12:54\/mi/);
 assert.equal(summaryMap.dumbbellCurl,'25 lb/hand · 2 × 12 · RPE 7','unchecked legacy results remain discoverable');
 assert.equal(summaryMap.tricepsPressdown,'77 lb total · 2 × 12 · RPE 7');
 assert.equal(evaluate(`previousResultData(SESSIONS.day1.exercises[0],'Trap / hex bar',{excludeEntryId:'august-1-day-1'}).selected`),null,'editing excludes the workout itself');
+const carryRoundTrip=JSON.parse(evaluate(`JSON.stringify(normalizeEntry({
+ id:'august-9-day-1',date:'2026-08-09',dayKey:'day1',dayLabel:SESSIONS.day1.label,sessionType:'primary',
+ exercises:[${august9Carry}]
+}))`));
+assert.deepEqual(carryRoundTrip.exercises[0],{
+ exerciseId:'loadedCarry',name:'Farmer carry',type:'carry',unit:'lb per hand',variation:'Farmer carry',load:'45',sets:'4',distance:'40',carrySeconds:'30',rpe:'6',completed:true
+},'normalization preserves existing carry-history fields without rewriting raw values');
+const carryBackup=JSON.parse(evaluate(`(()=>{
+ const prior=entries;
+ entries=[normalizeEntry({id:'august-9-day-1',date:'2026-08-09',dayKey:'day1',dayLabel:SESSIONS.day1.label,sessionType:'primary',exercises:[${august9Carry}]})];
+ const backup=JSON.stringify(buildJsonBackup());
+ entries=prior;
+ return backup;
+})()`));
+assert.equal(carryBackup.version,11,'the carry patch does not require a storage-schema migration');
+assert.deepEqual(carryBackup.entries[0].exercises[0],carryRoundTrip.exercises[0],'JSON backups preserve raw carry history');
 assert.equal(evaluate(`previousResultData(SESSIONS.day1.exercises[0],'Trap / hex bar',{excludeEntryId:null,source:[
  {id:'older',date:'2026-08-01',updatedAt:'2026-08-01T10:00:00Z',exercises:[{exerciseId:'deadlift',type:'weighted',variation:'Trap / hex bar',load:'35'}]},
  {id:'newer',date:'2026-08-01',updatedAt:'2026-08-01T11:00:00Z',exercises:[{exerciseId:'deadlift',type:'weighted',variation:'Trap / hex bar',load:'45'}]}
@@ -742,9 +771,9 @@ const indexHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const appSource=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 assert.match(appSource,/Exercise notes<textarea[^>]+data-field="notes"/,'exercise notes must support detailed multiline comments');
-assert.ok(indexHtml.indexOf('program-config.js?v=26')<indexHtml.indexOf('app.js?v=26'));
-assert.match(serviceWorker,/aft-workout-tracker-v26/);
-assert.match(serviceWorker,/program-config\.js\?v=26/);
+assert.ok(indexHtml.indexOf('program-config.js?v=27')<indexHtml.indexOf('app.js?v=27'));
+assert.match(serviceWorker,/aft-workout-tracker-v27/);
+assert.match(serviceWorker,/program-config\.js\?v=27/);
 const htmlIds=[...indexHtml.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]);
 assert.equal(new Set(htmlIds).size,htmlIds.length,'HTML IDs must be unique');
 const referencedIds=[...appSource.matchAll(/\$\('([^']+)'\)/g)].map(match=>match[1]);

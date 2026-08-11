@@ -22,7 +22,9 @@ const EXERCISE_NAME_IDS={
  'Loaded carry or hold':'loadedCarry','Farmer carry':'loadedCarry',
  'Plank':'plank','Front plank':'plank',
  'Run / walk intervals':'runWalkIntervals','Walk / run intervals':'runWalkIntervals',
- 'Dumbbell curls':'dumbbellCurl','Cable triceps pressdowns':'tricepsPressdown',
+ 'Dumbbell curls':'dumbbellCurl','Cable triceps pressdowns':'tricepsPressdown','Cable triceps pressdown':'tricepsPressdown',
+ 'Preacher curl':'preacherCurl','Hammer curl':'hammerCurl','Cable fly / pec deck':'chestFly','Chest fly':'chestFly',
+ 'Overhead cable triceps extension':'overheadTricepsExtension',
  'Hand-release push-ups':'handReleasePushups',
  'Vertical pull':'verticalPull','Lat pulldown or assisted pull-up':'verticalPull','Lat pulldown':'verticalPull',
  'Overhead press':'overheadPress','Dumbbell overhead press':'overheadPress','Seated dumbbell overhead press':'overheadPress',
@@ -58,7 +60,13 @@ const VARIATION_ID_BY_LABEL={
  'Dumbbell row':'chestSupportedDumbbellRow','Machine row':'machineRow','T-bar row':'tBarRow',
  'Farmer carry':'farmerCarry','Heavy static hold':'heavyStaticHold','Suitcase carry':'suitcaseCarry',
  'Dumbbell lateral raise':'dumbbellLateralRaise','Machine lateral raise':'machineLateralRaise',
- 'Cable lateral raise':'cableLateralRaise','Cuffed-cable lateral raise':'cuffedCableLateralRaise'
+ 'Cable lateral raise':'cableLateralRaise','Cuffed-cable lateral raise':'cuffedCableLateralRaise',
+ 'Machine preacher curl':'machinePreacherCurl','EZ-bar preacher curl':'ezBarPreacherCurl',
+ 'Dumbbell preacher curl':'dumbbellPreacherCurl','Cable preacher curl':'cablePreacherCurl',
+ 'Cable chest fly':'cableChestFly','Pec deck / machine fly':'pecDeckMachineFly',
+ 'Dumbbell hammer curl':'dumbbellHammerCurl','Rope cable hammer curl':'ropeCableHammerCurl',
+ 'Rope overhead cable extension':'ropeOverheadCableExtension','Single-arm overhead cable extension':'singleArmOverheadCableExtension',
+ 'Other equivalent cable variation':'otherOverheadCableExtension'
 };
 
 let entries=[];
@@ -458,7 +466,7 @@ function skillDoseExerciseResult(entry,exerciseId){
 
 function weeklySkillDoseEntryStatus(entry){
  const legacyDay3=entry?.dayKey==='day3'
-  &&String(entry?.programVersion||'')!=='1.4'
+  &&!programVersionAtLeast(entry?.programVersion,'1.4')
   &&(!entry.weeklySkillDoseGroupId||entry.weeklySkillDoseGroupId===WEEKLY_SKILL_DOSE_GROUP_ID);
  const relevant=isSkillMicrodoseEntry(entry)||legacyDay3;
  if(!relevant)return null;
@@ -467,6 +475,18 @@ function weeklySkillDoseEntryStatus(entry){
  if(pushups.completed&&plank.completed)return 'full';
  if(pushups.performed||plank.performed)return 'partial';
  return null;
+}
+
+function programVersionAtLeast(value,minimum){
+ const parsed=String(value||'').split('.').map(Number);
+ const baseline=String(minimum||'').split('.').map(Number);
+ if(!parsed.length||parsed.some(part=>!Number.isFinite(part)))return false;
+ const length=Math.max(parsed.length,baseline.length);
+ for(let index=0;index<length;index+=1){
+  const actual=parsed[index]||0,target=baseline[index]||0;
+  if(actual!==target)return actual>target;
+ }
+ return true;
 }
 
 function weeklySkillDoseState(value,{source=entries,excludeEntryId=''}={}){
@@ -694,13 +714,18 @@ function coachDirectiveConsumed(directiveId){
 
 function activeCoachOverlay(programVersion,workoutDayId,exerciseId,date=''){
  return (PROGRAM.coachNoteOverlays||[]).find(overlay=>
-  overlay.status==='active'
+  overlayVisibleAt(overlay,date)
   &&String(overlay.programVersion)===String(programVersion||'')
   &&overlay.workoutDayId===workoutDayId
   &&canonicalExerciseId(overlay.exerciseId)===canonicalExerciseId(exerciseId)
   &&(!date||!overlay.effectiveDate||overlay.effectiveDate<=date)
   &&(overlay.scope!=='next_occurrence'||!coachDirectiveConsumed(overlay.id))
  )||null;
+}
+
+function overlayVisibleAt(overlay,date=''){
+ if(overlay?.status==='active')return !overlay.resolvedDate||!date||date<overlay.resolvedDate;
+ return Boolean(overlay?.status==='resolved'&&date&&overlay.resolvedDate&&date<overlay.resolvedDate);
 }
 
 function applicableCoachOverlay(definition,state={}){
@@ -3352,9 +3377,14 @@ function bestExerciseLoad(exerciseId){
 }
 
 function armSupersetSessionCount(){
+ const validPairs=[
+  ['dumbbellCurl','tricepsPressdown'],
+  ['preacherCurl','tricepsPressdown'],
+  ['hammerCurl','overheadTricepsExtension']
+ ];
  return entries.filter(entry=>{
   const completed=new Set((entry.exercises||[]).filter(exercise=>exercise.completed).map(exerciseIdentity));
-  return completed.has('dumbbellCurl')&&completed.has('tricepsPressdown');
+  return validPairs.some(pair=>pair.every(id=>completed.has(id)));
  }).length;
 }
 

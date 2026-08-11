@@ -6,7 +6,7 @@ Maintain and deploy this mobile-first, coach-driven AFT Workout Tracker as a sta
 
 ## Current training constraint
 
-Day 3 is **Lower Strength and Gym Conditioning**. Version 1.4 prescribes exactly two conditioning rounds in this order:
+Day 3 is **Lower Strength and Gym Conditioning**. Version 1.4.1 retains exactly two conditioning rounds in this order:
 
 1. Farmer carry: 45 lb per hand for about 30 seconds
 2. Lateral step-ups: 6 per side
@@ -17,15 +17,17 @@ Day 3 is **Lower Strength and Gym Conditioning**. Version 1.4 prescribes exactly
 
 Do not automatically increase sled weight, hard-cardio duration, or round count. Ordered component logging supports shared or per-round results. Sled entry distinguishes added plates, known empty-sled weight, known total system weight, and unknown total; it also supports known distance, an unknown-length gym lane, or unknown distance plus duration, surface, RPE, equipment, direction, and notes. Legacy `sledLoad` fields remain readable.
 
-Historical version 1.3 Day 3 snapshots retain the 95 lb Romanian-deadlift target, the four-component `foundation-1.2` circuit, and any saved one-occurrence sled directive. Version 1.4 uses **115 lb total for 2 × 8** and the six-component `foundation-1.4` circuit as its baseline.
+Historical version 1.3 Day 3 snapshots retain the 95 lb Romanian-deadlift target, the four-component `foundation-1.2` circuit, and any saved one-occurrence sled directive. Versions 1.4 and 1.4.1 use **115 lb total for 2 × 8** and the six-component `foundation-1.4` circuit as their baseline.
 
 ## Current program model
 
-`program-config.js` is the single source of truth for program metadata, daily prescriptions, stable exercise IDs, target RPEs, coaching notes, run stage, recovery work, and auxiliary templates. The active primary program is **AFT Foundation Block 1**, version **1.4**, effective **2026-08-08**. The independent auxiliary template is **AFT Skill Microdose**, version **1.0**, effective **2026-08-06**.
+`program-config.js` is the single source of truth for program metadata, daily prescriptions, stable exercise IDs, target RPEs, coaching notes, run stage, recovery work, and auxiliary templates. The active primary program is **AFT Foundation Block 1**, version **1.4.1**, effective **2026-08-12**. The independent auxiliary template is **AFT Skill Microdose**, version **1.0**, effective **2026-08-06**.
+
+Version 1.4.1 keeps Run Stage 3, all Day 4 work, recovery, the skill microdose, and the Day 3 strength/circuit baseline unchanged. Day 1 now formalizes 130 lb leg press 3 × 8, 35 lb/hand dumbbell bench 3 × 9, 88 lb row 3 × 10, and 45 lb/hand carries, and uses `preacherCurl` with `tricepsPressdown`. Day 2 uses HRPU 5 × 7, overhead press 25 lb/hand 3 × 9, machine row 88 lb 3 × 11, normal cable lateral raises, and the new `chestFly`. Day 3 replaces its legacy generic arm pair with `hammerCurl` and `overheadTricepsExtension`. Machine-specific cable-stack values remain coaching/setup notes unless the equipment is directly comparable.
 
 Do not add an automatic coaching or load-progression algorithm. ChatGPT is the coach; Codex updates `program-config.js` after the user reviews recommendations.
 
-Temporary exercise-specific coach instructions live in `coachNoteOverlays`. An overlay is scoped to program version, workout day, exercise identity, and effective date. Set its status to `resolved` (and add `resolvedDate`) to remove a normal overlay from future cards and exports without rewriting prescriptions or workout history. A `next_occurrence` directive is copied into the saved exercise result and considered consumed only after that exercise is saved as completed. The Day 2 lateral-raise safety overlay is carried forward separately for version 1.4 so its version scope remains explicit. The old version 1.3 Day 3 next-occurrence sled directive remains available only to historical v1.3 contexts; v1.4 makes that sequence the baseline circuit.
+Temporary exercise-specific coach instructions live in `coachNoteOverlays`. An overlay is scoped to program version, workout day, exercise identity, and effective date. Set its status to `resolved` and add `resolvedDate` to remove it from workouts on and after that date; date-aware historical cards and exports before the resolution date still show the note. A `next_occurrence` directive is copied into the saved exercise result and considered consumed only after that exercise is saved as completed. The v1.3 and v1.4 Day 2 lateral-raise safety overlays are resolved as of August 12 without deleting their historical context. The old version 1.3 Day 3 next-occurrence sled directive remains available only to historical v1.3 contexts; v1.4 and v1.4.1 make that sequence the baseline circuit.
 
 Every saved workout stores program metadata and a complete `prescriptionSnapshot`. Editing an old workout renders that snapshot—or its own legacy saved exercise list—not the current program. This is required so a later coach update never changes historical prescriptions. Current variation/equipment logging options are merged into snapshot-backed edit screens, but the saved prescription, targets, names, and coaching details remain untouched.
 
@@ -49,7 +51,7 @@ The nonblocking pre-save review flags meaningful data on unchecked exercises and
 
 An optional Recovery Session logs modality, duration, RPE, pre/post soreness, and notes. It appears in history and exports but is ignored by next-day rotation and primary-workout counts.
 
-The optional AFT Skill Microdose prescribes hand-release push-ups 3 × 4, front plank 3 × 20 seconds, and up to five minutes of gentle optional mobility at session RPE 3–4. It is the sole optional extra push-up/plank practice session in version 1.4. Historical v1.3 Day 3 bundles still satisfy their saved Monday–Sunday dose, but v1.4 Day 3 cannot consume the standalone slot. An additional microdose requires explicit acknowledgement and stores `weeklyFrequencyOverride` plus its reason. Saved microdoses are classified as `skill_microdose`, remain outside primary/recovery counts, never alter Run Stage 3, and contribute only to weekly practice volume. There are no air squats, automatic scheduling, automatic progression, or medical/recovery recommendations.
+The optional AFT Skill Microdose prescribes hand-release push-ups 3 × 4, front plank 3 × 20 seconds, and up to five minutes of gentle optional mobility at session RPE 3–4. It is the sole optional extra push-up/plank practice session in version 1.4.1. Historical v1.3 Day 3 bundles still satisfy their saved Monday–Sunday dose, but v1.4 and later Day 3 workouts cannot consume the standalone slot. An additional microdose requires explicit acknowledgement and stores `weeklyFrequencyOverride` plus its reason. Saved microdoses are classified as `skill_microdose`, remain outside primary/recovery counts, never alter Run Stage 3, and contribute only to weekly practice volume. There are no air squats, automatic scheduling, automatic progression, or medical/recovery recommendations.
 
 Every day displays a specific active warm-up and exercises are numbered in intended completion order. Day 1 keeps its full walk/run block after strength work because it is conditioning rather than the warm-up. Day 4 begins with its walk/run session after a separate walking and dynamic warm-up. Air squats are not in the current block.
 

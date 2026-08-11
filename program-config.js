@@ -1,8 +1,8 @@
 window.AFT_PROGRAM_CONFIG={
  id:'aft-foundation-block-1',
  name:'AFT Foundation Block 1',
- version:'1.4',
- effectiveDate:'2026-08-08',
+ version:'1.4.1',
+ effectiveDate:'2026-08-12',
  currentRunStage:3,
  rotation:['day1','day2','day3','day4'],
  runStages:[
@@ -32,7 +32,7 @@ window.AFT_PROGRAM_CONFIG={
    optional:true,
    eyebrow:'OPTIONAL ACCESSORY',
    label:'Arm Superset',
-   instruction:'Perform curls and pressdowns back-to-back, then rest 60–90 seconds.'
+   instruction:'Perform the paired curl and triceps exercise back-to-back, then rest 60–90 seconds.'
   }
  },
  circuitTemplates:{
@@ -60,13 +60,13 @@ window.AFT_PROGRAM_CONFIG={
  coachNoteOverlays:[
   {
    id:'day2-lateral-raise-right-elbow-2026-08-03',programVersion:'1.3',workoutDayId:'day2',exerciseId:'lateralRaise',
-   effectiveDate:'2026-08-03',status:'active',
+   effectiveDate:'2026-08-03',status:'resolved',resolvedDate:'2026-08-12',
    text:'Right medial-elbow discomfort occurred with the dumbbell variation. Use a pain-free machine or cuffed-cable variation, or omit this exercise. Stop if discomfort increases.',
    reason:'Right medial-elbow twinge rated 1/10 during the August 3 workout.'
   },
   {
    id:'day2-lateral-raise-right-elbow-v1.4',programVersion:'1.4',workoutDayId:'day2',exerciseId:'lateralRaise',
-   effectiveDate:'2026-08-08',status:'active',
+   effectiveDate:'2026-08-08',status:'resolved',resolvedDate:'2026-08-12',
    text:'Right medial-elbow discomfort occurred with the dumbbell variation. Use a pain-free machine or cuffed-cable variation, or omit this exercise. Stop if discomfort increases.',
    reason:'The temporary pain-free lateral-raise substitution directive remains active in Foundation Block 1 v1.4.'
   },
@@ -98,14 +98,14 @@ window.AFT_PROGRAM_CONFIG={
    warmup:'5–8 minutes of easy cardio, dynamic hip and ankle prep, then 2–4 progressive deadlift warm-up sets.',
    exercises:[
     {id:'deadlift',name:'Trap-bar deadlift',prescription:'145 lb total for 3 × 5',type:'weighted',unit:'lb',sets:3,targetLoad:145,targetLoadVariation:'Trap / hex bar',targetRpe:'6–8',variations:['Trap / hex bar','Conventional barbell','Sumo barbell','Dumbbells'],defaultVariation:'Trap / hex bar',barWeights:{'Trap / hex bar':45,'Conventional barbell':45,'Sumo barbell':45},perSideVariations:['Trap / hex bar'],barWeightOptions:[45,55,60],coachingNotes:'Use the trap/hex bar when available. Record the actual bar weight and plate weight per side; use another listed variation when equipment requires it.'},
-    {id:'squatOrLegPress',name:'Leg press',prescription:'3 × 8',type:'weighted',unit:'lb',sets:3,variations:['Leg press','Lying leg press','Upright leg press','Plate-loaded leg press','Selectorized leg press','Other leg press'],defaultVariation:'Leg press',targetRpe:'7',coachingNotes:'Keep all three sets controlled at approximately RPE 7.'},
-    {id:'horizontalPress',name:'Horizontal press',prescription:'3 × 8–10',type:'weighted',unit:'lb per hand',sets:3,variations:['Dumbbell bench press','Chest-press machine','Barbell bench press'],defaultVariation:'Dumbbell bench press',barWeights:{'Barbell bench press':45}},
-    {id:'seatedRow',name:'Seated cable row',prescription:'3 × 10',type:'weighted',unit:'lb',sets:3,variations:['Seated cable row','Chest-supported machine row'],defaultVariation:'Seated cable row'},
-    {id:'loadedCarry',name:'Farmer carry',prescription:'4 trips of approximately 30–40 yd',type:'carry',unit:'lb per hand',sets:4,variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry'},
+    {id:'squatOrLegPress',name:'Leg press',prescription:'130 lb for 3 × 8',type:'weighted',unit:'lb',sets:3,targetLoad:130,targetLoadVariation:'Leg press',variations:['Leg press','Lying leg press','Upright leg press','Plate-loaded leg press','Selectorized leg press','Other leg press'],defaultVariation:'Leg press',targetRpe:'7',coachingNotes:'Use 130 lb only on the same leg-press variation and setup as the August 9 exposure. Log other equipment as a substitution. Keep all three sets controlled at approximately RPE 7.'},
+    {id:'horizontalPress',name:'Dumbbell bench press',prescription:'35 lb per hand for 3 × 9',type:'weighted',unit:'lb per hand',sets:3,targetLoad:35,targetLoadVariation:'Dumbbell bench press',targetRpe:'7–8',variations:['Dumbbell bench press','Chest-press machine','Barbell bench press'],defaultVariation:'Dumbbell bench press',barWeights:{'Barbell bench press':45},coachingNotes:'Use controlled repetitions and stop with approximately 2–3 good repetitions remaining.'},
+    {id:'seatedRow',name:'Seated cable row',prescription:'88 lb for 3 × 10',type:'weighted',unit:'lb',sets:3,targetLoad:88,targetLoadVariation:'Seated cable row',variations:['Seated cable row','Chest-supported machine row'],defaultVariation:'Seated cable row',coachingNotes:'Hold 88 lb until all three sets of 10 are completed cleanly.'},
+    {id:'loadedCarry',name:'Farmer carry',prescription:'45 lb per hand for 4 trips of approximately 30–40 yd',type:'carry',unit:'lb per hand',sets:4,variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry',coachingNotes:'Keep the current load; do not progress it while the Day 3 sled work is in the program.'},
     {id:'plank',name:'Front plank',prescription:'3 × 35 sec',type:'timed',sets:3},
     {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 3 — 1:00 walk / 2:00 run × 7',type:'interval',runStage:3,coachingNotes:'Progress running duration, not speed. Keep the running pace relaxed and controlled. Mild left lateral-knee tightness occurred during the final Stage 2 session but improved while running. Record any recurrence. Do not push pace to compensate for the longer running segments.'},
-    {id:'dumbbellCurl',name:'Dumbbell curls',prescription:'2 × 10–12',type:'weighted',unit:'lb per hand',sets:2,group:'armSuperset',optional:true},
-    {id:'tricepsPressdown',name:'Cable triceps pressdowns',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,group:'armSuperset',optional:true}
+    {id:'preacherCurl',name:'Preacher curl',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',variations:['Machine preacher curl','EZ-bar preacher curl','Dumbbell preacher curl','Cable preacher curl'],defaultVariation:'Machine preacher curl',variationUnits:{'Machine preacher curl':'lb total','EZ-bar preacher curl':'lb total','Dumbbell preacher curl':'lb per hand','Cable preacher curl':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use controlled full repetitions and stop approximately 1–3 good repetitions before failure.'},
+    {id:'tricepsPressdown',name:'Cable triceps pressdown',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',group:'armSuperset',optional:true,coachingNotes:'The prior 77-lb working load may be reused only on the same machine and cable setup. Stop approximately 1–3 good repetitions before failure.'}
    ]
   },
   day2:{
@@ -116,12 +116,13 @@ window.AFT_PROGRAM_CONFIG={
    targetSessionRpe:'6–7',
    warmup:'5–8 minutes of easy cardio, shoulder and upper-back movement prep, then 1–2 easy push-up and pull ramp-up sets.',
    exercises:[
-    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'5 × 6',type:'body',sets:5,coachingNotes:'Complete all 30 repetitions with equal, clean sets before further progression.'},
-    {id:'verticalPull',name:'Lat pulldown',prescription:'3 × 8–10',type:'weighted',unit:'lb',sets:3,variations:['Lat pulldown','Assisted pull-up','Band-assisted pull-up'],defaultVariation:'Lat pulldown'},
-    {id:'overheadPress',name:'Seated dumbbell overhead press',prescription:'25 lb per hand for 3 × 8–10',type:'weighted',unit:'lb per hand',sets:3,targetLoad:25,targetLoadVariation:'Seated dumbbell press',variations:['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],defaultVariation:'Seated dumbbell press'},
-    {id:'chestSupportedRow',name:'Machine row',prescription:'77 lb for 3 × 11',type:'weighted',unit:'lb',sets:3,targetLoad:77,targetLoadVariation:'Machine row',variations:['Dumbbell row','Machine row','T-bar row'],defaultVariation:'Machine row'},
-    {id:'lateralRaise',name:'Dumbbell lateral raises',prescription:'2 × 12–15',type:'weighted',unit:'lb per hand',sets:2,variations:['Dumbbell lateral raise','Machine lateral raise','Cable lateral raise','Cuffed-cable lateral raise'],defaultVariation:'Machine lateral raise',variationUnits:{'Dumbbell lateral raise':'lb per hand','Machine lateral raise':'lb total','Cable lateral raise':'lb per side','Cuffed-cable lateral raise':'lb per side'}},
-    {id:'trunkStability',name:'Dead bug or Pallof press',prescription:'3 × 10 each side',type:'body',sets:3,variations:['Dead bug','Pallof press'],defaultVariation:'Dead bug'},
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'5 × 7',type:'body',sets:5,coachingNotes:'Use five equal, technically clean sets. Maintain strong whole-body bracing and stop before failure.'},
+    {id:'verticalPull',name:'Lat pulldown',prescription:'3 × 8–10',type:'weighted',unit:'lb',sets:3,variations:['Lat pulldown','Assisted pull-up','Band-assisted pull-up'],defaultVariation:'Lat pulldown',coachingNotes:'On the same machine and pulley setup, use 143 lb and target 3 × 10. Do not carry that displayed stack number to a different machine; record pulley ratio in notes when useful.'},
+    {id:'overheadPress',name:'Seated dumbbell overhead press',prescription:'25 lb per hand for 3 × 9',type:'weighted',unit:'lb per hand',sets:3,targetLoad:25,targetLoadVariation:'Seated dumbbell press',variations:['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],defaultVariation:'Seated dumbbell press'},
+    {id:'chestSupportedRow',name:'Machine row',prescription:'88 lb for 3 × 11',type:'weighted',unit:'lb',sets:3,targetLoad:88,targetLoadVariation:'Machine row',variations:['Dumbbell row','Machine row','T-bar row'],defaultVariation:'Machine row'},
+    {id:'lateralRaise',name:'Cable lateral raise',prescription:'2 × 12–15',type:'weighted',unit:'lb per side',sets:2,targetRpe:'7–8',variations:['Cable lateral raise','Cuffed-cable lateral raise','Machine lateral raise','Dumbbell lateral raise'],defaultVariation:'Cable lateral raise',variationUnits:{'Cable lateral raise':'lb per side','Cuffed-cable lateral raise':'lb per side','Machine lateral raise':'lb total','Dumbbell lateral raise':'lb per hand'},coachingNotes:'Use the same or an equivalent pain-free cable setup. The prior displayed stack value is not a universal load target.'},
+    {id:'chestFly',name:'Cable fly / pec deck',prescription:'2 × 10–15',type:'weighted',unit:'lb per side',sets:2,targetRpe:'7–9',variations:['Cable chest fly','Pec deck / machine fly'],defaultVariation:'Cable chest fly',variationUnits:{'Cable chest fly':'lb per side','Pec deck / machine fly':'lb total'},coachingNotes:'Use a controlled stretch and contraction. Stop approximately 1–3 good repetitions before failure. Pair with dead-bug work when practical.'},
+    {id:'trunkStability',name:'Dead bug or Pallof press',prescription:'3 × 10 each side',type:'body',sets:3,variations:['Dead bug','Pallof press'],defaultVariation:'Dead bug',coachingNotes:'Keep the movement slow and controlled. Use a full exhale and deliberate brace rather than increasing repetitions because the current variation feels easy.'},
     {id:'easyCardio',name:'Easy cardio',prescription:'25–30 minutes',type:'cardio',modalities:['Bike','Elliptical','Rower','Incline walk','Other'],targetRpe:'4–5',coachingNotes:'Use conversational effort throughout.'}
    ]
   },
@@ -140,8 +141,8 @@ window.AFT_PROGRAM_CONFIG={
     {id:'singleLegStrength',name:'Split squat',prescription:'Body weight for 2 × 8 each leg',type:'weighted',unit:'lb total',sets:2,variations:['Body-weight split squat','Light dumbbell split squat','Forward step-up','Lateral step-up'],defaultVariation:'Body-weight split squat',coachingNotes:'Use body weight and controlled repetitions.'},
     {id:'sidePlank',name:'Side plank',prescription:'3 × 35 sec each side',type:'timed',sets:3},
     {id:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 rest',type:'circuit',circuitVersion:'foundation-1.4',targetRpe:'7–8',defaults:{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'30',restSeconds:'150'},modalities:['Bike','Rower','Elliptical','Short safe sprint'],coachingNotes:'Keep exactly two rounds. Do not automatically increase sled weight, hard-cardio duration, or round count.'},
-    {id:'dumbbellCurl',name:'Dumbbell curls',prescription:'2 × 10–12',type:'weighted',unit:'lb per hand',sets:2,group:'armSuperset',optional:true},
-    {id:'tricepsPressdown',name:'Cable triceps pressdowns',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,group:'armSuperset',optional:true}
+    {id:'hammerCurl',name:'Hammer curl',prescription:'2 × 10–15',type:'weighted',unit:'lb per hand',sets:2,targetRpe:'7–9',variations:['Dumbbell hammer curl','Rope cable hammer curl'],defaultVariation:'Dumbbell hammer curl',variationUnits:{'Dumbbell hammer curl':'lb per hand','Rope cable hammer curl':'lb total'},group:'armSuperset',optional:true},
+    {id:'overheadTricepsExtension',name:'Overhead cable triceps extension',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',variations:['Rope overhead cable extension','Single-arm overhead cable extension','Other equivalent cable variation'],defaultVariation:'Rope overhead cable extension',variationUnits:{'Rope overhead cable extension':'lb total','Single-arm overhead cable extension':'lb per side','Other equivalent cable variation':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use a pain-free shoulder position and a controlled stretch in the lengthened position.'}
    ]
   },
   day4:{

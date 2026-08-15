@@ -1,8 +1,8 @@
 window.AFT_PROGRAM_CONFIG={
  id:'aft-foundation-block-1',
  name:'AFT Foundation Block 1',
- version:'1.4.1',
- effectiveDate:'2026-08-12',
+ version:'1.4.2',
+ effectiveDate:'2026-08-16',
  currentRunStage:3,
  rotation:['day1','day2','day3','day4'],
  runStages:[
@@ -103,7 +103,7 @@ window.AFT_PROGRAM_CONFIG={
     {id:'seatedRow',name:'Seated cable row',prescription:'88 lb for 3 × 10',type:'weighted',unit:'lb',sets:3,targetLoad:88,targetLoadVariation:'Seated cable row',variations:['Seated cable row','Chest-supported machine row'],defaultVariation:'Seated cable row',coachingNotes:'Hold 88 lb until all three sets of 10 are completed cleanly.'},
     {id:'loadedCarry',name:'Farmer carry',prescription:'45 lb per hand for 4 trips of approximately 30–40 yd',type:'carry',unit:'lb per hand',sets:4,variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry',coachingNotes:'Keep the current load; do not progress it while the Day 3 sled work is in the program.'},
     {id:'plank',name:'Front plank',prescription:'3 × 35 sec',type:'timed',sets:3},
-    {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 3 — 1:00 walk / 2:00 run × 7',type:'interval',runStage:3,coachingNotes:'Progress running duration, not speed. Keep the running pace relaxed and controlled. Mild left lateral-knee tightness occurred during the final Stage 2 session but improved while running. Record any recurrence. Do not push pace to compensate for the longer running segments.'},
+    {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 3 — 1:00 walk / 2:00 run × 7',type:'interval',runStage:3,targetRpe:'5–6',coachingNotes:'On a treadmill, start the running segments around 6.2 mph and use 6.2–6.4 mph as the acceptable working range. Finish each 2-minute run with roughly another 30–60 seconds of running available. Do not chase overall average pace; prioritize continuous-running tolerance before speed. Record actual walk and run speeds in the existing run details.'},
     {id:'preacherCurl',name:'Preacher curl',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',variations:['Machine preacher curl','EZ-bar preacher curl','Dumbbell preacher curl','Cable preacher curl'],defaultVariation:'Machine preacher curl',variationUnits:{'Machine preacher curl':'lb total','EZ-bar preacher curl':'lb total','Dumbbell preacher curl':'lb per hand','Cable preacher curl':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use controlled full repetitions and stop approximately 1–3 good repetitions before failure.'},
     {id:'tricepsPressdown',name:'Cable triceps pressdown',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',group:'armSuperset',optional:true,coachingNotes:'The prior 77-lb working load may be reused only on the same machine and cable setup. Stop approximately 1–3 good repetitions before failure.'}
    ]
@@ -136,12 +136,12 @@ window.AFT_PROGRAM_CONFIG={
    exercises:[
     {id:'romanianDeadlift',name:'Romanian deadlift',prescription:'115 lb total for 2 × 8',type:'weighted',unit:'lb',sets:2,targetLoad:115,targetLoadVariation:'Barbell',variations:['Barbell','Dumbbells','Smith machine'],defaultVariation:'Barbell',barWeights:{'Barbell':45,'Smith machine':20}},
     {id:'squatPattern',name:'Goblet squat',prescription:'55 lb for 3 × 8',type:'weighted',unit:'lb',sets:3,targetLoad:55,targetLoadVariation:'Goblet squat',variations:['Goblet squat','Front squat','Hack squat','Leg press'],defaultVariation:'Goblet squat',barWeights:{'Front squat':45}},
-    {id:'inclinePress',name:'Incline dumbbell press',prescription:'30 lb per hand for 3 × 9',type:'weighted',unit:'lb per hand',sets:3,targetLoad:30,targetLoadVariation:'Incline dumbbell press',variations:['Incline dumbbell press','Incline chest-press machine'],defaultVariation:'Incline dumbbell press'},
-    {id:'oneArmRow',name:'One-arm dumbbell row',prescription:'40 lb for 3 × 11 each side',type:'weighted',unit:'lb',sets:3,targetLoad:40,targetLoadVariation:'One-arm dumbbell row',variations:['One-arm dumbbell row','One-arm cable row'],defaultVariation:'One-arm dumbbell row'},
+    {id:'inclinePress',name:'Incline dumbbell press',prescription:'30 lb per hand for 3 × 9',type:'weighted',unit:'lb per hand',sets:3,targetLoad:30,targetLoadVariation:'Incline dumbbell press',variations:['Incline dumbbell press','Incline chest-press machine'],defaultVariation:'Incline dumbbell press',coachingNotes:'Hold 30 lb per hand until all three sets of 9 are completed cleanly; the prior result was 9, 9, 7.'},
+    {id:'oneArmRow',name:'One-arm dumbbell row',prescription:'45 lb for 3 × 10 each side',type:'weighted',unit:'lb',sets:3,targetLoad:45,targetLoadVariation:'One-arm dumbbell row',targetRpe:'6–8',variations:['One-arm dumbbell row','One-arm cable row'],defaultVariation:'One-arm dumbbell row'},
     {id:'singleLegStrength',name:'Split squat',prescription:'Body weight for 2 × 8 each leg',type:'weighted',unit:'lb total',sets:2,variations:['Body-weight split squat','Light dumbbell split squat','Forward step-up','Lateral step-up'],defaultVariation:'Body-weight split squat',coachingNotes:'Use body weight and controlled repetitions.'},
     {id:'sidePlank',name:'Side plank',prescription:'3 × 35 sec each side',type:'timed',sets:3},
     {id:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 rest',type:'circuit',circuitVersion:'foundation-1.4',targetRpe:'7–8',defaults:{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'30',restSeconds:'150'},modalities:['Bike','Rower','Elliptical','Short safe sprint'],coachingNotes:'Keep exactly two rounds. Do not automatically increase sled weight, hard-cardio duration, or round count.'},
-    {id:'hammerCurl',name:'Hammer curl',prescription:'2 × 10–15',type:'weighted',unit:'lb per hand',sets:2,targetRpe:'7–9',variations:['Dumbbell hammer curl','Rope cable hammer curl'],defaultVariation:'Dumbbell hammer curl',variationUnits:{'Dumbbell hammer curl':'lb per hand','Rope cable hammer curl':'lb total'},group:'armSuperset',optional:true},
+    {id:'hammerCurl',name:'Hammer curl',prescription:'25 lb per hand for 2 × 10–15',type:'weighted',unit:'lb per hand',sets:2,targetLoad:25,targetLoadVariation:'Dumbbell hammer curl',targetRpe:'7–9',variations:['Dumbbell hammer curl','Rope cable hammer curl'],defaultVariation:'Dumbbell hammer curl',variationUnits:{'Dumbbell hammer curl':'lb per hand','Rope cable hammer curl':'lb total'},group:'armSuperset',optional:true},
     {id:'overheadTricepsExtension',name:'Overhead cable triceps extension',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',variations:['Rope overhead cable extension','Single-arm overhead cable extension','Other equivalent cable variation'],defaultVariation:'Rope overhead cable extension',variationUnits:{'Rope overhead cable extension':'lb total','Single-arm overhead cable extension':'lb per side','Other equivalent cable variation':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use a pain-free shoulder position and a controlled stretch in the lengthened position.'}
    ]
   },
@@ -153,9 +153,9 @@ window.AFT_PROGRAM_CONFIG={
    targetSessionRpe:'6–7',
    warmup:'5–10 minutes of brisk walking plus marches and leg swings. The interval timer then begins with its walk segment.',
    exercises:[
-    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 3 — 1:00 walk / 2:00 run × 7',type:'run',runStage:3,coachingNotes:'Progress running duration, not speed. Keep the running pace relaxed and controlled. Mild left lateral-knee tightness occurred during the final Stage 2 session but improved while running. Record any recurrence. Do not push pace to compensate for the longer running segments.'},
+    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 3 — 1:00 walk / 2:00 run × 7',type:'run',runStage:3,targetRpe:'5–6',coachingNotes:'On a treadmill, start the running segments around 6.2 mph and use 6.2–6.4 mph as the acceptable working range. Finish each 2-minute run with roughly another 30–60 seconds of running available. Do not chase overall average pace; prioritize continuous-running tolerance before speed. Record actual walk and run speeds in the existing run details.'},
     {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 7',type:'body',sets:4,coachingNotes:'Use four equal, technically clean sets. Stop before failure.'},
-    {id:'plank',name:'Front plank',prescription:'Set 1: 35 sec · Set 2: 35 sec · Set 3: 30 sec',type:'timed',sets:3,prescribedTimes:['0:35','0:35','0:30']},
+    {id:'plank',name:'Front plank',prescription:'3 × 35 sec',type:'timed',sets:3,prescribedTimes:['0:35','0:35','0:35']},
     {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed'}
    ]
   },

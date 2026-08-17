@@ -69,17 +69,21 @@ The coaching Markdown export includes every planned exercise, completion status,
 
 The PWA uses versioned CSS/JavaScript/config URLs and network-first same-origin fetching with offline cache fallback. When a newly activated service worker takes control, a persistent **Reload update** banner appears. Reloading first autosaves the active draft.
 
+Cloud backup is implemented as a local-first Firebase/Firestore adapter and is configured for the account-owned `fitness-tracker-16dfb` project in `cloud-config.js`. The app remains fully usable when cloud code is disabled, signed out, offline, or unavailable. On sign-in, completed workouts sync as full JSON documents under `users/{uid}/workouts/{encodedEntryId}`. A separate per-entry `changedAt` clock resolves conflicts and deleted workouts remain as tombstones so stale devices cannot resurrect them. The local sync state binds to the first authenticated UID and refuses to upload to a different account. Active drafts and both timers never leave the device. `firestore.rules` restricts every workout path to its authenticated owner; never place an Admin SDK or service-account credential in this static repository.
+
 ## Deployment tasks
 
 1. Run the app through a local HTTP server.
 2. Check JavaScript syntax and browser console errors.
 3. Run `node tests/app-model.test.cjs`.
-4. Test saving, draft recovery, editing legacy entries, deleting/restoring, Markdown export, JSON backup/import, and CSV export.
-5. Confirm the manifest and service worker load correctly.
-6. Verify offline behavior after the first load.
-7. In repository Pages settings, deploy the `main` branch from `/ (root)`.
-8. Test iPhone Safari and Add to Home Screen.
-9. Return the production HTTPS URL and any GitHub setup instructions.
+4. Run `node tests/cloud-sync-model.test.cjs`.
+5. Test saving, draft recovery, editing legacy entries, deleting/restoring, Markdown export, JSON backup/import, and CSV export.
+6. When cloud backup is enabled, verify Google sign-in, first upload, manual Sync now, offline/local logging, and recovery in a clean browser profile.
+7. Confirm the manifest and service worker load correctly.
+8. Verify offline behavior after the first load.
+9. In repository Pages settings, deploy the `main` branch from `/ (root)`.
+10. Test iPhone Safari and Add to Home Screen.
+11. Return the production HTTPS URL and any GitHub/Firebase setup instructions.
 
 ## Data model
 
@@ -90,7 +94,8 @@ The canonical workout array stays under the existing `aftWorkoutEntries.v1` loca
 - `aftWorkoutSnapshots.v1` — up to five local restore points
 - `aftBackupMeta.v1` — last downloaded JSON backup metadata
 - `aftDataVersion.v1` — app data migration marker
+- `aftCloudSyncState.v1` — per-workout cloud change clocks, deletion state, and last-sync metadata
 
 Data schema version 11 adds optional auxiliary-template metadata, the `skill_microdose` category, shared weekly skill-dose metadata, and an explicit weekly-frequency override record. Version 10 adds optional ordered `components`, `appliedCoachDirective`, structured multi-reason adherence, and the targeted idempotent August 5 Day 3 circuit correction. The correction preserves the prescription snapshot, keeps the selected hard-cardio modality, records the two sled directions separately, and leaves unknown sled measurements explicitly unknown. Prescription adherence is derived at display/export time whenever explicit snapshot metadata or a safely parseable saved prescription is available; otherwise it is `not_assessable`. Version 9 sleep/pain/override values, version 8 variation IDs, and version 7 run fields remain compatible. A safety snapshot is created before the version marker advances.
 
-The app requests persistent browser storage on demand. This reduces eviction risk but does not sync across devices. JSON backup/import remains the only portable, device-loss-safe copy.
+The app requests persistent browser storage on demand. This reduces eviction risk. When optional Firebase backup is disabled, JSON backup/import remains the only portable, device-loss-safe copy; when enabled, Firestore adds private account recovery without replacing local storage or the independent JSON backup.

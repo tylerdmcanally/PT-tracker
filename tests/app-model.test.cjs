@@ -922,15 +922,18 @@ const indexHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const appSource=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 assert.match(appSource,/Exercise notes<textarea[^>]+data-field="notes"/,'exercise notes must support detailed multiline comments');
-assert.ok(indexHtml.indexOf('program-config.js?v=29')<indexHtml.indexOf('app.js?v=29'));
-assert.match(serviceWorker,/aft-workout-tracker-v29/);
-assert.match(serviceWorker,/program-config\.js\?v=29/);
+assert.ok(indexHtml.indexOf('program-config.js?v=30')<indexHtml.indexOf('cloud-config.js?v=30'));
+assert.ok(indexHtml.indexOf('cloud-config.js?v=30')<indexHtml.indexOf('cloud-sync.js?v=30'));
+assert.ok(indexHtml.indexOf('cloud-sync.js?v=30')<indexHtml.indexOf('app.js?v=30'));
+assert.match(serviceWorker,/aft-workout-tracker-v30/);
+assert.match(serviceWorker,/program-config\.js\?v=30/);
+assert.match(serviceWorker,/cloud-sync\.js\?v=30/);
 const htmlIds=[...indexHtml.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]);
 assert.equal(new Set(htmlIds).size,htmlIds.length,'HTML IDs must be unique');
 const referencedIds=[...appSource.matchAll(/\$\('([^']+)'\)/g)].map(match=>match[1]);
 referencedIds.forEach(id=>assert.ok(htmlIds.includes(id),`app.js references missing #${id}`));
 [
- 'index.html','styles.css','program-config.js','app.js','manifest.webmanifest',
+ 'index.html','styles.css','program-config.js','cloud-config.js','cloud-sync.js','app.js','firestore.rules','manifest.webmanifest',
  'icons/icon-192.png','icons/icon-512.png','icons/icon-512-maskable.png','icons/apple-touch-icon.png'
 ].forEach(asset=>assert.ok(fs.existsSync(path.join(root,asset)),`offline asset missing: ${asset}`));
 

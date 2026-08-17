@@ -38,6 +38,7 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 - Weekly run distance/time, pain-free run counts, recent pace, and stage-specific best-pace metrics
 - Autosaved workout drafts and durable on-device workout history
 - Five rolling local restore points, protected-storage status, and backup reminders
+- Optional private Firebase backup with Google sign-in, offline-safe per-workout sync, and deletion tombstones
 - Edit/delete saved sessions
 - Progress summary
 - Detailed Markdown export for the coach chat, including adherence reasons, ordered circuit components, explicit unknown sled values, one prior comparable result, active coach notes/directives, and full exercise/session notes
@@ -46,9 +47,27 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 
 ## Data storage
 
-Workout data stays in the browser on the device where it was entered. It is not synced to a server.
+Device storage remains the app's primary working copy. Workout logging, active drafts, interval timers, history, and exports continue to work without a network connection or cloud account.
 
-The app requests protected browser storage when the user chooses **Protect device storage**, autosaves the active workout and session timer, and keeps up to five rolling restore points before important writes, imports, and deletions. Those measures protect against accidental in-app changes and reduce browser-eviction risk, but they cannot survive a lost device, device wipe, cleared Safari data, or a changed site address. Export a JSON backup periodically for that protection.
+The app requests protected browser storage when the user chooses **Protect device storage**, autosaves the active workout and session timer, and keeps up to five rolling restore points before important writes, imports, and deletions. Those measures protect against accidental in-app changes and reduce browser-eviction risk, but they cannot survive a lost device, device wipe, cleared Safari data, or a changed site address.
+
+When the optional Firebase connection is enabled, each completed workout is also stored as a private Firestore document owned by the signed-in user. Saves, edits, imports, restores, and deletions are reconciled by a separate change timestamp; deletions use tombstones so an older device cannot accidentally resurrect a removed workout. A device's sync state binds to the first Google account used so local history cannot be silently copied to a different account later. Active drafts and timers are intentionally device-only. JSON export remains an independent portable backup.
+
+## Firebase cloud backup
+
+The app is connected to the account-owned `fitness-tracker-16dfb` Firebase project. Google Authentication and the default Firestore database must remain enabled, and the deployed database rules must match `firestore.rules`.
+
+For a replacement Firebase project, complete this one-time setup:
+
+1. Create a no-cost Firebase project and register a Web app in the [Firebase console](https://console.firebase.google.com/).
+2. Open **Authentication → Sign-in method** and enable Google.
+3. Add `tylerdmcanally.github.io` under **Authentication → Settings → Authorized domains**.
+4. Create a Cloud Firestore database. Use production mode and choose the nearest U.S. region.
+5. Publish the contents of `firestore.rules` as the database rules. They limit each signed-in user to their own workout path.
+6. Copy the Web app's Firebase configuration values into `cloud-config.js`, then set `enabled:true`.
+7. Test Google sign-in and **Sync now** locally, push the configuration change, and verify it once on GitHub Pages.
+
+Firebase's browser configuration is a public project identifier, not an administrator credential. Never add a service-account key or Firebase Admin credential to this static repository. Firestore Security Rules and Firebase Authentication protect the data.
 
 ## Deployment: GitHub Pages
 
@@ -81,6 +100,7 @@ Run the data-model checks with:
 
 ```bash
 node tests/app-model.test.cjs
+node tests/cloud-sync-model.test.cjs
 ```
 
 ## Equipment assumptions

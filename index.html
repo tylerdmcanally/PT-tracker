@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=29">
+  <link rel="stylesheet" href="styles.css?v=30">
   <title>AFT Workout Tracker</title>
 </head>
 <body>
@@ -152,7 +152,7 @@
       <section class="card">
         <p class="eyebrow">BACKUP / TRANSFER</p>
         <h2>Data tools</h2>
-        <p class="muted">Workouts stay on this device. The app autosaves an active draft and keeps a small rolling set of local restore points. A downloaded JSON backup is still the only copy that survives lost devices or cleared browser data.</p>
+        <p class="muted">The app autosaves an active draft and keeps a small rolling set of local restore points. Downloaded JSON backups remain available for portable, independent recovery.</p>
         <div id="backupReminder" class="backup-reminder hidden"></div>
         <div class="button-row">
           <button id="downloadJsonButton" class="secondary" type="button">Export JSON backup</button>
@@ -167,6 +167,19 @@
             <button id="restoreSnapshotButton" class="secondary subtle" type="button">Restore previous data</button>
           </div>
         </div>
+      </section>
+
+      <section id="cloudBackupCard" class="card cloud-backup-card">
+        <p class="eyebrow">OPTIONAL CLOUD BACKUP</p>
+        <h2>Private workout sync</h2>
+        <p class="muted">Completed workouts stay available on this device and can also be copied to your private account for recovery. Active drafts and timers remain device-only.</p>
+        <p id="cloudSyncStatus" class="cloud-sync-status" role="status">Checking cloud backup…</p>
+        <div class="button-row">
+          <button id="cloudSignInButton" class="primary" type="button">Sign in with Google</button>
+          <button id="cloudSyncButton" class="secondary" type="button">Sync now</button>
+          <button id="cloudSignOutButton" class="secondary subtle" type="button">Sign out</button>
+        </div>
+        <p id="cloudSyncDetail" class="muted"></p>
       </section>
 
       <section class="card install-help">
@@ -201,7 +214,9 @@
     <button id="reloadUpdateButton" class="primary subtle" type="button">Reload update</button>
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="program-config.js?v=29"></script>
-  <script src="app.js?v=29"></script>
+  <script src="program-config.js?v=30"></script>
+  <script src="cloud-config.js?v=30"></script>
+  <script src="cloud-sync.js?v=30"></script>
+  <script src="app.js?v=30"></script>
 </body>
 </html>

@@ -10,6 +10,7 @@ const SNAPSHOT_KEY='aftWorkoutSnapshots.v1';
 const TIMER_KEY='aftSessionTimer.v1';
 const BACKUP_META_KEY='aftBackupMeta.v1';
 const DATA_VERSION_KEY='aftDataVersion.v1';
+const CLOUD_STATE_KEY='aftCloudSyncState.v1';
 const DATA_VERSION=11;
 const MAX_SNAPSHOTS=5;
 const WEEKLY_SKILL_DOSE_GROUP_ID='aft_pushup_plank_microdose';
@@ -85,6 +86,10 @@ let sessionTimerState={elapsedMs:0,running:false,startedAt:null};
 let sessionTimerTick=null;
 let draftTimer=null;
 let suppressDraft=false;
+let cloudUser=null;
+let cloudSyncTimer=null;
+let cloudSyncInFlight=false;
+let cloudSyncPending=false;
 
 const $=id=>document.getElementById(id);
 const clone=value=>JSON.parse(JSON.stringify(value));
@@ -115,6 +120,7 @@ function init(){
  renderProgress();
  updatePreview();
  renderStorageStatus();
+ initCloudBackup();
  registerServiceWorker();
 }
 
@@ -169,6 +175,9 @@ function bind(){
  $('exportTo').onchange=updatePreview;
  $('restoreSnapshotButton').onclick=restoreLatestSnapshot;
  $('protectStorageButton').onclick=requestStorageProtection;
+ $('cloudSignInButton').onclick=signInCloudBackup;
+ $('cloudSyncButton').onclick=()=>syncCloudBackup({notify:true});
+ $('cloudSignOutButton').onclick=signOutCloudBackup;
  $('startSessionTimerButton').onclick=startSessionTimer;
  $('pauseSessionTimerButton').onclick=pauseSessionTimer;
  $('finishSessionTimerButton').onclick=finishAndSaveSession;
@@ -196,6 +205,7 @@ function bind(){
   saveDraftNow();
   persistSessionTimer();
  });
+ window.addEventListener('online',()=>scheduleCloudBackup(100));
 }
 
 function registerServiceWorker(){
@@ -4015,7 +4025,9 @@ function persistKnownHistoricalCorrections(){
    );
   });
   if(!needsWrite)return false;
+  const previous=Array.isArray(stored)?stored:[];
   localStorage.setItem(KEY,JSON.stringify(entries));
+  recordCloudLocalChanges(previous,entries);
   return true;
  }catch(error){
   console.warn('Unable to persist the historical circuit correction',error);
@@ -4023,10 +4035,12 @@ function persistKnownHistoricalCorrections(){
  }
 }
 
-function persistEntries(reason,{snapshot=true}={}){
+function persistEntries(reason,{snapshot=true,trackCloud=true}={}){
  try{
+  const previous=loadEntries();
   if(snapshot)createSnapshot(reason);
   localStorage.setItem(KEY,JSON.stringify(entries));
+  if(trackCloud)recordCloudLocalChanges(previous,entries);
   return true;
  }catch(error){
   console.error('Unable to save workout data',error);
@@ -4073,10 +4087,12 @@ function restoreLatestSnapshot(){
  }
  if(!confirm(`Restore workout data from ${dateTimeFmt(snapshot.createdAt)} (${snapshot.reason})? Your current data will also be saved as a restore point.`))return;
  try{
+  const previous=entries.slice();
   createSnapshot('Before restoring previous data');
   localStorage.setItem(KEY,snapshot.raw);
   entries=loadEntries();
   persistKnownHistoricalCorrections();
+  recordCloudLocalChanges(previous,entries);
   editing=null;
   clearDraft();
   resetSessionTimer();
@@ -4198,6 +4214,217 @@ async function renderStorageStatus(){
  const reminder=backupReminder(meta);
  $('backupReminder').classList.toggle('hidden',!reminder);
  $('backupReminder').textContent=reminder;
+}
+
+function cloudBackupConfigured(){
+ return Boolean(window.AFTCloud?.isConfigured?.());
+}
+
+function loadCloudState(){
+ try{
+  return window.AFTCloud?.model?.normalizeState(JSON.parse(localStorage.getItem(CLOUD_STATE_KEY)||'null'))||null;
+ }catch{
+  return window.AFTCloud?.model?.normalizeState(null)||null;
+ }
+}
+
+function saveCloudState(state){
+ if(!state)return;
+ try{localStorage.setItem(CLOUD_STATE_KEY,JSON.stringify(state))}catch(error){
+  console.warn('Unable to save cloud sync state',error);
+ }
+}
+
+function recordCloudLocalChanges(previous,next){
+ if(!cloudBackupConfigured()||!window.AFTCloud?.model)return;
+ const result=window.AFTCloud.model.recordLocalChanges(previous,next,loadCloudState());
+ if(!result.changedIds.length)return;
+ saveCloudState(result.state);
+ renderCloudSyncUi('Changes are safely stored on this device and waiting to sync.','syncing');
+ scheduleCloudBackup();
+}
+
+function scheduleCloudBackup(delay=900){
+ if(!cloudUser||!cloudBackupConfigured())return;
+ clearTimeout(cloudSyncTimer);
+ cloudSyncTimer=setTimeout(()=>syncCloudBackup(),delay);
+}
+
+async function initCloudBackup(){
+ if(!cloudBackupConfigured()){
+  renderCloudSyncUi();
+  return;
+ }
+ renderCloudSyncUi('Connecting to private cloud backup…','syncing');
+ try{
+  await window.AFTCloud.initialize(user=>{
+   cloudUser=user;
+   renderCloudSyncUi();
+   if(user)scheduleCloudBackup(100);
+  });
+ }catch(error){
+  cloudUser=null;
+  recordCloudError(error);
+ }
+}
+
+function renderCloudSyncUi(message='',stateClass=''){
+ const status=$('cloudSyncStatus');
+ if(!status)return;
+ status.classList.remove('syncing','synced','error');
+ if(stateClass)status.classList.add(stateClass);
+ const configured=cloudBackupConfigured();
+ const signIn=$('cloudSignInButton');
+ const sync=$('cloudSyncButton');
+ const signOut=$('cloudSignOutButton');
+ if(!configured){
+  status.textContent='Cloud backup is built in but not connected yet.';
+  $('cloudSyncDetail').textContent='Local autosave, restore points, and JSON export continue to work. Complete the one-time Firebase setup before enabling sign-in.';
+  signIn.disabled=true;
+  sync.disabled=true;
+  signOut.disabled=true;
+  return;
+ }
+ signIn.disabled=Boolean(cloudUser)||cloudSyncInFlight;
+ sync.disabled=!cloudUser||cloudSyncInFlight;
+ signOut.disabled=!cloudUser||cloudSyncInFlight;
+ if(message){
+  status.textContent=message;
+ }else if(cloudUser){
+  const saved=loadCloudState();
+  status.textContent=saved?.lastError
+   ?'Cloud backup needs attention. Device logging is unaffected.'
+   :saved?.lastSyncAt?`Cloud backup is active · last synced ${dateTimeFmt(saved.lastSyncAt)}.`
+   :'Cloud backup is active and ready for its first sync.';
+  status.classList.add(saved?.lastError?'error':'synced');
+ }else{
+  status.textContent='Cloud backup is configured. Sign in to protect and recover completed workouts.';
+ }
+ const saved=loadCloudState();
+ $('cloudSyncDetail').textContent=cloudUser
+  ?saved?.lastError
+   ?saved.lastError.includes('different Google account')
+    ?'Sign out and choose the Google account originally linked to this device. No workout data was uploaded to the other account.'
+    :'Check the connection and Firebase setup, then tap Sync now. Your local workouts, drafts, and timers remain available.'
+   :`Signed in as ${cloudUser.email||'your private account'}. ${entries.length} saved ${entries.length===1?'workout':'workouts'} on this device. Active drafts and timers are not uploaded.`
+  :'Your local workouts will not leave this device until you sign in.';
+}
+
+async function signInCloudBackup(){
+ if(!cloudBackupConfigured())return;
+ renderCloudSyncUi('Opening secure Google sign-in…','syncing');
+ try{
+  const user=await window.AFTCloud.signIn();
+  if(user){
+   cloudUser=user;
+   await syncCloudBackup({notify:true});
+  }
+ }catch(error){
+  recordCloudError(error);
+ }
+}
+
+async function signOutCloudBackup(){
+ if(!cloudUser)return;
+ if(!confirm('Sign out of cloud backup? Saved workouts will remain on this device and in your private cloud account.'))return;
+ try{
+  await window.AFTCloud.signOut();
+  cloudUser=null;
+  renderCloudSyncUi();
+  toast('Signed out · device workouts are unchanged');
+ }catch(error){
+  recordCloudError(error);
+ }
+}
+
+function validRemoteCloudRecords(records){
+ return (records||[]).flatMap(record=>{
+  if(record?.deleted)return [record];
+  const payload=normalizeEntry(record?.payload);
+  return payload?[{...record,payload}]:[];
+ });
+}
+
+async function syncCloudBackup({notify=false}={}){
+ if(!cloudUser||!cloudBackupConfigured()){
+  if(notify)toast('Sign in before syncing cloud backup');
+  return false;
+ }
+ if(cloudSyncInFlight){
+  cloudSyncPending=true;
+  return false;
+ }
+ cloudSyncInFlight=true;
+ clearTimeout(cloudSyncTimer);
+ renderCloudSyncUi('Syncing completed workouts…','syncing');
+ try{
+  if(navigator.onLine===false)throw new Error('Waiting for an internet connection');
+  const localState=loadCloudState();
+  if(localState?.userId&&localState.userId!==cloudUser.uid){
+   throw new Error('This device backup is linked to a different Google account');
+  }
+  localState.userId=cloudUser.uid;
+  saveCloudState(localState);
+  const remote=validRemoteCloudRecords(await cloudOperation(window.AFTCloud.readRecords(cloudUser)));
+  const result=window.AFTCloud.model.mergeWorkoutRecords(entries,remote,localState);
+  const merged=result.entries.map(normalizeEntry).filter(Boolean).sort(compareEntries);
+  const changed=JSON.stringify(merged)!==JSON.stringify(entries);
+  if(changed){
+   const previous=entries;
+   entries=merged;
+   if(!persistEntries('Before cloud recovery',{trackCloud:false})){
+    entries=previous;
+    throw new Error('Cloud data was received, but device storage could not be updated');
+   }
+   editing=editing&&entries.some(entry=>entry.id===editing)?editing:null;
+   renderHistory();
+   renderProgress();
+   renderRunProgress($('daySelect').value);
+   refreshWeeklySkillDoseUi();
+   updatePreview();
+   renderStorageStatus();
+  }
+  saveCloudState(result.state);
+  const uploaded=await cloudOperation(window.AFTCloud.writeRecords(cloudUser,result.uploads));
+  const finalState=loadCloudState()||result.state;
+  finalState.lastSyncAt=new Date().toISOString();
+  finalState.lastError='';
+  saveCloudState(finalState);
+  renderCloudSyncUi();
+  if(notify)toast(`Cloud backup synced · ${entries.length} workouts protected`);
+  return {uploaded,pulled:result.pulledCount,deleted:result.deletedCount};
+ }catch(error){
+  recordCloudError(error);
+  return false;
+ }finally{
+  cloudSyncInFlight=false;
+  renderCloudSyncUi();
+  if(cloudSyncPending){
+   cloudSyncPending=false;
+   scheduleCloudBackup(100);
+  }
+ }
+}
+
+function cloudOperation(promise,timeoutMs=20000){
+ return Promise.race([
+  promise,
+  new Promise((_resolve,reject)=>setTimeout(()=>reject(new Error('Cloud sync timed out')),timeoutMs))
+ ]);
+}
+
+function recordCloudError(error){
+ const message=String(error?.code||error?.message||'Cloud sync failed').slice(0,180);
+ const state=loadCloudState();
+ if(state){
+  state.lastError=message;
+  saveCloudState(state);
+ }
+ console.error('Cloud backup error',error);
+ renderCloudSyncUi('Cloud backup could not sync. Your workouts remain safely stored on this device.','error');
+ $('cloudSyncDetail').textContent=message.includes('different Google account')
+  ?'Sign out and choose the Google account originally linked to this device. No workout data was uploaded to the other account.'
+  :'Check the connection and Firebase setup, then tap Sync now. Local logging is unaffected.';
 }
 
 function backupReminder(meta){

@@ -1,5 +1,5 @@
-const CACHE = "aft-workout-tracker-v30";
-const ASSETS=['./','./index.html','./styles.css?v=30','./program-config.js?v=30','./cloud-config.js?v=30','./cloud-sync.js?v=30','./app.js?v=30','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-512-maskable.png','./icons/apple-touch-icon.png'];
+const CACHE = "aft-workout-tracker-v31";
+const ASSETS=['./','./index.html','./styles.css?v=31','./program-config.js?v=31','./cloud-config.js?v=31','./cloud-sync.js?v=31','./app.js?v=31','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-512-maskable.png','./icons/apple-touch-icon.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
 self.addEventListener('fetch',e=>{

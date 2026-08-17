@@ -90,6 +90,7 @@ let cloudUser=null;
 let cloudSyncTimer=null;
 let cloudSyncInFlight=false;
 let cloudSyncPending=false;
+let expandAllExercises=false;
 
 const $=id=>document.getElementById(id);
 const clone=value=>JSON.parse(JSON.stringify(value));
@@ -134,23 +135,34 @@ function populateSessionSelect(){
 }
 
 function bind(){
- $('daySelect').onchange=()=>{
+ $('daySelect').onchange=event=>{
+  const previousKey=activeSessionDefinition?.key||'day1';
+  if(!confirmDiscardCurrentWorkout('switch workout days')){
+   event.target.value=previousKey;
+   return;
+  }
   editing=null;
-  renderWorkout(null,{preserveSession:true});
+  clearDraft();
+  resetSessionTimer();
+  renderWorkout();
   scheduleDraft();
  };
  document.querySelectorAll('.tab').forEach(button=>button.onclick=()=>tab(button.dataset.tab));
  $('workoutForm').onsubmit=saveWorkout;
  $('workoutForm').oninput=event=>{
   if(event.target.id==='painDuring')updatePainVisibility();
+  if(['bodyWeight','preSoreness','readiness','sleepQuality'].includes(event.target.id))updatePreWorkoutSummary();
   updateMicrodoseCaution();
   refreshAdherenceForEvent(event.target);
+  refreshExerciseCardSummaryForEvent(event.target);
   refreshExerciseExtraForEvent(event.target);
   scheduleDraft();
  };
  $('workoutForm').onchange=event=>{
+  if(['bodyWeight','preSoreness','readiness','sleepQuality'].includes(event.target.id))updatePreWorkoutSummary();
   updateMicrodoseCaution();
   refreshAdherenceForEvent(event.target);
+  refreshExerciseCardSummaryForEvent(event.target);
   refreshExerciseExtraForEvent(event.target);
   scheduleDraft();
  };
@@ -182,6 +194,9 @@ function bind(){
  $('pauseSessionTimerButton').onclick=pauseSessionTimer;
  $('finishSessionTimerButton').onclick=finishAndSaveSession;
  $('nextExerciseButton').onclick=scrollToNextExercise;
+ $('stickyNextExerciseButton').onclick=scrollToNextExercise;
+ $('expandAllExercisesButton').onclick=toggleAllExercises;
+ $('historyFilter').onchange=renderHistory;
  window.addEventListener('beforeinstallprompt',event=>{
   event.preventDefault();
   installPrompt=event;
@@ -372,6 +387,7 @@ function mergeCurrentLoggingOptions(saved,current){
 
 function renderWorkout(saved=null,{preserveSession=false}={}){
  suppressDraft=true;
+ expandAllExercises=false;
  const key=saved?.dayKey||$('daySelect').value||'day1';
  activeSessionDefinition=saved?definitionForSavedEntry(saved):currentSessionDefinition(key);
  activeWeeklyOverride=Boolean(saved?.weeklyFrequencyOverride);
@@ -409,6 +425,7 @@ function renderWorkout(saved=null,{preserveSession=false}={}){
  clearRunTimer();
  $('exerciseList').innerHTML=renderExerciseList(session,saved);
  bindExerciseControls();
+ scopeExerciseControlLabels();
  updateWorkoutFlow();
  if(saved){
   $('sessionDate').value=saved.date;
@@ -432,6 +449,7 @@ function renderWorkout(saved=null,{preserveSession=false}={}){
  const hasLegacyPain=saved?.painScore!==''&&saved?.painScore!=null&&(saved?.painDuring==null||saved?.painDuring==='');
  $('legacyPainWrap').classList.toggle('hidden',!hasLegacyPain);
  updatePainVisibility();
+ updatePreWorkoutSummary();
  refreshWeeklySkillDoseUi();
  updateMicrodoseCaution();
  updateSessionTimer();
@@ -441,6 +459,12 @@ function renderWorkout(saved=null,{preserveSession=false}={}){
 function clearSessionFields(){
  ['duration','sessionRpe','bodyWeight','preSoreness','readiness','sleepQuality','painDuring','painLocation','postSoreness','legacyPainScore','sessionNotes']
   .forEach(id=>$(id).value='');
+}
+
+function updatePreWorkoutSummary(){
+ const values=[$('bodyWeight').value,$('preSoreness').value,$('readiness').value,$('sleepQuality').value].filter(value=>String(value).trim()!=='');
+ $('preWorkoutSummary').textContent=values.length?`${values.length} of 4 recorded`:'Optional';
+ $('preWorkoutCard').classList.toggle('has-data',Boolean(values.length));
 }
 
 function updatePainVisibility(){
@@ -598,6 +622,10 @@ function updateMicrodoseCaution(){
 
 function renderExerciseList(session,saved){
  const savedExercises=Array.isArray(saved?.exercises)?saved.exercises:[];
+ const exerciseStates=session.exercises.map((definition,index)=>findSavedExercise(definition,savedExercises,index)||defaultExerciseState(definition));
+ let expandedIndex=exerciseStates.findIndex((state,index)=>!state.completed&&!isOptionalExercise(session.exercises[index]));
+ if(expandedIndex<0)expandedIndex=exerciseStates.findIndex(state=>!state.completed);
+ if(expandedIndex<0)expandedIndex=0;
  let html='',openGroup=null,visibleIndex=0;
  session.exercises.forEach((definition,index)=>{
   const groupKey=definition.group||null;
@@ -615,8 +643,8 @@ function renderExerciseList(session,saved){
      </div><div class="exercise-group-cards">`;
    }
   }
-  const state=findSavedExercise(definition,savedExercises,index)||defaultExerciseState(definition);
-  html+=exerciseCard(definition,visibleIndex,state,{showPrevious:true});
+  const state=exerciseStates[index];
+  html+=exerciseCard(definition,visibleIndex,state,{showPrevious:true,expanded:index===expandedIndex});
   visibleIndex+=1;
  });
  if(openGroup)html+='</div></section>';
@@ -661,6 +689,8 @@ function updateWorkoutFlow(){
   :'Complete each card in order, then finish the session details.';
  $('nextExerciseButton').disabled=!flow.next?.card;
  $('nextExerciseButton').textContent=flow.next?.card?'Go to next':'All done';
+ $('stickyNextExerciseButton').disabled=!flow.next?.card;
+ $('stickyNextExerciseButton').textContent=flow.next?.card?'Next exercise':'Required work done';
  document.querySelectorAll('.exercise-card').forEach((card,index)=>{
   const completed=Boolean(card.querySelector('.exercise-complete')?.checked);
   const status=card.querySelector('[data-exercise-status]');
@@ -670,13 +700,25 @@ function updateWorkoutFlow(){
   }
   const completionLabel=card.querySelector('[data-completion-label]');
   if(completionLabel)completionLabel.textContent=completed?'Completed':'Mark done';
+  updateExerciseCardSummary(card,index);
  });
 }
 
 function scrollToNextExercise(){
  const next=workoutFlowState().next?.card;
  if(!next)return;
+ if(!expandAllExercises)document.querySelectorAll('.exercise-card').forEach(card=>{card.open=card===next});
+ next.open=true;
  next.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function toggleAllExercises(){
+ expandAllExercises=!expandAllExercises;
+ document.querySelectorAll('.exercise-card').forEach(card=>{card.open=expandAllExercises});
+ const button=$('expandAllExercisesButton');
+ button.textContent=expandAllExercises?'Collapse all':'Expand all';
+ button.setAttribute('aria-pressed',String(expandAllExercises));
+ if(!expandAllExercises)scrollToNextExercise();
 }
 
 function findSavedExercise(definition,savedExercises,index){
@@ -1117,7 +1159,7 @@ function exerciseExtraSummary(state){
  return details.join(' · ')||'Optional';
 }
 
-function exerciseCard(definition,index,state,{showPrevious=false}={}){
+function exerciseCard(definition,index,state,{showPrevious=false,expanded=false}={}){
  const setPlan=getSetPlan(definition);
  const currentVariation=state.variation||exerciseVariationLabel(state)||definition.defaultVariation||'';
  const renderState=definition.variations?{...state,variation:currentVariation}:state;
@@ -1128,20 +1170,25 @@ function exerciseCard(definition,index,state,{showPrevious=false}={}){
  const optional=isOptionalExercise(definition);
  const hasExtras=Boolean(String(state.notes||'').trim()||hasExercisePainData(state.exercisePain));
  const directive=definition.type==='circuit'?applicableCoachOverlay(definition,renderState):null;
- return `<section class="card exercise-card ${state.completed?'completed':''}" data-i="${index}" data-exercise-id="${attr(definition.id)}" data-optional="${optional}">
-  <div class="exercise-heading">
+ const resultState={...renderState,type:definition.type,unit:definition.unit||renderState.unit||''};
+ const hasResult=Boolean(state.completed||hasMeaningfulResultData(resultState));
+ const resultSummary=hasResult?compactResultSummary(definition,resultState):'Tap to log result';
+ return `<details class="card exercise-card ${state.completed?'completed':''}" data-i="${index}" data-exercise-id="${attr(definition.id)}" data-optional="${optional}" ${expanded?'open':''}>
+  <summary class="exercise-heading" id="exercise-title-${index}">
    <div>
     <p class="exercise-order">Exercise ${index+1}${optional?' · Optional':''}</p>
     <h2>${esc(definition.name)}</h2>
     <p>${esc(definition.prescription)}</p>
+    <p class="exercise-result-summary ${hasResult?'has-result':''}" data-card-result-summary>${esc(resultSummary)}</p>
    </div>
-   <span class="exercise-status" data-exercise-status>${state.completed?'Done':'To do'}</span>
-  </div>
+   <span class="exercise-summary-meta"><span class="exercise-status" data-exercise-status>${state.completed?'Done':'To do'}</span><span class="exercise-chevron" aria-hidden="true">⌄</span></span>
+  </summary>
+  <div class="exercise-card-body" role="group" aria-labelledby="exercise-title-${index}">
   ${definition.targetRpe?`<p class="target-rpe">Target RPE ${esc(definition.targetRpe)}</p>`:''}
   ${definition.coachingNotes?`<p class="coaching-note">${esc(definition.coachingNotes)}</p>`:''}
   ${coachOverlayMarkup(definition,renderState)}
   <div data-result-reference>${previous}</div>
-  <p class="today-result-label">Today's result</p>
+  <div class="today-result-heading"><p class="today-result-label">Today's result</p>${canFillPrescribedResult(definition)?'<button class="secondary subtle fill-prescribed" type="button" data-fill-prescribed>Fill prescribed result</button>':''}</div>
   ${variation}${fields(definition,renderState,setPlan,directive)}
   ${adherenceDetailMarkup(definition,renderState)}
   <details class="exercise-extras" ${hasExtras?'open':''}>
@@ -1155,7 +1202,13 @@ function exerciseCard(definition,index,state,{showPrevious=false}={}){
    ${adherenceResultMarkup(definition,renderState)}
    <label class="check-label"><input class="exercise-complete" type="checkbox" ${state.completed?'checked':''}><span data-completion-label>${state.completed?'Completed':'Mark done'}</span></label>
   </div>
- </section>`;
+  </div>
+ </details>`;
+}
+
+function canFillPrescribedResult(definition){
+ const target=adherenceTarget(definition);
+ return Boolean(target&&['reps','timed'].includes(target.kind));
 }
 
 function fields(definition,state,setPlan,directive=null){
@@ -1659,10 +1712,20 @@ function weightedFields(definition,state,setPlan){
 
 function bindExerciseControls(){
  document.querySelectorAll('.exercise-complete').forEach(input=>input.onchange=()=>{
-  input.closest('.exercise-card').classList.toggle('completed',input.checked);
+  const card=input.closest('.exercise-card');
+  card.classList.toggle('completed',input.checked);
   updateWorkoutFlow();
   scheduleDraft();
+  if(input.checked){
+   const next=workoutFlowState().next?.card;
+   if(next&&next!==card){
+    if(!expandAllExercises)card.open=false;
+    next.open=true;
+    setTimeout(()=>next.scrollIntoView({behavior:'smooth',block:'start'}),120);
+   }
+  }else card.open=true;
  });
+ document.querySelectorAll('[data-fill-prescribed]').forEach(button=>button.onclick=()=>fillPrescribedResult(button.closest('.exercise-card')));
  bindSetControls();
  bindWeightedLoadControls();
  bindCircuitControls();
@@ -1677,6 +1740,100 @@ function bindExerciseControls(){
  });
  bindRunTimers();
  bindRunCalculations();
+}
+
+function fillPrescribedResult(card){
+ const index=[...document.querySelectorAll('.exercise-card')].indexOf(card);
+ const definition=activeSessionDefinition?.exercises?.[index];
+ const target=adherenceTarget(definition);
+ if(!definition||!target)return;
+ const sets=Number(target.sets)||getSetPlan(definition)?.default||0;
+ const setCount=card.querySelector('.set-count-select');
+ if(setCount&&sets){
+  setCount.value=String(sets);
+  setCount.dispatchEvent(new Event('change',{bubbles:true}));
+ }
+ if(target.kind==='reps'){
+  card.querySelectorAll('.set-rep-select').forEach(selectInput=>{
+   const value=String(target.minReps);
+   if([...selectInput.options].some(option=>option.value===value))selectInput.value=value;
+   else{
+    selectInput.value='custom';
+    const custom=selectInput.closest('label').querySelector('.custom-reps');
+    custom.value=value;
+    custom.classList.remove('hidden');
+   }
+  });
+  if(definition.targetLoad!=null){
+   const variation=card.querySelector('[data-field="variation"]');
+   if(variation&&definition.targetLoadVariation&&[...variation.options].some(option=>option.value===definition.targetLoadVariation)){
+    variation.value=definition.targetLoadVariation;
+    variation.dispatchEvent(new Event('change',{bubbles:true}));
+   }
+   const mode=card.querySelector('[data-field="loadMode"]');
+   const load=card.querySelector('[data-field="load"]');
+   const enteredLoad=prescribedEnteredLoad(definition.targetLoad,mode?.value,card.querySelector('[data-field="barWeight"]')?.value);
+   if(load)load.value=formatLoad(enteredLoad);
+   const panel=card.querySelector('.weighted-load');
+   if(panel)updateWeightedLoad(panel,variation?.value||definition.defaultVariation||'',false);
+  }
+ }else if(target.kind==='timed'){
+  const targets=target.minSecondsBySet||Array.from({length:sets},()=>target.minSeconds);
+  card.querySelectorAll('[data-time-index]').forEach((input,inputIndex)=>{
+   const seconds=targets[inputIndex]??target.minSeconds;
+   if(seconds!=null)input.value=fmtSec(seconds);
+  });
+ }
+ updateCardAdherence(card);
+ updateExerciseCardSummary(card,index);
+ scheduleDraft();
+ toast(`${definition.name}: prescribed sets and minimum reps/time filled in`);
+}
+
+function prescribedEnteredLoad(targetLoad,loadMode,barWeight){
+ const target=Number(targetLoad);
+ const bar=numberOrNull(barWeight)||0;
+ if(loadMode==='platesPerSide')return Math.max(0,(target-bar)/2);
+ if(loadMode==='plates')return Math.max(0,target-bar);
+ return target;
+}
+
+function updateExerciseCardSummary(card,index=[...document.querySelectorAll('.exercise-card')].indexOf(card)){
+ const definition=activeSessionDefinition?.exercises?.[index];
+ const display=card?.querySelector('[data-card-result-summary]');
+ if(!definition||!display)return;
+ const prior=findSavedExercise(definition,activeSavedExercises,index)||{};
+ const result=collectExerciseCard(card,definition,index,prior);
+ const hasResult=Boolean(result.completed||hasMeaningfulResultData(result));
+ display.textContent=hasResult?compactResultSummary(definition,result):'Tap to log result';
+ display.classList.toggle('has-result',hasResult);
+}
+
+function refreshExerciseCardSummaryForEvent(target){
+ const card=target?.closest?.('.exercise-card');
+ if(card)updateExerciseCardSummary(card);
+}
+
+function scopeExerciseControlLabels(){
+ document.querySelectorAll('.exercise-card').forEach((card,index)=>{
+  const name=activeSessionDefinition?.exercises?.[index]?.name||`Exercise ${index+1}`;
+  card.querySelectorAll('input, select, textarea, button').forEach(control=>{
+   if(control.type==='hidden')return;
+   let label='';
+   if(control.classList.contains('exercise-complete'))label='Mark done';
+   else if(control.matches('[data-fill-prescribed]'))label='Fill prescribed result';
+   else{
+    const wrappingLabel=control.closest('label');
+    if(wrappingLabel){
+     label=[...wrappingLabel.childNodes]
+      .filter(node=>node.nodeType===3||node.nodeType===1&&node.tagName==='SPAN')
+      .map(node=>node.textContent.trim()).filter(Boolean).join(' ');
+    }
+    if(!label)label=control.textContent.trim()||control.getAttribute('aria-label')||control.dataset.field||control.dataset.painField||'Control';
+   }
+   control.setAttribute('aria-label',`${name}: ${label}`);
+  });
+ });
 }
 
 function readCircuitPerformance(container){
@@ -2084,24 +2241,30 @@ function runFields(type,state){
  const hasAdvanced=['deviceReportedPace','warmupMinutes','cooldownMinutes','walkSpeed','runSpeed','runEnvironment','treadmillIncline','avgHr','maxHr']
   .some(field=>state[field]!==''&&state[field]!=null)
   ||(String(state.runStage)==='manual'&&String(state.structure||'').trim()!=='');
- return `<section class="run-log-section">
-  <div class="logging-section-heading"><span>1</span><div><strong>Set the interval plan</strong><small>The coach-prescribed stage is prefilled.</small></div></div>
-  ${grid(
-   runStageSelect(state.runStage),
-   num('walkMinutes','Walk / easy interval (min)',state.walkMinutes,0,null,.25),
-   num('runMinutes','Run interval (min)',state.runMinutes,0,null,.25),
-   num('rounds','Planned walk/run rounds',state.rounds),
-   num('continuousMinutes','Continuous run (min)',state.continuousMinutes)
-  )}
-  <input data-field="programmedIntervalTime" type="hidden" value="${attr(state.programmedIntervalTime)}">
+ const customPlan=String(state.runStage)==='manual';
+ return `<section class="run-log-section run-plan-section">
+  <p class="today-result-label">Interval plan</p>
   <p class="run-plan-summary" data-run-plan-summary></p>
+  <details class="exercise-inline-details run-plan-details" ${customPlan?'open':''}>
+   <summary><span>Modify interval plan</span><span>${customPlan?'Custom plan':'Coach plan prefilled'}</span></summary>
+   <div class="exercise-inline-details-body">
+    ${grid(
+     runStageSelect(state.runStage),
+     num('walkMinutes','Walk / easy interval (min)',state.walkMinutes,0,null,.25),
+     num('runMinutes','Run interval (min)',state.runMinutes,0,null,.25),
+     num('rounds','Planned walk/run rounds',state.rounds),
+     num('continuousMinutes','Continuous run (min)',state.continuousMinutes)
+    )}
+   </div>
+  </details>
+  <input data-field="programmedIntervalTime" type="hidden" value="${attr(state.programmedIntervalTime)}">
  </section>
  <section class="run-log-section">
-  <div class="logging-section-heading"><span>2</span><div><strong>Run the workout</strong><small>The timer begins with the walk segment.</small></div></div>
+  <div class="logging-section-heading"><span>1</span><div><strong>Run the workout</strong><small>The timer begins with the walk segment.</small></div></div>
   ${runTimerMarkup()}
  </section>
  <section class="run-log-section">
-  <div class="logging-section-heading"><span>3</span><div><strong>Record the result</strong><small>Rounds, time, distance, effort, and discomfort.</small></div></div>
+  <div class="logging-section-heading"><span>2</span><div><strong>Record the result</strong><small>Rounds, time, distance, effort, and discomfort.</small></div></div>
   ${grid(
    num('completedRounds','Walk/run rounds completed',state.completedRounds),
    text('totalTime','Total elapsed time',state.totalTime,'24:00'),
@@ -2931,6 +3094,7 @@ function markReviewExercisesCompleted(item,issues){
 
 function returnToReviewIssue(issue){
  const card=document.querySelector(`.exercise-card[data-i="${issue.index}"]`);
+ if(card)card.open=true;
  card?.scrollIntoView({behavior:'smooth',block:'center'});
  const target=issue.type==='completion'
   ?card?.querySelector('.exercise-complete')
@@ -2939,6 +3103,7 @@ function returnToReviewIssue(issue){
 }
 
 function newWorkout(notify=true){
+ if(notify&&!confirmDiscardCurrentWorkout('start a different workout'))return;
  editing=null;
  clearDraft();
  resetSessionTimer();
@@ -2947,6 +3112,16 @@ function newWorkout(notify=true){
  renderWorkout();
  tab('workout');
  if(notify)toast('New workout ready');
+}
+
+function currentWorkoutHasMeaningfulProgress(){
+ if(!activeSessionDefinition||!$('workoutForm'))return false;
+ try{return draftHasMeaningfulProgress(collectWorkoutItem({draft:true}),sessionTimerElapsed())}catch{return false}
+}
+
+function confirmDiscardCurrentWorkout(action){
+ if(!currentWorkoutHasMeaningfulProgress())return true;
+ return confirm(`This workout has unsaved entries. Discard them and ${action}?`);
 }
 
 function nextWorkoutDay(source=entries){
@@ -3132,7 +3307,13 @@ function renderHistory(){
   container.innerHTML='<div class="empty-state">No workouts saved yet.</div>';
   return;
  }
- container.innerHTML=entries.map(entry=>{
+ const filter=$('historyFilter')?.value||'all';
+ const visible=entries.filter(entry=>filter==='all'||filter==='primary'&&isPrimaryEntry(entry)||entry.sessionType===filter);
+ if(!visible.length){
+  container.innerHTML='<div class="empty-state">No workouts match this filter.</div>';
+  return;
+ }
+ container.innerHTML=visible.map(entry=>{
   const definition=definitionForSavedEntry(entry);
   const done=(entry.exercises||[]).filter(exercise=>exercise.completed||hasData(exercise)).map(exercise=>{
    const planned=definition.exercises.find(item=>canonicalExerciseId(item.id)===exerciseIdentity(exercise))
@@ -3156,8 +3337,8 @@ function renderHistory(){
   if(entry.postSoreness!=='')sessionDetails.push(`post-soreness ${entry.postSoreness}/10`);
   const category=sessionCategoryLabel(entry);
   const categoryClass=isSkillMicrodoseEntry(entry)?'skill-history':entry.sessionType==='recovery'?'recovery-history':'';
-  return `<article class="history-item ${categoryClass}">
-   <div class="history-top">
+  return `<details class="history-item ${categoryClass}">
+   <summary class="history-summary">
     <div>
      <p class="eyebrow">${esc(category.toUpperCase())}</p>
      <h3>${esc(entry.dayLabel)}</h3>
@@ -3165,12 +3346,15 @@ function renderHistory(){
      <p class="program-badge">${esc(program)}</p>
      ${entry.weeklyFrequencyOverride?'<p class="frequency-override-badge">Additional weekly session · coach-directed override</p>':''}
     </div>
-    <div class="history-actions"><button class="secondary" data-history-action="edit" data-entry-id="${attr(entry.id)}">Edit</button><button class="danger" data-history-action="delete" data-entry-id="${attr(entry.id)}">Delete</button></div>
+    <span class="history-chevron" aria-hidden="true">⌄</span>
+   </summary>
+   <div class="history-body">
+    ${sessionDetails.length?`<p>${esc(sessionDetails.join(' · '))}</p>`:''}
+    ${done?`<ul class="history-exercises">${done}</ul>`:'<p>No completed exercises marked.</p>'}
+    ${entry.notes?`<p><strong>Post-session notes:</strong> ${esc(entry.notes).replaceAll('\n','<br>')}</p>`:''}
+    <div class="history-actions"><button class="secondary" data-history-action="edit" data-entry-id="${attr(entry.id)}">Edit workout</button><button class="danger" data-history-action="delete" data-entry-id="${attr(entry.id)}">Delete workout</button></div>
    </div>
-   ${sessionDetails.length?`<p>${esc(sessionDetails.join(' · '))}</p>`:''}
-   ${done?`<ul class="history-exercises">${done}</ul>`:'<p>No completed exercises marked.</p>'}
-   ${entry.notes?`<p><strong>Post-session notes:</strong> ${esc(entry.notes).replaceAll('\n','<br>')}</p>`:''}
-  </article>`;
+  </details>`;
  }).join('');
  container.querySelectorAll('[data-history-action="edit"]').forEach(button=>button.onclick=()=>editEntry(button.dataset.entryId));
  container.querySelectorAll('[data-history-action="delete"]').forEach(button=>button.onclick=()=>deleteEntry(button.dataset.entryId));
@@ -3179,6 +3363,7 @@ function renderHistory(){
 function editEntry(entryId){
  const entry=entries.find(item=>item.id===entryId);
  if(!entry)return;
+ if(!confirmDiscardCurrentWorkout('open a saved workout'))return;
  editing=entryId;
  clearDraft();
  resetSessionTimer();
@@ -3240,31 +3425,49 @@ function renderProgress(){
  ];
  if(recentRun?.exercise.deviceReportedPace)runMetricCards.splice(2,0,['Most recent device pace',`${recentRun.exercise.deviceReportedPace}/mi`]);
  runMetricCards.push(...bestPaceByStage(runs).map(item=>[`Stage ${item.stage} best calculated pace`,`${item.pace}/mi`]));
- const cards=[
-  ['All sessions',entries.length],
+ const currentStageCompletions=runStageCompletionCount(stage.id);
+ const headlineCards=[
   ['Primary workouts',primaryEntries.length],
-  ['Recovery sessions',recoveryEntries.length||'—'],
-  ['Skill microdose sessions',skillMicrodoseEntries.length||'—'],
   ['Training time',minutes?`${minutes} min`:'—'],
-  ['Current-version workouts',currentProgramEntries.length],
-  ['Avg. current-version RPE',averageRpe],
-  ['Current coach-directed run stage',`Stage ${stage.id}`],
-  ...runMetricCards,
-  ['This week push-ups',currentWeek.pushups||'—'],
-  ['This week front plank',currentWeek.plankSeconds?fmtSec(currentWeek.plankSeconds):'—'],
-  ['Best push-up set',bestRep('handReleasePushups')],
-  ['Longest continuous front plank',bestTime('plank')],
-  ['Best hex-bar deadlift',bestDeadlift(['Trap / hex bar'])],
-  ['Best straight-bar deadlift',bestDeadlift(['Conventional barbell','Sumo barbell'])],
-  ['Latest weight',weight==='—'?'—':`${weight} lb`],
-  ['Avg. session RPE',allAverageRpe],
-  ['Current-stage completions',runStageCompletionCount(stage.id)||'—'],
-  ['Highest dumbbell-curl weight',bestExerciseLoad('dumbbellCurl')],
-  ['Highest pressdown weight',bestExerciseLoad('tricepsPressdown')],
-  ['Highest lateral-raise weight',bestExerciseLoad('lateralRaise')],
-  ['Arm-superset sessions',armSupersetSessionCount()||'—']
+  ['Current run stage',`Stage ${stage.id}`],
+  ['Stage completions',currentStageCompletions||'—'],
+  ['Latest run/walk',recentRun?.exercise.distance?`${formatDistance(recentRun.exercise.distance)} mi`:'—'],
+  ['Avg. session RPE',allAverageRpe]
  ];
- $('progressCards').innerHTML=cards.map(([label,value])=>`<article class="metric"><div class="label">${esc(label)}</div><div class="value">${esc(value||'—')}</div></article>`).join('');
+ const progressGroups=[
+  ['Running',[
+   ...runMetricCards,
+   ['Current-stage completions',currentStageCompletions||'—']
+  ]],
+  ['AFT practice & strength',[
+   ['This week push-ups',currentWeek.pushups||'—'],
+   ['This week front plank',currentWeek.plankSeconds?fmtSec(currentWeek.plankSeconds):'—'],
+   ['Best push-up set',bestRep('handReleasePushups')],
+   ['Longest continuous front plank',bestTime('plank')],
+   ['Best hex-bar deadlift',bestDeadlift(['Trap / hex bar'])],
+   ['Best straight-bar deadlift',bestDeadlift(['Conventional barbell','Sumo barbell'])]
+  ]],
+  ['Accessories',[
+   ['Highest dumbbell-curl weight',bestExerciseLoad('dumbbellCurl')],
+   ['Highest pressdown weight',bestExerciseLoad('tricepsPressdown')],
+   ['Highest lateral-raise weight',bestExerciseLoad('lateralRaise')],
+   ['Arm-superset sessions',armSupersetSessionCount()||'—']
+  ]],
+  ['Workload & recovery',[
+   ['All sessions',entries.length],
+   ['Recovery sessions',recoveryEntries.length||'—'],
+   ['Skill microdose sessions',skillMicrodoseEntries.length||'—'],
+   ['Current-version workouts',currentProgramEntries.length],
+   ['Avg. current-version RPE',averageRpe],
+   ['Latest weight',weight==='—'?'—':`${weight} lb`]
+  ]]
+ ];
+ const metric=([label,value])=>`<article class="metric"><div class="label">${esc(label)}</div><div class="value">${esc(value??'—')}</div></article>`;
+ $('progressCards').innerHTML=headlineCards.map(metric).join('');
+ $('progressGroups').innerHTML=progressGroups.map(([label,groupCards])=>{
+  const available=groupCards.filter(([,value])=>value!==''&&value!==null&&value!==undefined&&value!=='—');
+  return `<details class="card progress-group"><summary><span>${esc(label)}</span><span class="summary-status">${available.length} tracked</span></summary><div class="metric-grid">${available.length?available.map(metric).join(''):'<p class="muted">No results tracked yet.</p>'}</div></details>`;
+ }).join('');
  $('weeklyTestProgress').innerHTML=weeks.length
   ?`<div class="weekly-table"><div class="weekly-row weekly-head"><span>Week of</span><span>Push-ups</span><span>Front plank</span></div>${weeks.slice(0,10).map(week=>`<div class="weekly-row"><strong>${dateFmt(week.week)}</strong><span>${week.pushups||'—'} reps</span><span>${week.plankSeconds?fmtSec(week.plankSeconds):'—'}</span></div>`).join('')}</div>`
   :'<div class="empty-state">Weekly push-up and front-plank totals will appear after completed sets are logged.</div>';
@@ -4271,6 +4474,7 @@ async function initCloudBackup(){
 function renderCloudSyncUi(message='',stateClass=''){
  const status=$('cloudSyncStatus');
  if(!status)return;
+ const summary=$('cloudSyncSummary');
  status.classList.remove('syncing','synced','error');
  if(stateClass)status.classList.add(stateClass);
  const configured=cloudBackupConfigured();
@@ -4278,6 +4482,7 @@ function renderCloudSyncUi(message='',stateClass=''){
  const sync=$('cloudSyncButton');
  const signOut=$('cloudSignOutButton');
  if(!configured){
+  if(summary)summary.textContent='Not connected';
   status.textContent='Cloud backup is built in but not connected yet.';
   $('cloudSyncDetail').textContent='Local autosave, restore points, and JSON export continue to work. Complete the one-time Firebase setup before enabling sign-in.';
   signIn.disabled=true;
@@ -4308,6 +4513,9 @@ function renderCloudSyncUi(message='',stateClass=''){
     :'Check the connection and Firebase setup, then tap Sync now. Your local workouts, drafts, and timers remain available.'
    :`Signed in as ${cloudUser.email||'your private account'}. ${entries.length} saved ${entries.length===1?'workout':'workouts'} on this device. Active drafts and timers are not uploaded.`
   :'Your local workouts will not leave this device until you sign in.';
+ if(summary)summary.textContent=cloudSyncInFlight||stateClass==='syncing'
+  ?'Syncing…'
+  :cloudUser?(loadCloudState()?.lastError?'Needs attention':'Active'):'Sign in available';
 }
 
 async function signInCloudBackup(){

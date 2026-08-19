@@ -56,7 +56,8 @@ const VARIATION_ID_BY_LABEL={
  'Leg press':'unspecifiedLegPress','Lying leg press':'lyingLegPress','Upright leg press':'uprightLegPress',
  'Plate-loaded leg press':'plateLoadedLegPress','Selectorized leg press':'selectorizedLegPress','Other leg press':'otherLegPress',
  'Dumbbell bench press':'dumbbellBenchPress','Barbell bench press':'barbellBenchPress','Chest-press machine':'machineChestPress',
- 'Lat pulldown':'latPulldown','Assisted pull-up':'assistedPullup','Band-assisted pull-up':'assistedPullup',
+ 'Lat pulldown':'latPulldown','Seated lat pulldown':'seatedLatPulldown','Modified standing lat pulldown':'modifiedStandingLatPulldown',
+ 'Assisted pull-up':'assistedPullup','Band-assisted pull-up':'assistedPullup',
  'Seated cable row':'seatedCableRow','Chest-supported machine row':'machineRow','Chest-supported dumbbell row':'chestSupportedDumbbellRow',
  'Dumbbell row':'chestSupportedDumbbellRow','Machine row':'machineRow','T-bar row':'tBarRow',
  'Farmer carry':'farmerCarry','Heavy static hold':'heavyStaticHold','Suitcase carry':'suitcaseCarry',
@@ -4131,8 +4132,15 @@ function normalizeExercise(exercise){
 }
 
 const AUGUST5_CIRCUIT_CORRECTION='august5-day3-sled-components-v1';
+const AUGUST11_PULLDOWN_VARIATION_CORRECTION='august11-day2-standing-pulldown-variation-v1';
+const AUGUST18_PULLDOWN_VARIATION_CORRECTION='august18-day2-seated-pulldown-variation-v1';
+const KNOWN_HISTORICAL_CORRECTIONS=new Set([
+ AUGUST5_CIRCUIT_CORRECTION,
+ AUGUST11_PULLDOWN_VARIATION_CORRECTION,
+ AUGUST18_PULLDOWN_VARIATION_CORRECTION
+]);
 
-function applyKnownHistoricalCorrections(entry){
+function applyAugust5CircuitCorrection(entry){
  if(entry.date!=='2026-08-05'||entry.dayKey!=='day3'||String(entry.programVersion)!=='1.3')return entry;
  const circuit=(entry.exercises||[]).find(exercise=>exerciseIdentity(exercise)==='gymConditioningCircuit');
  if(!circuit)return entry;
@@ -4180,6 +4188,31 @@ function applyKnownHistoricalCorrections(entry){
  return entry;
 }
 
+function applyPulldownVariationCorrection(entry){
+ if(entry.dayKey!=='day2')return entry;
+ const correction=entry.date==='2026-08-11'
+  ?{variation:'Modified standing lat pulldown',variationId:'modifiedStandingLatPulldown',marker:AUGUST11_PULLDOWN_VARIATION_CORRECTION}
+  :entry.date==='2026-08-18'
+   ?{variation:'Seated lat pulldown',variationId:'seatedLatPulldown',marker:AUGUST18_PULLDOWN_VARIATION_CORRECTION}
+   :null;
+ if(!correction)return entry;
+ const pulldown=(entry.exercises||[]).find(exercise=>exerciseIdentity(exercise)==='verticalPull');
+ if(!pulldown)return entry;
+ const currentVariationId=exerciseVariationId(pulldown);
+ if(currentVariationId&&!['latPulldown',correction.variationId].includes(currentVariationId))return entry;
+ pulldown.variation=correction.variation;
+ pulldown.variationId=correction.variationId;
+ const applied=Array.isArray(pulldown.historicalCorrections)?pulldown.historicalCorrections:[];
+ pulldown.historicalCorrections=[...new Set([...applied,correction.marker])];
+ return entry;
+}
+
+function applyKnownHistoricalCorrections(entry){
+ applyAugust5CircuitCorrection(entry);
+ applyPulldownVariationCorrection(entry);
+ return entry;
+}
+
 function normalizeEntry(entry){
  if(!entry||typeof entry!=='object'||typeof entry.id!=='string'||!entry.id||typeof entry.date!=='string'||!entry.date||!SESSIONS[entry.dayKey])return null;
  const current=SESSIONS[entry.dayKey];
@@ -4215,7 +4248,7 @@ function loadEntries(){
 
 function persistKnownHistoricalCorrections(){
  const corrected=entries.filter(entry=>(entry.exercises||[]).some(exercise=>
-  Array.isArray(exercise.historicalCorrections)&&exercise.historicalCorrections.includes(AUGUST5_CIRCUIT_CORRECTION)
+  knownHistoricalCorrectionMarkers(exercise).length
  ));
  if(!corrected.length)return false;
  try{
@@ -4223,9 +4256,8 @@ function persistKnownHistoricalCorrections(){
   const storedById=new Map((Array.isArray(stored)?stored:[]).map(entry=>[entry.id,entry]));
   const needsWrite=corrected.some(entry=>{
    const original=storedById.get(entry.id);
-   return !(original?.exercises||[]).some(exercise=>
-    Array.isArray(exercise.historicalCorrections)&&exercise.historicalCorrections.includes(AUGUST5_CIRCUIT_CORRECTION)
-   );
+   const originalMarkers=new Set((original?.exercises||[]).flatMap(knownHistoricalCorrectionMarkers));
+   return (entry.exercises||[]).flatMap(knownHistoricalCorrectionMarkers).some(marker=>!originalMarkers.has(marker));
   });
   if(!needsWrite)return false;
   const previous=Array.isArray(stored)?stored:[];
@@ -4233,9 +4265,14 @@ function persistKnownHistoricalCorrections(){
   recordCloudLocalChanges(previous,entries);
   return true;
  }catch(error){
-  console.warn('Unable to persist the historical circuit correction',error);
+  console.warn('Unable to persist known historical corrections',error);
   return false;
  }
+}
+
+function knownHistoricalCorrectionMarkers(exercise){
+ return (Array.isArray(exercise?.historicalCorrections)?exercise.historicalCorrections:[])
+  .filter(marker=>KNOWN_HISTORICAL_CORRECTIONS.has(marker));
 }
 
 function persistEntries(reason,{snapshot=true,trackCloud=true}={}){

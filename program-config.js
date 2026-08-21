@@ -1,8 +1,8 @@
 window.AFT_PROGRAM_CONFIG={
  id:'aft-foundation-block-1',
  name:'AFT Foundation Block 1',
- version:'1.4.4',
- effectiveDate:'2026-08-19',
+ version:'1.4.5',
+ effectiveDate:'2026-08-21',
  currentRunStage:3,
  rotation:['day1','day2','day3','day4'],
  runStages:[
@@ -53,6 +53,17 @@ window.AFT_PROGRAM_CONFIG={
     {id:'hardCardio',order:3,exerciseId:'hardCardio',name:'Hard cardio',type:'cardio',prescription:'Approximately 30 seconds hard',planned:{durationSeconds:'30',durationApproximate:true},modalities:['Bike','Rower','Elliptical','Short safe sprint']},
     {id:'backwardSledDrag',order:4,exerciseId:'backwardSledDrag',name:'Backward sled drag',type:'sled',prescription:'One controlled gym-lane trip · record distance, load, duration, surface, and RPE when known',planned:{trips:'1',distanceMode:'lane_unknown',distanceLabel:'One gym lane',direction:'backward_drag'}},
     {id:'forwardSledPush',order:5,exerciseId:'forwardSledPush',name:'Forward sled push',type:'sled',prescription:'One controlled gym-lane trip · record distance, load, duration, surface, and RPE when known',planned:{trips:'1',distanceMode:'lane_unknown',distanceLabel:'One gym lane',direction:'forward_push'}},
+    {id:'rest',order:6,exerciseId:'circuitRest',name:'Rest',type:'rest',prescription:'2 minutes 30 seconds',planned:{durationSeconds:'150'}}
+   ]
+  },
+  'foundation-1.4.5':{
+   plannedRounds:2,
+   components:[
+    {id:'farmerCarry',order:1,exerciseId:'loadedCarry',name:'Farmer carry',type:'carry',prescription:'45 lb per hand for approximately 30 seconds',planned:{load:'45',loadUnit:'lb per hand',durationSeconds:'30',durationApproximate:true}},
+    {id:'lateralStepUps',order:2,exerciseId:'lateralStepUps',name:'Lateral step-ups',type:'reps',prescription:'6 repetitions per side',planned:{repsPerSide:'6'}},
+    {id:'hardCardio',order:3,exerciseId:'hardCardio',name:'Hard cardio',type:'cardio',prescription:'Approximately 30 seconds hard',planned:{durationSeconds:'30',durationApproximate:true},modalities:['Bike','Rower','Elliptical','Short safe sprint']},
+    {id:'backwardSledDrag',order:4,exerciseId:'backwardSledDrag',name:'Backward sled drag',type:'sled',prescription:'One controlled trip on the Torque Fitness TANK M4 at Level 3 over the approximately 20-yard gym lane',planned:{trips:'1',distanceMode:'lane_unknown',distanceLabel:'Approximately 20 yd gym lane',equipmentLabel:'Torque Fitness TANK M4 · Level 3',direction:'backward_drag'}},
+    {id:'forwardSledPush',order:5,exerciseId:'forwardSledPush',name:'Forward sled push',type:'sled',prescription:'One controlled trip on the Torque Fitness TANK M4 at Level 3 over the approximately 20-yard gym lane',planned:{trips:'1',distanceMode:'lane_unknown',distanceLabel:'Approximately 20 yd gym lane',equipmentLabel:'Torque Fitness TANK M4 · Level 3',direction:'forward_push'}},
     {id:'rest',order:6,exerciseId:'circuitRest',name:'Rest',type:'rest',prescription:'2 minutes 30 seconds',planned:{durationSeconds:'150'}}
    ]
   }
@@ -132,17 +143,17 @@ window.AFT_PROGRAM_CONFIG={
    label:'Day 3 — Lower Strength and Gym Conditioning',
    focus:'Reduced lower-body volume and a capped two-round conditioning circuit.',
    targetSessionRpe:'7–8',
-   warmup:'5–8 minutes of easy cardio, dynamic hip and ankle prep, then 2–4 progressive Romanian-deadlift warm-up sets.',
+   warmup:'Approximately 10 progressive minutes: easy cardio, dynamic hip and ankle prep, then 2–4 Romanian-deadlift warm-up sets.',
    exercises:[
-    {id:'romanianDeadlift',name:'Romanian deadlift',prescription:'115 lb total for 2 × 8',type:'weighted',unit:'lb',sets:2,targetLoad:115,targetLoadVariation:'Barbell',variations:['Barbell','Dumbbells','Smith machine'],defaultVariation:'Barbell',barWeights:{'Barbell':45,'Smith machine':20}},
-    {id:'squatPattern',name:'Goblet squat',prescription:'55 lb for 3 × 8',type:'weighted',unit:'lb',sets:3,targetLoad:55,targetLoadVariation:'Goblet squat',variations:['Goblet squat','Front squat','Hack squat','Leg press'],defaultVariation:'Goblet squat',barWeights:{'Front squat':45}},
-    {id:'inclinePress',name:'Incline dumbbell press',prescription:'30 lb per hand for 3 × 9',type:'weighted',unit:'lb per hand',sets:3,targetLoad:30,targetLoadVariation:'Incline dumbbell press',variations:['Incline dumbbell press','Incline chest-press machine'],defaultVariation:'Incline dumbbell press',coachingNotes:'Hold 30 lb per hand until all three sets of 9 are completed cleanly; the prior result was 9, 9, 7.'},
-    {id:'oneArmRow',name:'One-arm dumbbell row',prescription:'45 lb for 3 × 10 each side',type:'weighted',unit:'lb',sets:3,targetLoad:45,targetLoadVariation:'One-arm dumbbell row',targetRpe:'6–8',variations:['One-arm dumbbell row','One-arm cable row'],defaultVariation:'One-arm dumbbell row'},
-    {id:'singleLegStrength',name:'Split squat',prescription:'Body weight for 2 × 8 each leg',type:'weighted',unit:'lb total',sets:2,variations:['Body-weight split squat','Light dumbbell split squat','Forward step-up','Lateral step-up'],defaultVariation:'Body-weight split squat',coachingNotes:'Use body weight and controlled repetitions.'},
-    {id:'sidePlank',name:'Side plank',prescription:'3 × 35 sec each side',type:'timed',sets:3},
-    {id:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 rest',type:'circuit',circuitVersion:'foundation-1.4',targetRpe:'7–8',defaults:{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'30',restSeconds:'150'},modalities:['Bike','Rower','Elliptical','Short safe sprint'],coachingNotes:'Keep exactly two rounds. Do not automatically increase sled weight, hard-cardio duration, or round count.'},
-    {id:'hammerCurl',name:'Hammer curl',prescription:'25 lb per hand for 2 × 10–15',type:'weighted',unit:'lb per hand',sets:2,targetLoad:25,targetLoadVariation:'Dumbbell hammer curl',targetRpe:'7–9',variations:['Dumbbell hammer curl','Rope cable hammer curl'],defaultVariation:'Dumbbell hammer curl',variationUnits:{'Dumbbell hammer curl':'lb per hand','Rope cable hammer curl':'lb total'},group:'armSuperset',optional:true},
-    {id:'overheadTricepsExtension',name:'Overhead cable triceps extension',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',variations:['Rope overhead cable extension','Single-arm overhead cable extension','Other equivalent cable variation'],defaultVariation:'Rope overhead cable extension',variationUnits:{'Rope overhead cable extension':'lb total','Single-arm overhead cable extension':'lb per side','Other equivalent cable variation':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use a pain-free shoulder position and a controlled stretch in the lengthened position.'}
+    {id:'romanianDeadlift',name:'Romanian deadlift',prescription:'125 lb total for 2 × 8',type:'weighted',unit:'lb',sets:2,targetLoad:125,targetLoadVariation:'Barbell',targetRpe:'6–8',variations:['Barbell','Dumbbells','Smith machine'],defaultVariation:'Barbell',barWeights:{'Barbell':45,'Smith machine':20},coachingNotes:'Use technically clean repetitions; this progression follows two 115 lb exposures completed at RPE 6.'},
+    {id:'squatPattern',name:'Goblet squat',prescription:'55 lb for 3 × 9',type:'weighted',unit:'lb',sets:3,targetLoad:55,targetLoadVariation:'Goblet squat',targetRpe:'7–8',variations:['Goblet squat','Front squat','Hack squat','Leg press'],defaultVariation:'Goblet squat',barWeights:{'Front squat':45},coachingNotes:'Keep the goblet-squat load fixed at 55 lb while progressing repetitions.'},
+    {id:'inclinePress',name:'Incline dumbbell press',prescription:'30 lb per hand for 3 × 10',type:'weighted',unit:'lb per hand',sets:3,targetLoad:30,targetLoadVariation:'Incline dumbbell press',targetRpe:'7–8',variations:['Incline dumbbell press','Incline chest-press machine'],defaultVariation:'Incline dumbbell press',coachingNotes:'Keep 30 lb per hand and complete three technically clean sets of 10 before any future load change.'},
+    {id:'oneArmRow',name:'One-arm dumbbell row',prescription:'45 lb for 3 × 11 each side',type:'weighted',unit:'lb',sets:3,targetLoad:45,targetLoadVariation:'One-arm dumbbell row',targetRpe:'6–8',variations:['One-arm dumbbell row','One-arm cable row'],defaultVariation:'One-arm dumbbell row'},
+    {id:'singleLegStrength',name:'Split squat',prescription:'Body weight for 2 × 10 each leg',type:'weighted',unit:'lb total',sets:2,targetRpe:'6–7',variations:['Body-weight split squat','Light dumbbell split squat','Forward step-up','Lateral step-up'],defaultVariation:'Body-weight split squat',coachingNotes:'Use body weight and controlled repetitions for both sets.'},
+    {id:'sidePlank',name:'Side plank',prescription:'3 × 40 sec each side',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:40','0:40','0:40']},
+    {id:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 rest',type:'circuit',circuitVersion:'foundation-1.4.5',targetRpe:'7–8',defaults:{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'30',restSeconds:'150'},modalities:['Bike','Rower','Elliptical','Short safe sprint'],coachingNotes:'Keep exactly two rounds. Use the Torque Fitness TANK M4 at Level 3 on the same approximately 20-yard gym lane when available, and record that equipment label in the existing sled fields. Level 3 is a resistance setting, not a weight. Do not automatically increase sled resistance, hard-cardio duration, or round count.'},
+    {id:'hammerCurl',name:'Hammer curl',prescription:'20 lb per hand for 2 × 15',type:'weighted',unit:'lb per hand',sets:2,targetLoad:20,targetLoadVariation:'Dumbbell hammer curl',targetRpe:'7–9',variations:['Dumbbell hammer curl','Rope cable hammer curl'],defaultVariation:'Dumbbell hammer curl',variationUnits:{'Dumbbell hammer curl':'lb per hand','Rope cable hammer curl':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Treat 20 lb per hand as the current valid working load; this is not a failed 25-lb progression.'},
+    {id:'overheadTricepsExtension',name:'Overhead cable triceps extension',prescription:'88 lb for 2 × 15 on the same rope/cable setup',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',variations:['Rope overhead cable extension','Single-arm overhead cable extension','Other equivalent cable variation'],defaultVariation:'Rope overhead cable extension',variationUnits:{'Rope overhead cable extension':'lb total','Single-arm overhead cable extension':'lb per side','Other equivalent cable variation':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use the same rope and cable setup as the August 20 exposure. Keep a pain-free shoulder position and controlled stretch. The displayed 88-lb stack value is setup-specific rather than a universal load target.'}
    ]
   },
   day4:{

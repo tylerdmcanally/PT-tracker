@@ -42,8 +42,8 @@ vm.runInContext(fs.readFileSync(path.join(root,'app.js'),'utf8'),context,{filena
 const evaluate=source=>vm.runInContext(source,context);
 
 assert.equal(evaluate('PROGRAM.name'),'AFT Foundation Block 1');
-assert.equal(evaluate('PROGRAM.version'),'1.4.4');
-assert.equal(evaluate('PROGRAM.effectiveDate'),'2026-08-19');
+assert.equal(evaluate('PROGRAM.version'),'1.4.5');
+assert.equal(evaluate('PROGRAM.effectiveDate'),'2026-08-21');
 assert.equal(evaluate('PROGRAM.currentRunStage'),3);
 assert.equal(evaluate('SESSIONS.day3.exercises.find(exercise=>exercise.id==="gymConditioningCircuit").prescription.includes("Exactly 2 rounds")'),true);
 assert.equal(evaluate('SESSIONS.day3.targetSessionRpe'),'7–8');
@@ -55,15 +55,15 @@ assert.equal(evaluate('SESSIONS.skillMicrodose.weeklySkillDoseGroupId'),'aft_pus
 assert.equal(evaluate('SESSIONS.skillMicrodose.exercises.some(exercise=>/air squat/i.test(exercise.name))'),false);
 assert.equal(evaluate('sessionProgramMeta(SESSIONS.skillMicrodose).version'),'1.0');
 assert.equal(evaluate('sessionProgramMeta(SESSIONS.skillMicrodose).runStage'),'');
-assert.equal(evaluate('currentProgramMeta().version'),'1.4.4','the auxiliary template version remains independent of the primary program');
+assert.equal(evaluate('currentProgramMeta().version'),'1.4.5','the auxiliary template version remains independent of the primary program');
 assert.equal(evaluate('SESSIONS.day1.exercises.find(exercise=>exercise.id==="runWalkIntervals").runStage'),3);
 assert.equal(evaluate('SESSIONS.day4.exercises.find(exercise=>exercise.id==="primaryRun").runStage'),3);
 assert.equal(evaluate('SESSIONS.day4.exercises.find(exercise=>exercise.id==="handReleasePushups").prescription'),'4 × 7');
 assert.equal(evaluate('JSON.stringify(SESSIONS.day4.exercises.find(exercise=>exercise.id==="plank").prescribedTimes)'),'["0:35","0:35","0:35"]');
-assert.equal(evaluate('SESSIONS.day3.exercises.find(exercise=>exercise.id==="romanianDeadlift").prescription'),'115 lb total for 2 × 8');
-assert.equal(evaluate('SESSIONS.day3.exercises.find(exercise=>exercise.id==="romanianDeadlift").targetLoad'),115);
+assert.equal(evaluate('SESSIONS.day3.exercises.find(exercise=>exercise.id==="romanianDeadlift").prescription'),'125 lb total for 2 × 8');
+assert.equal(evaluate('SESSIONS.day3.exercises.find(exercise=>exercise.id==="romanianDeadlift").targetLoad'),125);
 assert.equal(evaluate('defaultExerciseState(SESSIONS.day3.exercises.find(exercise=>exercise.id==="romanianDeadlift")).load'),undefined,'the target load is not prefilled as a completed result');
-const v144Prescriptions=JSON.parse(evaluate(`JSON.stringify({
+const v145Prescriptions=JSON.parse(evaluate(`JSON.stringify({
  day1Deadlift:SESSIONS.day1.exercises.find(exercise=>exercise.id==='deadlift').prescription,
  day1LegPress:SESSIONS.day1.exercises.find(exercise=>exercise.id==='squatOrLegPress').prescription,
  day1Bench:SESSIONS.day1.exercises.find(exercise=>exercise.id==='horizontalPress').prescription,
@@ -87,18 +87,23 @@ const v144Prescriptions=JSON.parse(evaluate(`JSON.stringify({
  day3Hammer:SESSIONS.day3.exercises.find(exercise=>exercise.id==='hammerCurl').prescription,
  day3OverheadTriceps:SESSIONS.day3.exercises.find(exercise=>exercise.id==='overheadTricepsExtension').prescription
 })`));
-assert.deepEqual(v144Prescriptions,{
+assert.deepEqual(v145Prescriptions,{
  day1Deadlift:'155 lb total for 3 × 5',day1LegPress:'140 lb for 3 × 9',day1Bench:'35 lb per hand for 3 × 10',
  day1Row:'88 lb for 3 × 11',day1Carry:'45 lb per hand for 4 trips of approximately 30–40 yd',day1Plank:'3 × 45 sec',
  day1Preacher:'2 × 10–15; use 40 lb total on the same EZ-bar setup',day1Pressdown:'77 lb for 2 × 15 on the same machine/cable setup',
  day2Pushups:'5 × 8',day2Pull:'Approximately 154 lb displayed on the same seated machine for 3 × 8–10',day2Press:'25 lb per hand for 3 × 10',
  day2Row:'88 lb for 3 × 12 on the same machine/setup',day2Lateral:'2 × 15 on the same comparable cable setup/load',day2Fly:'66 lb total for 2 × 15 on the same pec-deck setup',
- day3Rdl:'115 lb total for 2 × 8',day3Goblet:'55 lb for 3 × 8',day3Incline:'30 lb per hand for 3 × 9',day3Row:'45 lb for 3 × 10 each side',
- day3Split:'Body weight for 2 × 8 each leg',day3SidePlank:'3 × 35 sec each side',day3Hammer:'25 lb per hand for 2 × 10–15',day3OverheadTriceps:'2 × 10–15'
+ day3Rdl:'125 lb total for 2 × 8',day3Goblet:'55 lb for 3 × 9',day3Incline:'30 lb per hand for 3 × 10',day3Row:'45 lb for 3 × 11 each side',
+ day3Split:'Body weight for 2 × 10 each leg',day3SidePlank:'3 × 40 sec each side',day3Hammer:'20 lb per hand for 2 × 15',day3OverheadTriceps:'88 lb for 2 × 15 on the same rope/cable setup'
 });
-assert.equal(evaluate('SESSIONS.day3.exercises.some(exercise=>exercise.id==="handReleasePushups"||exercise.id==="plank")'),false,'the optional Day 3 skill bundle remains absent from v1.4.4');
-assert.equal(evaluate('SESSIONS.day3.exercises.find(exercise=>exercise.id==="gymConditioningCircuit").circuitVersion'),'foundation-1.4');
+assert.equal(evaluate('SESSIONS.day3.exercises.some(exercise=>exercise.id==="handReleasePushups"||exercise.id==="plank")'),false,'the optional Day 3 skill bundle remains absent from v1.4.5');
+assert.equal(evaluate('SESSIONS.day3.exercises.find(exercise=>exercise.id==="gymConditioningCircuit").circuitVersion'),'foundation-1.4.5');
 assert.equal(evaluate('CIRCUIT_TEMPLATES["foundation-1.4"].components.length'),6);
+assert.equal(evaluate('CIRCUIT_TEMPLATES["foundation-1.4.5"].components.length'),6);
+assert.equal(evaluate(`CIRCUIT_TEMPLATES['foundation-1.4'].components.find(component=>component.id==='backwardSledDrag').planned.equipmentLabel`),undefined,'the historical v1.4 circuit plan remains unchanged');
+assert.equal(evaluate(`CIRCUIT_TEMPLATES['foundation-1.4.5'].components.find(component=>component.id==='backwardSledDrag').planned.equipmentLabel`),'Torque Fitness TANK M4 · Level 3');
+assert.equal(evaluate(`CIRCUIT_TEMPLATES['foundation-1.4.5'].components.find(component=>component.id==='forwardSledPush').planned.distanceLabel`),'Approximately 20 yd gym lane');
+assert.equal(evaluate(`CIRCUIT_TEMPLATES['foundation-1.4.5'].components.find(component=>component.id==='forwardSledPush').planned.load`),undefined,'the M4 resistance level is never represented as pounds');
 assert.equal(evaluate('SESSIONS.day2.exercises.find(exercise=>exercise.id==="lateralRaise").variations.includes("Cuffed-cable lateral raise")'),true);
 assert.equal(evaluate('SESSIONS.day2.exercises.find(exercise=>exercise.id==="lateralRaise").name'),'Cable lateral raise');
 assert.equal(evaluate('SESSIONS.day2.exercises.find(exercise=>exercise.id==="lateralRaise").defaultVariation'),'Cable lateral raise');
@@ -129,8 +134,14 @@ assert.equal(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='pre
 assert.equal(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='tricepsPressdown').targetLoad`),undefined,'the setup-specific 77-lb cable load is not universalized');
 assert.equal(evaluate(`SESSIONS.day3.exercises.find(exercise=>exercise.id==='oneArmRow').targetLoad`),45);
 assert.equal(evaluate(`SESSIONS.day3.exercises.find(exercise=>exercise.id==='oneArmRow').targetRpe`),'6–8');
-assert.equal(evaluate(`SESSIONS.day3.exercises.find(exercise=>exercise.id==='hammerCurl').targetLoad`),25);
+assert.equal(evaluate(`SESSIONS.day3.exercises.find(exercise=>exercise.id==='hammerCurl').targetLoad`),20);
 assert.equal(evaluate(`SESSIONS.day3.exercises.find(exercise=>exercise.id==='hammerCurl').targetLoadVariation`),'Dumbbell hammer curl');
+assert.equal(evaluate(`SESSIONS.day3.exercises.find(exercise=>exercise.id==='overheadTricepsExtension').targetLoad`),undefined,'the setup-specific 88-lb cable cue is not universalized');
+assert.equal(evaluate(`JSON.stringify(SESSIONS.day3.exercises.find(exercise=>exercise.id==='sidePlank').prescribedTimes)`),'["0:40","0:40","0:40"]');
+assert.match(evaluate(`SESSIONS.day3.warmup`),/Approximately 10 progressive minutes/);
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(Object.fromEntries(SESSIONS.day3.exercises.filter(exercise=>exercise.id!=='gymConditioningCircuit').map(exercise=>[exercise.id,exercise.targetRpe||''])))`)),{
+ romanianDeadlift:'6–8',squatPattern:'7–8',inclinePress:'7–8',oneArmRow:'6–8',singleLegStrength:'6–7',sidePlank:'6–8',hammerCurl:'7–9',overheadTricepsExtension:'7–9'
+});
 assert.equal(evaluate(`variationIdFor('Machine preacher curl')`),'machinePreacherCurl');
 assert.equal(evaluate(`variationIdFor('Seated lat pulldown')`),'seatedLatPulldown');
 assert.equal(evaluate(`variationIdFor('Modified standing lat pulldown')`),'modifiedStandingLatPulldown');
@@ -158,6 +169,8 @@ const currentDay2Press=`SESSIONS.day2.exercises.find(exercise=>exercise.id==='ov
 const currentDay2Row=`SESSIONS.day2.exercises.find(exercise=>exercise.id==='chestSupportedRow')`;
 const currentDay2Lateral=`SESSIONS.day2.exercises.find(exercise=>exercise.id==='lateralRaise')`;
 const currentDay2Fly=`SESSIONS.day2.exercises.find(exercise=>exercise.id==='chestFly')`;
+const currentDay3SidePlank=`SESSIONS.day3.exercises.find(exercise=>exercise.id==='sidePlank')`;
+const currentDay3Triceps=`SESSIONS.day3.exercises.find(exercise=>exercise.id==='overheadTricepsExtension')`;
 assert.equal(evaluate(`prescriptionAdherence(${currentDay1Deadlift},{type:'weighted',completed:true,variation:'Trap / hex bar',load:'55',loadMode:'platesPerSide',barWeight:'45',sets:'3',reps:'5, 5, 5'})`),'met');
 assert.equal(evaluate(`prescriptionAdherence(${currentDay1LegPress},{type:'weighted',completed:true,variation:'Leg press',load:'140',sets:'3',reps:'9, 9, 9'})`),'met');
 assert.equal(evaluate(`prescriptionAdherence(${currentDay1Bench},{type:'weighted',completed:true,variation:'Dumbbell bench press',load:'35',sets:'3',reps:'10, 10, 10'})`),'met');
@@ -174,10 +187,13 @@ assert.equal(evaluate(`prescriptionAdherence(${currentDay2Press},{type:'weighted
 assert.equal(evaluate(`prescriptionAdherence(${currentDay2Row},{type:'weighted',completed:true,variation:'Machine row',load:'77',sets:'3',reps:'12, 12, 12'})`),'met','machine-row adherence does not universalize the displayed stack target');
 assert.equal(evaluate(`prescriptionAdherence(${currentDay2Lateral},{type:'weighted',completed:true,variation:'Cable lateral raise',load:'33',sets:'2',reps:'15, 15'})`),'met');
 assert.equal(evaluate(`prescriptionAdherence(${currentDay2Fly},{type:'weighted',completed:true,variation:'Pec deck / machine fly',load:'55',sets:'2',reps:'15, 15'})`),'met','pec-deck adherence does not universalize the displayed stack target');
-assert.equal(evaluate(`prescriptionAdherence(${currentDay3Row},{type:'weighted',completed:true,variation:'One-arm dumbbell row',load:'45',sets:'3',reps:'10, 10, 10'})`),'met');
-assert.equal(evaluate(`prescriptionAdherence(${currentDay3Row},{type:'weighted',completed:true,variation:'One-arm dumbbell row',load:'40',sets:'3',reps:'10, 10, 10'})`),'modified');
-assert.equal(evaluate(`prescriptionAdherence(${currentHammerCurl},{type:'weighted',completed:true,variation:'Dumbbell hammer curl',load:'25',sets:'2',reps:'10, 10'})`),'met');
-assert.equal(evaluate(`prescriptionAdherence(${currentHammerCurl},{type:'weighted',completed:true,variation:'Rope cable hammer curl',load:'25',sets:'2',reps:'10, 10'})`),'modified','rope cable work remains a substitution rather than a directly comparable dumbbell load');
+assert.equal(evaluate(`prescriptionAdherence(${currentDay3Row},{type:'weighted',completed:true,variation:'One-arm dumbbell row',load:'45',sets:'3',reps:'11, 11, 11'})`),'met');
+assert.equal(evaluate(`prescriptionAdherence(${currentDay3Row},{type:'weighted',completed:true,variation:'One-arm dumbbell row',load:'40',sets:'3',reps:'11, 11, 11'})`),'modified');
+assert.equal(evaluate(`prescriptionAdherence(${currentHammerCurl},{type:'weighted',completed:true,variation:'Dumbbell hammer curl',load:'20',sets:'2',reps:'15, 15'})`),'met');
+assert.equal(evaluate(`prescriptionAdherence(${currentHammerCurl},{type:'weighted',completed:true,variation:'Rope cable hammer curl',load:'20',sets:'2',reps:'15, 15'})`),'modified','rope cable work remains a substitution rather than a directly comparable dumbbell load');
+assert.equal(evaluate(`prescriptionAdherence(${currentDay3SidePlank},{type:'timed',completed:true,sets:'3',times:'40, 40, 40'})`),'met');
+assert.equal(evaluate(`prescriptionAdherence(${currentDay3SidePlank},{type:'timed',completed:true,sets:'3',times:'40, 35, 40'})`),'below_target');
+assert.equal(evaluate(`prescriptionAdherence(${currentDay3Triceps},{type:'weighted',completed:true,variation:'Rope overhead cable extension',load:'77',sets:'2',reps:'15, 15'})`),'met','a different stack number is not judged against the setup-specific 88-lb cue');
 assert.equal(evaluate(`prescriptionAdherence(${currentDay4Plank},{type:'timed',completed:true,sets:'3',times:'35, 35, 35'})`),'met');
 assert.equal(evaluate(`prescriptionAdherence(${currentDay4Plank},{type:'timed',completed:true,sets:'3',times:'35, 35, 30'})`),'below_target');
 const v144RunMarkdown=evaluate(`markdownExercise(SESSIONS.day4.exercises.find(exercise=>exercise.id==='primaryRun'),{
@@ -196,12 +212,12 @@ assert.equal(evaluate(`prescriptionAdherence({type:'timed',prescription:'3 × 25
 assert.equal(evaluate(`prescriptionAdherence({type:'timed',prescription:'3 × 25–30 sec',sets:3},{type:'timed',completed:true,times:'25, 20, 25'})`),'below_target');
 assert.equal(evaluate(`prescriptionAdherence({type:'weighted',prescription:'3 × 8',sets:3,optional:true},{type:'weighted',completed:false})`),'not_applicable');
 assert.equal(evaluate(`prescriptionAdherence({type:'weighted',prescription:'95 lb total for 2 × 8',sets:2,targetLoad:95,targetLoadVariation:'Barbell',variations:['Barbell','Dumbbells']},{type:'weighted',completed:true,variation:'Dumbbells',load:'30',sets:'2',reps:'8, 8'})`),'modified','a substitution is recorded explicitly instead of being treated as the targeted load');
-assert.equal(evaluate(`prescriptionAdherence(SESSIONS.day3.exercises.find(exercise=>exercise.id==='romanianDeadlift'),{type:'weighted',completed:true,variation:'Barbell',load:'70',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8'})`),'met');
-assert.equal(evaluate(`prescriptionAdherence(SESSIONS.day3.exercises.find(exercise=>exercise.id==='romanianDeadlift'),{type:'weighted',completed:true,variation:'Barbell',load:'60',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8'})`),'modified');
+assert.equal(evaluate(`prescriptionAdherence(SESSIONS.day3.exercises.find(exercise=>exercise.id==='romanianDeadlift'),{type:'weighted',completed:true,variation:'Barbell',load:'80',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8'})`),'met');
+assert.equal(evaluate(`prescriptionAdherence(SESSIONS.day3.exercises.find(exercise=>exercise.id==='romanianDeadlift'),{type:'weighted',completed:true,variation:'Barbell',load:'70',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8'})`),'modified');
 assert.equal(evaluate(`prescribedEnteredLoad(145,'platesPerSide',45)`),50,'quick fill preserves per-side plate entry while reaching total prescribed load');
-assert.equal(evaluate(`prescribedEnteredLoad(115,'plates',45)`),70,'quick fill preserves combined-plate entry while reaching total prescribed load');
+assert.equal(evaluate(`prescribedEnteredLoad(125,'plates',45)`),80,'quick fill preserves combined-plate entry while reaching total prescribed load');
 assert.equal(evaluate(`prescribedEnteredLoad(30,'','')`),30,'non-bar exercises retain their direct prescribed load');
-const aboveTargetLoad=JSON.parse(evaluate(`JSON.stringify(prescriptionAdherenceDetail(SESSIONS.day3.exercises.find(exercise=>exercise.id==='romanianDeadlift'),{type:'weighted',completed:true,variation:'Barbell',load:'80',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8'}))`));
+const aboveTargetLoad=JSON.parse(evaluate(`JSON.stringify(prescriptionAdherenceDetail(SESSIONS.day3.exercises.find(exercise=>exercise.id==='romanianDeadlift'),{type:'weighted',completed:true,variation:'Barbell',load:'90',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8'}))`));
 assert.equal(aboveTargetLoad.value,'modified');
 assert.ok(aboveTargetLoad.reasons.some(reason=>reason.code==='load_above_target'));
 assert.equal(evaluate(`prescriptionAdherence({type:'carry',prescription:'Carry with good posture'},{type:'carry',completed:true,load:'45'})`),'not_assessable');
@@ -422,6 +438,11 @@ assert.equal(evaluate(`prescriptionAdherence(definitionForSavedEntry(august5Fixt
 assert.equal(evaluate(`prescriptionAdherence(definitionForSavedEntry(august5Fixture).exercises.find(exercise=>exercise.id==='gymConditioningCircuit'),{type:'circuit',circuitVersion:'foundation-1.2',completed:true,rounds:'3',carryLoad:'45',carrySeconds:'30',stepReps:'6',modality:'Bike',intervalSeconds:'45',restSeconds:'150'})`),'modified','exceeding the exact circuit round cap is a modification');
 assert.equal(evaluate(`sledTotalDistance({distanceMode:'known',trips:'2',distancePerTrip:'20',distanceUnit:'yd'})`),40);
 assert.equal(evaluate(`sledTotalSystemWeight({loadMode:'added_plus_sled',addedPlateWeight:'90',emptySledWeight:'70'})`),160);
+const tankM4Markdown=evaluate(`markdownSledPerformance({direction:'backward_drag',trips:'1',distanceMode:'lane_unknown',distanceLabel:'Approximately 20 yd gym lane',loadMode:'unknown',equipmentLabel:'Torque Fitness TANK M4 · Level 3'})`);
+assert.match(tankM4Markdown,/Distance: Approximately 20 yd gym lane \(length unknown\)/);
+assert.match(tankM4Markdown,/Equipment: Torque Fitness TANK M4 · Level 3/);
+assert.match(tankM4Markdown,/Load: Unknown \/ not recorded/,'Level 3 is exported as equipment resistance rather than pounds');
+assert.doesNotMatch(tankM4Markdown,/Level 3 lb/);
 const perRoundCircuit=JSON.parse(evaluate(`JSON.stringify(normalizeCircuitComponent({id:'backwardSledDrag',name:'Backward sled drag',type:'sled',resultMode:'per_round',roundResults:[
  {round:1,performed:true,direction:'backward_drag',distanceMode:'known',trips:'1',distancePerTrip:'20',distanceUnit:'yd',surface:'turf'},
  {round:2,performed:true,direction:'backward_drag',distanceMode:'lane_unknown',distanceLabel:'one gym lane',surface:'turf'}
@@ -435,6 +456,8 @@ const circuitCard=evaluate(`exerciseCard(SESSIONS.day3.exercises.find(exercise=>
 assert.ok(circuitCard.indexOf('Farmer carry')<circuitCard.indexOf('Backward sled drag'));
 assert.ok(circuitCard.indexOf('Backward sled drag')<circuitCard.indexOf('Forward sled push'));
 assert.match(circuitCard,/Performed as planned/,'the sled sequence is the v1.4 baseline rather than a one-time directive');
+assert.match(circuitCard,/Torque Fitness TANK M4/);
+assert.match(circuitCard,/Level 3/);
 assert.match(circuitCard,/data-circuit-field="addedPlateWeight"/);
 assert.match(circuitCard,/data-circuit-field="emptySledWeight"/);
 assert.match(circuitCard,/data-circuit-field="distancePerTrip"/);
@@ -459,7 +482,7 @@ assert.equal(evaluate(`circuitDirectiveAdherenceDetail(legacyCircuitDefinition,d
 assert.equal(evaluate(`circuitAdherenceDetail(legacyCircuitDefinition,directiveFixture.exercises[0]).value`),'modified','baseline prescription and directive adherence remain separate');
 evaluate(`entries=[directiveFixture]`);
 assert.equal(evaluate(`activeCoachOverlay('1.3','day3','gymConditioningCircuit','2026-08-12')`),null,'a saved completed occurrence consumes the directive');
-assert.equal(evaluate('PROGRAM.version'),'1.4.4','consuming a historical directive does not change the current program version');
+assert.equal(evaluate('PROGRAM.version'),'1.4.5','consuming a historical directive does not change the current program version');
 evaluate(`entries=[];activeProgramContext=currentProgramMeta();activeSessionDefinition=SESSIONS.day3;activeWorkoutDate='2026-08-08'`);
 
 const fakeCard={
@@ -654,6 +677,30 @@ assert.equal(august15V141Day3Definition.exercises.find(exercise=>exercise.id==='
 assert.equal(august15V141Day3Definition.exercises.find(exercise=>exercise.id==='oneArmRow').targetLoad,40);
 assert.equal(august15V141Day3Definition.exercises.find(exercise=>exercise.id==='hammerCurl').prescription,'2 × 10–15');
 assert.equal(august15V141Day3Definition.exercises.find(exercise=>exercise.id==='hammerCurl').targetLoad,undefined,'the new 25-lb target is not inserted into v1.4.1 history');
+
+const august20V144Fixture=`{
+ id:'august20-day3',date:'2026-08-20',dayKey:'day3',dayLabel:'Day 3 — Lower Strength and Gym Conditioning',programVersion:'1.4.4',
+ prescriptionSnapshot:{sessionKey:'day3',sessionType:'primary',label:'Day 3 — Lower Strength and Gym Conditioning',warmup:'5–8 minutes of easy cardio, dynamic hip and ankle prep, then 2–4 progressive Romanian-deadlift warm-up sets.',exercises:[
+  {id:'romanianDeadlift',name:'Romanian deadlift',prescription:'115 lb total for 2 × 8',type:'weighted',unit:'lb',sets:2,targetLoad:115,targetLoadVariation:'Barbell'},
+  {id:'squatPattern',name:'Goblet squat',prescription:'55 lb for 3 × 8',type:'weighted',unit:'lb',sets:3,targetLoad:55,targetLoadVariation:'Goblet squat'},
+  {id:'inclinePress',name:'Incline dumbbell press',prescription:'30 lb per hand for 3 × 9',type:'weighted',unit:'lb per hand',sets:3,targetLoad:30,targetLoadVariation:'Incline dumbbell press'},
+  {id:'oneArmRow',name:'One-arm dumbbell row',prescription:'45 lb for 3 × 10 each side',type:'weighted',unit:'lb',sets:3,targetLoad:45,targetLoadVariation:'One-arm dumbbell row'},
+  {id:'singleLegStrength',name:'Split squat',prescription:'Body weight for 2 × 8 each leg',type:'weighted',unit:'lb total',sets:2},
+  {id:'sidePlank',name:'Side plank',prescription:'3 × 35 sec each side',type:'timed',sets:3},
+  {id:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 rest',type:'circuit',circuitVersion:'foundation-1.4'},
+  {id:'hammerCurl',name:'Hammer curl',prescription:'25 lb per hand for 2 × 10–15',type:'weighted',unit:'lb per hand',sets:2,targetLoad:25,targetLoadVariation:'Dumbbell hammer curl',optional:true},
+  {id:'overheadTricepsExtension',name:'Overhead cable triceps extension',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,optional:true}
+ ]},
+ exercises:[{exerciseId:'hammerCurl',name:'Hammer curl',type:'weighted',variation:'Dumbbell hammer curl',load:'20',sets:'2',reps:'12, 12',rpe:'7',completed:true,notes:'Current valid working load.'}]
+}`;
+const august20V144Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry(${august20V144Fixture}))`));
+const august20V144Entry=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${august20V144Fixture}))`));
+assert.equal(august20V144Definition.warmup,'5–8 minutes of easy cardio, dynamic hip and ankle prep, then 2–4 progressive Romanian-deadlift warm-up sets.');
+assert.equal(august20V144Definition.exercises.find(exercise=>exercise.id==='romanianDeadlift').prescription,'115 lb total for 2 × 8');
+assert.equal(august20V144Definition.exercises.find(exercise=>exercise.id==='hammerCurl').prescription,'25 lb per hand for 2 × 10–15');
+assert.equal(august20V144Definition.exercises.find(exercise=>exercise.id==='gymConditioningCircuit').circuitVersion,'foundation-1.4');
+assert.equal(august20V144Entry.exercises[0].load,'20','the raw August 20 hammer-curl load remains unchanged');
+assert.equal(august20V144Entry.exercises[0].reps,'12, 12','the raw August 20 repetitions remain unchanged');
 
 const august15V141Day4Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry({
  date:'2026-08-15',dayKey:'day4',dayLabel:'Day 4 — Run and Calisthenics',programVersion:'1.4.1',
@@ -972,7 +1019,7 @@ evaluate(`entries=[{
  ]
 }]`);
 const markdown=evaluate('buildMd()');
-assert.match(markdown,/AFT Foundation Block 1 · version 1\.4\.4/);
+assert.match(markdown,/AFT Foundation Block 1 · version 1\.4\.5/);
 assert.match(markdown,/Program: AFT Foundation Block 1 · version 1\.2/,'historical entry version must remain visible');
 assert.match(markdown,/Planned:/);
 assert.match(markdown,/Status: Completed/);
@@ -996,7 +1043,7 @@ assert.match(csv,/"14:16"/);
 assert.match(csv,/"Relaxed pace\.\nNo pain\."/);
 const jsonBackup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
 assert.equal(jsonBackup.version,11);
-assert.equal(jsonBackup.currentProgram.version,'1.4.4');
+assert.equal(jsonBackup.currentProgram.version,'1.4.5');
 assert.equal(jsonBackup.currentProgram.runStage,3);
 assert.equal(jsonBackup.entries[0].exercises[0].deviceReportedPace,'14:16');
 
@@ -1063,12 +1110,12 @@ const indexHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const appSource=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 assert.match(appSource,/Exercise notes<textarea[^>]+data-field="notes"/,'exercise notes must support detailed multiline comments');
-assert.ok(indexHtml.indexOf('program-config.js?v=33')<indexHtml.indexOf('cloud-config.js?v=33'));
-assert.ok(indexHtml.indexOf('cloud-config.js?v=33')<indexHtml.indexOf('cloud-sync.js?v=33'));
-assert.ok(indexHtml.indexOf('cloud-sync.js?v=33')<indexHtml.indexOf('app.js?v=33'));
-assert.match(serviceWorker,/aft-workout-tracker-v33/);
-assert.match(serviceWorker,/program-config\.js\?v=33/);
-assert.match(serviceWorker,/cloud-sync\.js\?v=33/);
+assert.ok(indexHtml.indexOf('program-config.js?v=34')<indexHtml.indexOf('cloud-config.js?v=34'));
+assert.ok(indexHtml.indexOf('cloud-config.js?v=34')<indexHtml.indexOf('cloud-sync.js?v=34'));
+assert.ok(indexHtml.indexOf('cloud-sync.js?v=34')<indexHtml.indexOf('app.js?v=34'));
+assert.match(serviceWorker,/aft-workout-tracker-v34/);
+assert.match(serviceWorker,/program-config\.js\?v=34/);
+assert.match(serviceWorker,/cloud-sync\.js\?v=34/);
 assert.ok(indexHtml.indexOf('id="preWorkoutCard"')<indexHtml.indexOf('class="card session-timer-card"'));
 assert.ok(indexHtml.indexOf('class="card session-timer-card"')<indexHtml.indexOf('id="exerciseList"'));
 assert.match(appSource,/data-fill-prescribed/,'prescription quick-fill remains available for structured strength and timed work');

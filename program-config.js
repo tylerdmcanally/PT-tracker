@@ -1,15 +1,15 @@
 window.AFT_PROGRAM_CONFIG={
  id:'aft-foundation-block-1',
  name:'AFT Foundation Block 1',
- version:'1.4.5',
- effectiveDate:'2026-08-21',
- currentRunStage:3,
+ version:'1.4.6',
+ effectiveDate:'2026-08-23',
+ currentRunStage:4,
  rotation:['day1','day2','day3','day4'],
  runStages:[
   {id:1,label:'1:00 walk / 1:00 run × 10',runMinutes:'1',walkMinutes:'1',rounds:'10'},
   {id:2,label:'1:00 walk / 1:30 run × 8',runMinutes:'1.5',walkMinutes:'1',rounds:'8'},
   {id:3,label:'1:00 walk / 2:00 run × 7',runMinutes:'2',walkMinutes:'1',rounds:'7'},
-  {id:4,label:'1:00 walk / 3:00 run × 6',runMinutes:'3',walkMinutes:'1',rounds:'6'},
+  {id:4,label:'1:00 walk / 2:30 run × 6',runMinutes:'2.5',walkMinutes:'1',rounds:'6'},
   {id:5,label:'1:00 walk / 4:00 run × 5',runMinutes:'4',walkMinutes:'1',rounds:'5'},
   {id:6,label:'1:00 walk / 5:00 run × 5',runMinutes:'5',walkMinutes:'1',rounds:'5'},
   {id:7,label:'1:00 walk / 8:00 run × 3',runMinutes:'8',walkMinutes:'1',rounds:'3'},
@@ -114,7 +114,7 @@ window.AFT_PROGRAM_CONFIG={
     {id:'seatedRow',name:'Seated cable row',prescription:'88 lb for 3 × 11',type:'weighted',unit:'lb',sets:3,targetLoad:88,targetLoadVariation:'Seated cable row',targetRpe:'6–8',variations:['Seated cable row','Chest-supported machine row'],defaultVariation:'Seated cable row',coachingNotes:'Use the same cable setup for comparability. Hold 88 lb until all three sets of 11 are completed cleanly.'},
     {id:'loadedCarry',name:'Farmer carry',prescription:'45 lb per hand for 4 trips of approximately 30–40 yd',type:'carry',unit:'lb per hand',sets:4,variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry',coachingNotes:'Keep the current load; do not progress it while the Day 3 sled work is in the program.'},
     {id:'plank',name:'Front plank',prescription:'3 × 45 sec',type:'timed',sets:3,targetRpe:'6–7',prescribedTimes:['0:45','0:45','0:45'],coachingNotes:'Maintain clean front-plank technique throughout each set.'},
-    {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 3 — 1:00 walk / 2:00 run × 7',type:'interval',runStage:3,targetRpe:'5–6',coachingNotes:'This run follows the primary strength work and is not a pace test. On a treadmill, start the running segments around 6.0–6.2 mph. If RPE is already above 6 by the early-middle rounds, reduce speed rather than forcing pace. Finish each 2-minute run with approximately another 30–60 seconds of running available. Ignore overall average pace as a progression target and prioritize continuous-running tolerance before speed. Record actual walk and run speeds in the existing run details.'},
+    {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'interval',runStage:4,targetRpe:'5–6',coachingNotes:'This run follows the primary strength work and is not a pace test. On a treadmill, start the running segments around 6.0–6.2 mph. If RPE is already above 6 by the early-middle rounds, reduce speed rather than forcing pace. Do not chase total distance or overall average pace; the purpose is extending continuous-running tolerance after lifting. Finish each 2:30 running segment with reserve and record actual walk and run speeds in the existing run details.'},
     {id:'preacherCurl',name:'Preacher curl',prescription:'2 × 10–15; use 40 lb total on the same EZ-bar setup',type:'weighted',unit:'lb total',sets:2,targetLoad:40,targetLoadVariation:'EZ-bar preacher curl',targetRpe:'7–9',variations:['Machine preacher curl','EZ-bar preacher curl','Dumbbell preacher curl','Cable preacher curl'],defaultVariation:'EZ-bar preacher curl',variationUnits:{'Machine preacher curl':'lb total','EZ-bar preacher curl':'lb total','Dumbbell preacher curl':'lb per hand','Cable preacher curl':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Keep 40 lb total only when using the same EZ-bar setup. Other variations are not directly load-comparable. Use controlled full repetitions and do not make a coach-directed load increase without a comparable RPE or effort signal.'},
     {id:'tricepsPressdown',name:'Cable triceps pressdown',prescription:'77 lb for 2 × 15 on the same machine/cable setup',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',group:'armSuperset',optional:true,coachingNotes:'Use 77 lb only on the same machine and cable setup as the August 17 exposure. The displayed stack value is not a universal load target. Once both sets of 15 are completed in the target RPE range, the coach may consider a future load progression; progression is never automatic.'}
    ]
@@ -164,9 +164,9 @@ window.AFT_PROGRAM_CONFIG={
    targetSessionRpe:'6–7',
    warmup:'5–10 minutes of brisk walking plus marches and leg swings. The interval timer then begins with its walk segment.',
    exercises:[
-    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 3 — 1:00 walk / 2:00 run × 7',type:'run',runStage:3,targetRpe:'5–6',coachingNotes:'On a treadmill, start the running segments around 6.2 mph and use 6.2–6.4 mph as the acceptable working range. Finish each 2-minute run with roughly another 30–60 seconds of running available. Do not chase overall average pace; prioritize continuous-running tolerance before speed. Record actual walk and run speeds in the existing run details.'},
-    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 7',type:'body',sets:4,coachingNotes:'Use four equal, technically clean sets. Stop before failure.'},
-    {id:'plank',name:'Front plank',prescription:'3 × 35 sec',type:'timed',sets:3,prescribedTimes:['0:35','0:35','0:35']},
+    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'run',runStage:4,targetRpe:'5–6',coachingNotes:'On a treadmill, use approximately 6.2–6.4 mph while prioritizing completion of each 2:30 running segment with reserve. Do not increase speed simply because the prior Stage 3 session was completed at 6.4 mph; duration progression takes priority over speed progression. Record actual walk and run speeds in the existing run details.'},
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 8',type:'body',sets:4,targetRpe:'5–7',coachingNotes:'Use four equal, technically clean sets and stop before failure.'},
+    {id:'plank',name:'Front plank',prescription:'3 × 45 sec',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:45','0:45','0:45']},
     {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed'}
    ]
   },

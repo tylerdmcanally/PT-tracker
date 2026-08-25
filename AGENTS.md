@@ -4,6 +4,8 @@ This repository is the canonical AFT Workout Tracker application. The applicatio
 
 Private coaching state is maintained in the separate private repository `tylerdmcanally/aft-coaching`, normally available as the sibling directory `../aft-coaching`. This application repository must contain only app source, tests, build/deployment configuration, privacy guardrails, and the minimum active prescription data required at runtime.
 
+The private coaching repository is canonical for training, recovery, Health-snapshot, and nutrition state. This repository is canonical only for application implementation and the minimum active runtime prescription. Live current-day Apple Health data comes from the local `health-auto-export` MCP server when available to Codex; it belongs in the coaching workflow, not in this PWA. Codex conversations are temporary and are never a source of truth.
+
 ## Before changing application code
 
 1. Read `CODEX-HANDOFF.md` completely.
@@ -21,6 +23,7 @@ Private coaching state is maintained in the separate private repository `tylerdm
 - Preserve programmed interval time separately from total elapsed time, along with run speeds, heart rate, pain, RPE, and notes when entered.
 - Preserve the existing optional Firebase backup unless explicitly asked to change it. Drafts and timers remain device-local.
 - Keep the interface clean. Do not add timers, supersets UI, recovery scores, ECG/headache/body-composition tracking, extra soreness fields, automatic progression, extra runs, or navigation without a demonstrated workflow need.
+- Do not add Apple Health UI or `health-auto-export` integration merely because local Codex can query that MCP server. Apple Health interpretation and normalized snapshots belong in the private coaching repository.
 
 ## Prescription synchronization
 
@@ -32,4 +35,6 @@ If a workout produces no coach-directed prescription change, do not modify appli
 
 GitHub Pages publishes this repository root. Never copy, link, stage, embed, cache, or deploy private coaching content from the sibling repository.
 
-Private `context/`, `program/`, `workouts/`, `health/`, `handoffs/`, and `templates/` trees must not exist in this repository or appear in `index.html`, `app.js`, `program-config.js` beyond the minimum active prescription, `styles.css`, `icons/`, the service-worker asset list, build output, or any other publicly served artifact.
+Private `context/`, `program/`, `workouts/`, `health/`, `nutrition/`, `handoffs/`, and `templates/` trees must not exist in this repository or appear in `index.html`, `app.js`, `program-config.js` beyond the minimum active prescription, `styles.css`, `icons/`, the service-worker asset list, build output, or any other publicly served artifact.
+
+Run `node tests/privacy-boundary.test.cjs` with the application tests before deployment.

@@ -4,6 +4,12 @@
 
 Maintain and deploy this mobile-first, coach-driven AFT Workout Tracker as a static Progressive Web App on GitHub Pages from `tylerdmcanally/PT-tracker`.
 
+## Durable system boundary
+
+This repository is canonical for application code, tests, deployment configuration, local/cloud workout storage behavior, and the minimum active runtime prescription. The separate private `tylerdmcanally/aft-coaching` repository is canonical for coaching, recovery, workout history, Health snapshots, nutrition, and the rationale for prescription decisions. For current-day Health questions, a local Codex session queries the directly configured `health-auto-export` MCP server; persisted private Health files are historical snapshots, not a replacement for live current-day data. Codex conversations are temporary and no ChatGPT data bridge is required.
+
+Do not copy private coaching, Health, nutrition, symptom, recovery, or workout-history content into this public GitHub Pages repository. Do not add Apple Health UI or MCP integration to the PWA without a separately demonstrated application workflow need.
+
 ## Current training constraint
 
 Day 3 is **Lower Strength and Gym Conditioning**. Version 1.4.8 retains exactly two conditioning rounds in this order:
@@ -25,7 +31,7 @@ Historical version 1.3 Day 3 snapshots retain the 95 lb Romanian-deadlift target
 
 Version 1.4.8 changes Day 2 only: hand-release push-ups are 5 × 9; seated lat pulldown uses the next increment above 154 lb for 3 × 8–10; seated dumbbell overhead press is 30 lb per hand for 3 × 8; machine row uses the next increment above 88 lb for 3 × 8–10; the same cable lateral-raise setup progresses to 2 × 18; and pec deck uses the next increment above 66 lb for 2 × 12. Displayed machine and cable loads remain setup-specific guidance. Dead bug and easy cardio remain unchanged. Days 1, 3, and 4, Stage 4, the progressive Day 3 lower-body warm-up, two-round circuit, known TANK M4 Level 3 metadata, and auxiliary microdose remain unchanged. There is no weekday scheduling, third weekly run, or automatic progression.
 
-Do not add an automatic coaching or load-progression algorithm. ChatGPT is the coach; Codex updates `program-config.js` after the user reviews recommendations.
+Do not add an automatic coaching or load-progression algorithm. Coaching decisions are made in the private coaching workflow and must be durably recorded there before Codex updates the matching active data in `program-config.js`.
 
 Temporary exercise-specific coach instructions live in `coachNoteOverlays`. An overlay is scoped to program version, workout day, exercise identity, and effective date. Set its status to `resolved` and add `resolvedDate` to remove it from workouts on and after that date; date-aware historical cards and exports before the resolution date still show the note. A `next_occurrence` directive is copied into the saved exercise result and considered consumed only after that exercise is saved as completed. The v1.3 and v1.4 Day 2 lateral-raise safety overlays are resolved as of August 12 without deleting their historical context. The old version 1.3 Day 3 next-occurrence sled directive remains available only to historical v1.3 contexts; v1.4 and later make that sequence the baseline circuit.
 
@@ -77,13 +83,14 @@ Cloud backup is implemented as a local-first Firebase/Firestore adapter and is c
 2. Check JavaScript syntax and browser console errors.
 3. Run `node tests/app-model.test.cjs`.
 4. Run `node tests/cloud-sync-model.test.cjs`.
-5. Test saving, draft recovery, editing legacy entries, deleting/restoring, Markdown export, JSON backup/import, and CSV export.
-6. When cloud backup is enabled, verify Google sign-in, first upload, manual Sync now, offline/local logging, and recovery in a clean browser profile.
-7. Confirm the manifest and service worker load correctly.
-8. Verify offline behavior after the first load.
-9. In repository Pages settings, deploy the `main` branch from `/ (root)`.
-10. Test iPhone Safari and Add to Home Screen.
-11. Return the production HTTPS URL and any GitHub/Firebase setup instructions.
+5. Run `node tests/privacy-boundary.test.cjs`.
+6. Test saving, draft recovery, editing legacy entries, deleting/restoring, Markdown export, JSON backup/import, and CSV export.
+7. When cloud backup is enabled, verify Google sign-in, first upload, manual Sync now, offline/local logging, and recovery in a clean browser profile.
+8. Confirm the manifest and service worker load correctly.
+9. Verify offline behavior after the first load.
+10. In repository Pages settings, deploy the `main` branch from `/ (root)`.
+11. Test iPhone Safari and Add to Home Screen.
+12. Return the production HTTPS URL and any GitHub/Firebase setup instructions.
 
 ## Data model
 

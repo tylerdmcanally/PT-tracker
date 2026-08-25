@@ -2,6 +2,10 @@
 
 A small, installable, offline-first web app for the four-day Army fitness training split.
 
+## System boundary
+
+This public repository is canonical for the tracker application, its tests and deployment, workout storage behavior, and the minimum active runtime prescription. Private coaching, Health snapshots, nutrition state, and workout history live in the separate private `tylerdmcanally/aft-coaching` repository. Current-day Apple Health data is queried by local Codex through `health-auto-export` for coaching use; it is not integrated into this PWA and does not require ChatGPT as a bridge.
+
 ## Included
 
 - Four primary workout days plus separate optional recovery and AFT Skill Microdose sessions
@@ -101,6 +105,7 @@ Run the data-model checks with:
 ```bash
 node tests/app-model.test.cjs
 node tests/cloud-sync-model.test.cjs
+node tests/privacy-boundary.test.cjs
 ```
 
 ## Equipment assumptions

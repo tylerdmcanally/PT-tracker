@@ -4172,7 +4172,7 @@ function applyAugust5CircuitCorrection(entry){
    return;
   }
   const component=normalizeCircuitComponent({
-   ...sled,type:'sled',prescription:'Added during the August 5 circuit · measurements not recorded',planned:null,resultMode:'shared',
+   ...sled,type:'sled',prescription:'Added during the historical circuit · measurements not recorded',planned:null,resultMode:'shared',
    sharedResult:{performed:true,direction:sled.direction,distanceMode:'unknown',loadMode:'unknown'}
   },sled.order-1);
   components.push(component);
@@ -4181,7 +4181,7 @@ function applyAugust5CircuitCorrection(entry){
  circuit.components=components.sort((a,b)=>a.order-b.order);
  circuit.rounds='2';
  circuit.intervalSeconds='30';
- const correctionNote='Felt much better this week. Used approximately 30 seconds of hard cardio, then a backward sled drag and forward sled push.';
+ const correctionNote='Historical circuit used approximately 30 seconds of hard cardio, then a backward sled drag and forward sled push.';
  if(!String(circuit.notes||'').includes('backward sled drag'))circuit.notes=[circuit.notes,correctionNote].filter(Boolean).join('\n');
  const applied=Array.isArray(circuit.historicalCorrections)?circuit.historicalCorrections:[];
  circuit.historicalCorrections=[...new Set([...applied,AUGUST5_CIRCUIT_CORRECTION])];

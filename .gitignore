@@ -1,10 +1,11 @@
 # The GitHub Pages site is deployed directly from this repository root.
-# These files contain private coaching, health, and workout context and must
-# remain local to the Codex workspace. Never force-add them to Git.
-/AGENTS.md
+# Private coaching data belongs only in the separate sibling aft-coaching repo.
+# Keep these paths ignored as a guardrail against accidental copies.
 /MIGRATION_PROMPT.md
 /PRIVATE_CONTEXT_README.md
 /context/
 /program/
 /templates/
 /workouts/
+/health/
+/handoffs/

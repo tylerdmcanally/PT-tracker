@@ -3,6 +3,9 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const path=require('node:path');
 
+// Workout-like records in this file are synthetic compatibility fixtures.
+// Never paste real user exports, Health snapshots, or private coaching records here.
+
 const root=path.resolve(__dirname,'..');
 const storage=new Map();
 const context={
@@ -373,7 +376,7 @@ const august11PulldownRaw={
  prescriptionSnapshot:{sessionKey:'day2',sessionType:'primary',label:'Day 2 — Upper Body and Easy Cardio',exercises:[
   {id:'verticalPull',name:'Lat pulldown',prescription:'3 × 8–10',type:'weighted',unit:'lb',sets:3,variations:['Lat pulldown'],defaultVariation:'Lat pulldown'}
  ]},
- exercises:[{exerciseId:'verticalPull',name:'Lat pulldown',type:'weighted',unit:'lb',variation:'Lat pulldown',variationId:'latPulldown',load:'143',sets:'3',reps:'10, 10, 10',rpe:'7',completed:true,notes:'Modified standing setup.'}]
+ exercises:[{exerciseId:'verticalPull',name:'Lat pulldown',type:'weighted',unit:'lb',variation:'Lat pulldown',variationId:'latPulldown',load:'137',sets:'3',reps:'8, 9, 8',rpe:'7',completed:true,notes:'Synthetic standing setup fixture.'}]
 };
 const august18PulldownRaw={
  id:'august-18-day-2',date:'2026-08-18',updatedAt:'2026-08-18T19:00:00.000Z',dayKey:'day2',
@@ -381,7 +384,7 @@ const august18PulldownRaw={
  prescriptionSnapshot:{sessionKey:'day2',sessionType:'primary',label:'Day 2 — Upper Body and Easy Cardio',exercises:[
   {id:'verticalPull',name:'Lat pulldown',prescription:'3 × 8–10',type:'weighted',unit:'lb',sets:3,variations:['Lat pulldown'],defaultVariation:'Lat pulldown'}
  ]},
- exercises:[{exerciseId:'verticalPull',name:'Lat pulldown',type:'weighted',unit:'lb',variation:'Lat pulldown',variationId:'latPulldown',load:'143',sets:'3',reps:'10, 10, 10',rpe:'6',completed:true,notes:'Seated setup; clean repetitions.'}]
+ exercises:[{exerciseId:'verticalPull',name:'Lat pulldown',type:'weighted',unit:'lb',variation:'Lat pulldown',variationId:'latPulldown',load:'149',sets:'3',reps:'9, 8, 9',rpe:'6',completed:true,notes:'Synthetic seated setup fixture.'}]
 };
 const correctedAugust11Pulldown=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${JSON.stringify(august11PulldownRaw)}))`));
 const correctedAugust18Pulldown=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${JSON.stringify(august18PulldownRaw)}))`));
@@ -393,12 +396,12 @@ assert.equal(seatedPulldown.variation,'Seated lat pulldown');
 assert.equal(seatedPulldown.variationId,'seatedLatPulldown');
 assert.deepEqual(
  {load:standingPulldown.load,reps:standingPulldown.reps,rpe:standingPulldown.rpe,notes:standingPulldown.notes},
- {load:'143',reps:'10, 10, 10',rpe:'7',notes:'Modified standing setup.'},
+ {load:'137',reps:'8, 9, 8',rpe:'7',notes:'Synthetic standing setup fixture.'},
  'the Aug 11 correction changes only variation metadata'
 );
 assert.deepEqual(
  {load:seatedPulldown.load,reps:seatedPulldown.reps,rpe:seatedPulldown.rpe,notes:seatedPulldown.notes},
- {load:'143',reps:'10, 10, 10',rpe:'6',notes:'Seated setup; clean repetitions.'},
+ {load:'149',reps:'9, 8, 9',rpe:'6',notes:'Synthetic seated setup fixture.'},
  'the Aug 18 correction changes only variation metadata'
 );
 assert.deepEqual(correctedAugust11Pulldown.prescriptionSnapshot,august11PulldownRaw.prescriptionSnapshot,'the Aug 11 prescription snapshot remains untouched');
@@ -429,13 +432,13 @@ storage.delete('aftWorkoutEntries.v1');
 evaluate(`entries=[];august5Fixture=normalizeEntry({
  id:'august-5-day-3',date:'2026-08-05',updatedAt:'2026-08-05T19:00:00.000Z',dayKey:'day3',
  dayLabel:SESSIONS.day3.label,sessionType:'primary',programId:PROGRAM.id,programName:PROGRAM.name,
- programVersion:'1.3',programEffectiveDate:'2026-08-01',duration:'60',sessionRpe:'7',preSoreness:'1',readiness:'4',sleepQuality:'fair',painDuring:'0',
+ programVersion:'1.3',programEffectiveDate:'2026-08-01',duration:'57',sessionRpe:'8',preSoreness:'2',readiness:'3',sleepQuality:'good',painDuring:'0',
  prescriptionSnapshot:{sessionKey:'day3',sessionType:'primary',label:'Day 3 — Lower Strength and Gym Conditioning',targetSessionRpe:'7–8',exercises:[
   {id:'romanianDeadlift',name:'Romanian deadlift',prescription:'95 lb total for 2 × 8',type:'weighted',unit:'lb',sets:2,targetLoad:95,targetLoadVariation:'Barbell',variations:['Barbell','Dumbbells','Smith machine'],defaultVariation:'Barbell',barWeights:{Barbell:45,'Smith machine':20}},
   {id:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, 45-sec hard cardio, then 2:30 rest',type:'circuit',circuitVersion:'foundation-1.2'}
  ]},
  exercises:[
-  {exerciseId:'romanianDeadlift',name:'Romanian deadlift',prescription:'95 lb total for 2 × 8',type:'weighted',variation:'Barbell',load:'70',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8',rpe:'6',completed:true},
+  {exerciseId:'romanianDeadlift',name:'Romanian deadlift',prescription:'95 lb total for 2 × 8',type:'weighted',variation:'Barbell',load:'60',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8',rpe:'7',completed:true},
   {exerciseId:'gymConditioningCircuit',name:'Gym conditioning circuit',type:'circuit',circuitVersion:'foundation-1.2',rounds:'2',carryLoad:'45',carrySeconds:'30',stepReps:'6',modality:'Bike',intervalSeconds:'45',restSeconds:'150',rpe:'7',completed:true}
  ]
 })`);
@@ -738,7 +741,7 @@ const august20V144Fixture=`{
   {id:'hammerCurl',name:'Hammer curl',prescription:'25 lb per hand for 2 × 10–15',type:'weighted',unit:'lb per hand',sets:2,targetLoad:25,targetLoadVariation:'Dumbbell hammer curl',optional:true},
   {id:'overheadTricepsExtension',name:'Overhead cable triceps extension',prescription:'2 × 10–15',type:'weighted',unit:'lb total',sets:2,optional:true}
  ]},
- exercises:[{exerciseId:'hammerCurl',name:'Hammer curl',type:'weighted',variation:'Dumbbell hammer curl',load:'20',sets:'2',reps:'12, 12',rpe:'7',completed:true,notes:'Current valid working load.'}]
+ exercises:[{exerciseId:'hammerCurl',name:'Hammer curl',type:'weighted',variation:'Dumbbell hammer curl',load:'17',sets:'2',reps:'9, 11',rpe:'8',completed:true,notes:'Synthetic compatibility result.'}]
 }`;
 const august20V144Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry(${august20V144Fixture}))`));
 const august20V144Entry=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${august20V144Fixture}))`));
@@ -746,8 +749,8 @@ assert.equal(august20V144Definition.warmup,'5–8 minutes of easy cardio, dynami
 assert.equal(august20V144Definition.exercises.find(exercise=>exercise.id==='romanianDeadlift').prescription,'115 lb total for 2 × 8');
 assert.equal(august20V144Definition.exercises.find(exercise=>exercise.id==='hammerCurl').prescription,'25 lb per hand for 2 × 10–15');
 assert.equal(august20V144Definition.exercises.find(exercise=>exercise.id==='gymConditioningCircuit').circuitVersion,'foundation-1.4');
-assert.equal(august20V144Entry.exercises[0].load,'20','the raw August 20 hammer-curl load remains unchanged');
-assert.equal(august20V144Entry.exercises[0].reps,'12, 12','the raw August 20 repetitions remain unchanged');
+assert.equal(august20V144Entry.exercises[0].load,'17','the synthetic historical load remains unchanged');
+assert.equal(august20V144Entry.exercises[0].reps,'9, 11','the synthetic historical repetitions remain unchanged');
 
 const august15V141Day4Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry({
  date:'2026-08-15',dayKey:'day4',dayLabel:'Day 4 — Run and Calisthenics',programVersion:'1.4.1',
@@ -774,7 +777,7 @@ const august22V145Fixture=`{
   {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed'}
  ]},
  exercises:[
-  {exerciseId:'primaryRun',name:'Walk / run intervals',type:'run',completed:true,runStage:'3',walkMinutes:'1',runMinutes:'2',rounds:'7',completedRounds:'7',programmedIntervalTime:'21:00',totalTime:'21:08',distance:'2.01',runSpeed:'6.4',runPain:'0',rpe:'6',notes:'Approximately one additional minute of running reserve.'},
+  {exerciseId:'primaryRun',name:'Walk / run intervals',type:'run',completed:true,runStage:'3',walkMinutes:'1',runMinutes:'2',rounds:'7',completedRounds:'7',programmedIntervalTime:'21:00',totalTime:'22:34',distance:'1.77',runSpeed:'6.0',runPain:'0',rpe:'5',notes:'Synthetic compatibility result.'},
   {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',completed:true,sets:'4',reps:'7, 7, 7, 7',rpe:'5'},
   {exerciseId:'plank',name:'Front plank',type:'timed',completed:true,sets:'3',times:'40, 40, 40',rpe:'6'}
  ]
@@ -786,7 +789,7 @@ assert.equal(august22V145Definition.exercises.find(exercise=>exercise.id==='prim
 assert.equal(august22V145Definition.exercises.find(exercise=>exercise.id==='handReleasePushups').prescription,'4 × 7');
 assert.deepEqual(august22V145Definition.exercises.find(exercise=>exercise.id==='plank').prescribedTimes,['0:35','0:35','0:35']);
 assert.equal(august22V145Entry.exercises.find(exercise=>exercise.exerciseId==='primaryRun').runMinutes,'2','the raw Stage 3 interval duration remains unchanged');
-assert.equal(august22V145Entry.exercises.find(exercise=>exercise.exerciseId==='primaryRun').distance,'2.01');
+assert.equal(august22V145Entry.exercises.find(exercise=>exercise.exerciseId==='primaryRun').distance,'1.77');
 assert.equal(evaluate(`prescriptionAdherence(definitionForSavedEntry(${august22V145Fixture}).exercises.find(exercise=>exercise.id==='primaryRun'),normalizeEntry(${august22V145Fixture}).exercises.find(exercise=>exercise.exerciseId==='primaryRun'))`),'met');
 assert.equal(evaluate(`(()=>{const prior=entries;entries=[normalizeEntry(${august22V145Fixture})];const selected=previousResultData(SESSIONS.day4.exercises.find(exercise=>exercise.id==='primaryRun'),'').selected;entries=prior;return selected?.comparable})()`),false,'the prior Stage 3 run is not directly comparable with active Stage 4');
 
@@ -804,13 +807,13 @@ const august23V146Fixture=`{
   {"id":"tricepsPressdown","name":"Cable triceps pressdown","prescription":"77 lb for 2 × 15 on the same machine/cable setup","type":"weighted","unit":"lb total","sets":2,"targetRpe":"7–9","optional":true}
  ]},
  "exercises":[
-  {"exerciseId":"deadlift","name":"Trap-bar deadlift","type":"weighted","variation":"Trap / hex bar","load":"55","loadMode":"platesPerSide","barWeight":"45","sets":"3","reps":"5, 5, 5","rpe":"6","completed":true},
-  {"exerciseId":"squatOrLegPress","name":"Leg press","type":"weighted","variation":"Leg press","load":"140","sets":"3","reps":"9, 9, 9","rpe":"6","completed":true},
-  {"exerciseId":"horizontalPress","name":"Dumbbell bench press","type":"weighted","variation":"Dumbbell bench press","load":"35","sets":"3","reps":"10, 10, 10","rpe":"7","completed":true},
-  {"exerciseId":"seatedRow","name":"Seated cable row","type":"weighted","variation":"Seated cable row","load":"88","sets":"3","reps":"11, 11, 11","rpe":"4","completed":true},
-  {"exerciseId":"loadedCarry","name":"Farmer carry","type":"carry","variation":"Farmer carry","load":"45","sets":"4","distance":"40","rpe":"6","completed":true},
-  {"exerciseId":"plank","name":"Front plank","type":"timed","sets":"3","times":"45, 45, 45","rpe":"7","completed":true},
-  {"exerciseId":"runWalkIntervals","name":"Walk / run intervals","type":"interval","runStage":"4","walkMinutes":"1","runMinutes":"2.5","rounds":"6","completedRounds":"6","programmedIntervalTime":"21:00","totalTime":"21:16","distance":"1.98","runSpeed":"6.1","avgHr":"141","rpe":"7","completed":true}
+  {"exerciseId":"deadlift","name":"Trap-bar deadlift","type":"weighted","variation":"Trap / hex bar","load":"50","loadMode":"platesPerSide","barWeight":"45","sets":"3","reps":"5, 5, 5","rpe":"7","completed":true},
+  {"exerciseId":"squatOrLegPress","name":"Leg press","type":"weighted","variation":"Leg press","load":"135","sets":"3","reps":"9, 9, 9","rpe":"7","completed":true},
+  {"exerciseId":"horizontalPress","name":"Dumbbell bench press","type":"weighted","variation":"Dumbbell bench press","load":"32","sets":"3","reps":"10, 10, 10","rpe":"8","completed":true},
+  {"exerciseId":"seatedRow","name":"Seated cable row","type":"weighted","variation":"Seated cable row","load":"83","sets":"3","reps":"11, 11, 11","rpe":"6","completed":true},
+  {"exerciseId":"loadedCarry","name":"Farmer carry","type":"carry","variation":"Farmer carry","load":"42","sets":"4","distance":"35","rpe":"7","completed":true},
+  {"exerciseId":"plank","name":"Front plank","type":"timed","sets":"3","times":"45, 45, 45","rpe":"6","completed":true},
+  {"exerciseId":"runWalkIntervals","name":"Walk / run intervals","type":"interval","runStage":"4","walkMinutes":"1","runMinutes":"2.5","rounds":"6","completedRounds":"6","programmedIntervalTime":"21:00","totalTime":"22:05","distance":"1.75","runSpeed":"5.9","avgHr":"136","rpe":"5","completed":true}
  ]
 }`;
 const august23V146Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry(${august23V146Fixture}))`));
@@ -822,8 +825,8 @@ assert.equal(august23V146Definition.exercises.find(exercise=>exercise.id==='hori
 assert.equal(august23V146Definition.exercises.find(exercise=>exercise.id==='seatedRow').targetLoad,88,'the historical row target remains frozen even though the current program treats the new stack cue as setup-specific');
 assert.equal(august23V146Definition.exercises.find(exercise=>exercise.id==='plank').targetRpe,'6–7');
 assert.equal(august23V146Definition.exercises.find(exercise=>exercise.id==='runWalkIntervals').runStage,4);
-assert.equal(august23V146Entry.exercises.find(exercise=>exercise.exerciseId==='runWalkIntervals').totalTime,'21:16');
-assert.equal(august23V146Entry.exercises.find(exercise=>exercise.exerciseId==='runWalkIntervals').avgHr,'141');
+assert.equal(august23V146Entry.exercises.find(exercise=>exercise.exerciseId==='runWalkIntervals').totalTime,'22:05');
+assert.equal(august23V146Entry.exercises.find(exercise=>exercise.exerciseId==='runWalkIntervals').avgHr,'136');
 assert.equal(evaluate(`prescriptionAdherence(definitionForSavedEntry(${august23V146Fixture}).exercises.find(exercise=>exercise.id==='runWalkIntervals'),normalizeEntry(${august23V146Fixture}).exercises.find(exercise=>exercise.exerciseId==='runWalkIntervals'))`),'met');
 
 const august25V147Fixture=`{
@@ -839,13 +842,13 @@ const august25V147Fixture=`{
   {"id":"easyCardio","name":"Easy cardio","prescription":"25–30 minutes","type":"cardio","targetRpe":"4–5"}
  ]},
  "exercises":[
-  {"exerciseId":"handReleasePushups","name":"Hand-release push-ups","type":"body","sets":"5","reps":"8, 8, 8, 8, 8","rpe":"7","completed":true},
-  {"exerciseId":"verticalPull","name":"Lat pulldown","type":"weighted","variation":"Seated lat pulldown","load":"154","sets":"3","reps":"10, 10, 10","rpe":"6","completed":true},
-  {"exerciseId":"overheadPress","name":"Seated dumbbell overhead press","type":"weighted","variation":"Seated dumbbell press","load":"25","sets":"3","reps":"10, 10, 10","rpe":"7","completed":true},
-  {"exerciseId":"chestSupportedRow","name":"Machine row","type":"weighted","variation":"Machine row","load":"88","sets":"3","reps":"12, 12, 12","rpe":"7","completed":true},
-  {"exerciseId":"lateralRaise","name":"Cable lateral raise","type":"weighted","variation":"Cable lateral raise","unit":"lb per side","load":"33","sets":"2","reps":"15, 15","rpe":"5","completed":true},
-  {"exerciseId":"chestFly","name":"Cable fly / pec deck","type":"weighted","variation":"Pec deck / machine fly","unit":"lb total","load":"66","sets":"2","reps":"15, 15","rpe":"6","completed":true},
-  {"exerciseId":"easyCardio","name":"Easy cardio","type":"cardio","modality":"Bike","minutes":"20","distance":"1.23","avgHr":"118","rpe":"5","completed":true}
+  {"exerciseId":"handReleasePushups","name":"Hand-release push-ups","type":"body","sets":"5","reps":"7, 7, 7, 7, 7","rpe":"6","completed":true},
+  {"exerciseId":"verticalPull","name":"Lat pulldown","type":"weighted","variation":"Seated lat pulldown","load":"150","sets":"3","reps":"9, 9, 9","rpe":"7","completed":true},
+  {"exerciseId":"overheadPress","name":"Seated dumbbell overhead press","type":"weighted","variation":"Seated dumbbell press","load":"22","sets":"3","reps":"9, 9, 9","rpe":"8","completed":true},
+  {"exerciseId":"chestSupportedRow","name":"Machine row","type":"weighted","variation":"Machine row","load":"84","sets":"3","reps":"11, 11, 11","rpe":"8","completed":true},
+  {"exerciseId":"lateralRaise","name":"Cable lateral raise","type":"weighted","variation":"Cable lateral raise","unit":"lb per side","load":"30","sets":"2","reps":"14, 14","rpe":"6","completed":true},
+  {"exerciseId":"chestFly","name":"Cable fly / pec deck","type":"weighted","variation":"Pec deck / machine fly","unit":"lb total","load":"60","sets":"2","reps":"14, 14","rpe":"7","completed":true},
+  {"exerciseId":"easyCardio","name":"Easy cardio","type":"cardio","modality":"Bike","minutes":"19","distance":"1.10","avgHr":"120","rpe":"5","completed":true}
  ]
 }`;
 const august25V147Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry(${august25V147Fixture}))`));
@@ -858,8 +861,8 @@ assert.equal(august25V147Definition.exercises.find(exercise=>exercise.id==='late
 assert.equal(august25V147Definition.exercises.find(exercise=>exercise.id==='chestFly').prescription,'66 lb total for 2 × 15 on the same pec-deck setup');
 assert.equal(august25V147Entry.duration,'','the omitted historical session duration remains blank');
 assert.equal(august25V147Entry.sessionRpe,'','the omitted historical session RPE remains blank');
-assert.equal(august25V147Entry.exercises.find(exercise=>exercise.exerciseId==='easyCardio').minutes,'20');
-assert.equal(august25V147Entry.exercises.find(exercise=>exercise.exerciseId==='easyCardio').avgHr,'118');
+assert.equal(august25V147Entry.exercises.find(exercise=>exercise.exerciseId==='easyCardio').minutes,'19');
+assert.equal(august25V147Entry.exercises.find(exercise=>exercise.exerciseId==='easyCardio').avgHr,'120');
 assert.equal(evaluate(`prescriptionAdherence(definitionForSavedEntry(${august25V147Fixture}).exercises.find(exercise=>exercise.id==='easyCardio'),normalizeEntry(${august25V147Fixture}).exercises.find(exercise=>exercise.exerciseId==='easyCardio'))`),'below_target','the shortened cardio is preserved without changing the standard prescription');
 
 assert.equal(evaluate(`(()=>{
@@ -986,7 +989,7 @@ evaluate(`entries=[
  },
  {
   id:'august-7-day-4',date:'2026-08-07',updatedAt:'2026-08-07T19:00:00.000Z',dayKey:'day4',dayLabel:'Day 4 — Run and Calisthenics',sessionType:'primary',programId:PROGRAM.id,programName:PROGRAM.name,
-  programVersion:'1.3',programEffectiveDate:'2026-08-01',activeRunStage:2,duration:'45',sessionRpe:'6',painDuring:'1',painLocation:'left lateral knee',
+  programVersion:'1.3',programEffectiveDate:'2026-08-01',activeRunStage:2,duration:'45',sessionRpe:'6',painDuring:'2',painLocation:'synthetic test shoulder',
   prescriptionSnapshot:{sessionKey:'day4',sessionType:'primary',label:'Day 4 — Run and Calisthenics',targetSessionRpe:'6–7',exercises:[
    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 2 — 1:00 walk / 1:30 run × 8',type:'run',runStage:2},
    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 6',type:'body',sets:4},
@@ -994,7 +997,7 @@ evaluate(`entries=[
    {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed'}
   ]},
   exercises:[
-   {exerciseId:'primaryRun',name:'Walk / run intervals',type:'run',runStage:'2',walkMinutes:'1',runMinutes:'1.5',rounds:'8',completedRounds:'8',programmedIntervalTime:'20:00',totalTime:'23:00',distance:'1.81',warmupMinutes:'5',runPain:'1',rpe:'6',completed:true,exercisePain:{severity:1,laterality:'left',location:'lateral knee',causedExerciseToStop:false,note:'Mild tightness that improved while running.'}},
+   {exerciseId:'primaryRun',name:'Walk / run intervals',type:'run',runStage:'2',walkMinutes:'1',runMinutes:'1.5',rounds:'8',completedRounds:'8',programmedIntervalTime:'20:00',totalTime:'23:00',distance:'1.81',warmupMinutes:'5',runPain:'2',rpe:'6',completed:true,exercisePain:{severity:2,laterality:'bilateral',location:'synthetic test shoulder',causedExerciseToStop:false,note:'Synthetic fixture exercise-pain note.'}},
    {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'4',reps:'6, 6, 6, 6',completed:true},
    {exerciseId:'plank',name:'Front plank',type:'timed',sets:'3',times:'30, 30, 30',completed:true},
    {exerciseId:'mobility',name:'Mobility',type:'timed',times:'8',completed:true}
@@ -1007,9 +1010,9 @@ const august7Markdown=evaluate('buildMd()');
 assert.match(august7Markdown,/\| Aug 3, 2026 \| 52 reps \| 1:30 \|/);
 assert.match(august7Markdown,/Walk \/ run intervals[\s\S]*Prescription adherence: Met/);
 assert.match(august7Markdown,/Total elapsed time: 23:00/);
-assert.match(august7Markdown,/Exercise-specific pain: 1\/10 · Left · lateral knee · did not stop the exercise/);
-assert.match(august7Markdown,/Exercise-pain note:[\s\S]*Mild tightness that improved while running\./);
-assert.match(august7Markdown,/Run discomfort: 1\/10[\s\S]*Exercise RPE: 6\/10/);
+assert.match(august7Markdown,/Exercise-specific pain: 2\/10 · Bilateral · synthetic test shoulder · did not stop the exercise/);
+assert.match(august7Markdown,/Exercise-pain note:[\s\S]*Synthetic fixture exercise-pain note\./);
+assert.match(august7Markdown,/Run discomfort: 2\/10[\s\S]*Exercise RPE: 6\/10/);
 assert.match(august7Markdown,/Previous comparable result:[\s\S]*Timed results: 8:00/,'legacy mobility is interpreted from its saved minute-based prescription');
 assert.equal(evaluate(`(()=>{const entry=normalizeEntry(JSON.parse(JSON.stringify(entries.find(item=>item.id==='july-31-day-4'))));const definition=definitionForSavedEntry(entry).exercises[0];return compactResultSummary(definition,entry.exercises[0])})()`),'8:00','JSON round-trip preserves definition-aware legacy mobility display');
 
@@ -1017,7 +1020,7 @@ elements.exportFrom.value='2026-08-05';
 elements.exportTo.value='2026-08-05';
 evaluate('entries=[august5Fixture]');
 const august5Markdown=evaluate('buildMd()');
-assert.match(august5Markdown,/Romanian deadlift[\s\S]*Prescription adherence: Modified[\s\S]*Load above target: 115 lb completed vs 95 lb prescribed/);
+assert.match(august5Markdown,/Romanian deadlift[\s\S]*Prescription adherence: Modified[\s\S]*Load above target: 105 lb completed vs 95 lb prescribed/);
 assert.ok(august5Markdown.indexOf('**Farmer carry**')<august5Markdown.indexOf('**Backward sled drag**'));
 assert.ok(august5Markdown.indexOf('**Backward sled drag**')<august5Markdown.indexOf('**Forward sled push**'));
 assert.match(august5Markdown,/Direction: Backward drag/);
@@ -1025,13 +1028,13 @@ assert.match(august5Markdown,/Distance: Unknown \/ not recorded/);
 assert.match(august5Markdown,/Load: Unknown \/ not recorded/);
 assert.match(august5Markdown,/Backward sled drag was added outside the versioned prescription/);
 assert.match(august5Markdown,/Forward sled push was added outside the versioned prescription/);
-assert.match(august5Markdown,/Felt much better this week/);
+assert.match(august5Markdown,/Historical circuit used approximately 30 seconds of hard cardio/);
 const august5Csv=evaluate('buildCsv()');
 assert.match(august5Csv,/"adherence_reasons"/);
 assert.match(august5Csv,/"circuit_components_json"/);
 assert.match(august5Csv,/"backwardSledDrag"/);
 assert.match(august5Csv,/""loadMode"":""unknown""/);
-assert.match(august5Csv,/"Load above target: 115 lb completed vs 95 lb prescribed"/);
+assert.match(august5Csv,/"Load above target: 105 lb completed vs 95 lb prescribed"/);
 elements.exportFrom.value='2026-08-12';
 elements.exportTo.value='2026-08-12';
 evaluate('entries=[directiveFixture]');
@@ -1071,14 +1074,14 @@ evaluate(`{
   },
   {
    id:'august-3-day-2',date:'2026-08-03',updatedAt:'2026-08-03T19:00:00.000Z',dayKey:'day2',dayLabel:'Day 2 — Upper Body and Easy Cardio',sessionType:'primary',
-   programId:PROGRAM.id,programName:PROGRAM.name,programVersion:'1.3',programEffectiveDate:'2026-08-01',duration:'65',sessionRpe:'7',preSoreness:'1',readiness:'2',sleepQuality:'poor',painDuring:'1',painLocation:'right medial elbow',
-   notes:'Poor sleep and felt draggy/rundown.',prescriptionSnapshot:snapshot,
+   programId:PROGRAM.id,programName:PROGRAM.name,programVersion:'1.3',programEffectiveDate:'2026-08-01',duration:'65',sessionRpe:'7',preSoreness:'1',readiness:'2',sleepQuality:'fair',painDuring:'2',painLocation:'synthetic test shoulder',
+   notes:'Synthetic fixture recovery note.',prescriptionSnapshot:snapshot,
    exercises:[
     {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'5',reps:'6, 6, 6, 6, 4',rpe:'7',completed:true},
     {exerciseId:'verticalPull',name:'Lat pulldown',type:'weighted',unit:'lb',variation:'Lat pulldown',load:'132',sets:'3',reps:'10, 10, 10',rpe:'7',completed:true,notes:'Original pulldown note.'},
     {exerciseId:'overheadPress',name:'Seated dumbbell overhead press',type:'weighted',unit:'lb per hand',variation:'Seated dumbbell press',load:'25',sets:'3',reps:'8, 8, 6',rpe:'8',completed:true},
     {exerciseId:'chestSupportedRow',name:'Chest-supported or machine row',type:'weighted',unit:'lb',variation:'Machine row',load:'77',sets:'3',reps:'10, 10, 10',rpe:'7',completed:true},
-    {exerciseId:'lateralRaise',name:'Dumbbell lateral raises',type:'weighted',unit:'lb per hand',load:'10',sets:'2',reps:'10, 10',rpe:'7',completed:true,exercisePain:{severity:1,location:'medial elbow',laterality:'right',note:'Minor twinge during dumbbell lateral raises.',causedExerciseToStop:false}},
+    {exerciseId:'lateralRaise',name:'Dumbbell lateral raises',type:'weighted',unit:'lb per hand',load:'10',sets:'2',reps:'10, 10',rpe:'7',completed:true,exercisePain:{severity:2,location:'synthetic test shoulder',laterality:'bilateral',note:'Synthetic fixture exercise-pain note.',causedExerciseToStop:false}},
     {exerciseId:'trunkStability',name:'Dead bug or Pallof press',type:'body',variation:'Dead bug',sets:'3',reps:'10, 10, 10',rpe:'6',completed:true},
     {exerciseId:'easyCardio',name:'Easy cardio',type:'cardio',modality:'Stationary bike',minutes:'20',distance:'5.5',outputUnit:'mi',rpe:'4',completed:true}
    ]
@@ -1106,10 +1109,10 @@ assert.equal(august3Adherence.easyCardio,'below_target');
 const august3Markdown=evaluate('buildMd()');
 assert.match(august3Markdown,/## AFT-event practice volume/);
 assert.match(august3Markdown,/Practice volume reflects accumulated training work and is not a benchmark or official AFT event result\./);
-assert.match(august3Markdown,/sleep quality Poor/);
-assert.match(august3Markdown,/Active coach note: Right medial-elbow discomfort occurred/);
-assert.match(august3Markdown,/Exercise-specific pain: 1\/10 · Right · medial elbow · did not stop the exercise/);
-assert.match(august3Markdown,/Exercise-pain note:[\s\S]*Minor twinge during dumbbell lateral raises\./);
+assert.match(august3Markdown,/sleep quality Fair/);
+assert.match(august3Markdown,/Active coach note: Use a pain-free machine or cuffed-cable variation/);
+assert.match(august3Markdown,/Exercise-specific pain: 2\/10 · Bilateral · synthetic test shoulder · did not stop the exercise/);
+assert.match(august3Markdown,/Exercise-pain note:[\s\S]*Synthetic fixture exercise-pain note\./);
 const august3Section=august3Markdown.slice(august3Markdown.indexOf('### Aug 3, 2026'));
 assert.equal((august3Section.match(/Previous comparable result:/g)||[]).length,2,'only push-ups and overhead press have a directly comparable prior result');
 assert.match(august3Section,/Previous comparable result:[\s\S]*Date: Jul 27, 2026[\s\S]*Repetitions: 10, 8, 4, 5, 5[\s\S]*Total repetitions: 32/);
@@ -1118,17 +1121,17 @@ assert.doesNotMatch(august3Section,/Load: 30 lb\/hand/,'future workouts are neve
 assert.doesNotMatch(august3Section,/Load: 20 lb\/hand/,'incompatible lateral-raise equipment is omitted');
 const august3Json=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
 assert.equal(august3Json.version,11);
-assert.equal(august3Json.entries.find(entry=>entry.id==='august-3-day-2').sleepQuality,'poor');
-assert.equal(august3Json.entries.find(entry=>entry.id==='august-3-day-2').exercises.find(exercise=>exercise.exerciseId==='lateralRaise').exercisePain.laterality,'right');
+assert.equal(august3Json.entries.find(entry=>entry.id==='august-3-day-2').sleepQuality,'fair');
+assert.equal(august3Json.entries.find(entry=>entry.id==='august-3-day-2').exercises.find(exercise=>exercise.exerciseId==='lateralRaise').exercisePain.laterality,'bilateral');
 const august3Csv=evaluate('buildCsv()');
 assert.match(august3Csv,/"sleep_quality"/);
 assert.match(august3Csv,/"prescription_adherence"/);
 assert.match(august3Csv,/"exercise_pain_severity"/);
-assert.match(august3Csv,/"poor"/);
-assert.match(august3Csv,/"medial elbow"/);
+assert.match(august3Csv,/"fair"/);
+assert.match(august3Csv,/"synthetic test shoulder"/);
 const august3RoundTrip=evaluate(`normalizeEntry(${JSON.stringify(JSON.parse(evaluate('JSON.stringify(entries.find(item=>item.id==="august-3-day-2"))')))})`);
-assert.equal(august3RoundTrip.sleepQuality,'poor');
-assert.equal(august3RoundTrip.exercises.find(exercise=>exercise.exerciseId==='lateralRaise').exercisePain.severity,1);
+assert.equal(august3RoundTrip.sleepQuality,'fair');
+assert.equal(august3RoundTrip.exercises.find(exercise=>exercise.exerciseId==='lateralRaise').exercisePain.severity,2);
 const overrideRoundTrip=evaluate(`normalizeEntry({id:'override',date:'2026-08-03',dayKey:'day2',exercises:[{exerciseId:'overheadPress',type:'weighted',adherenceOverride:{value:'met',reason:'Coach-approved modification'}}]})`);
 assert.equal(overrideRoundTrip.exercises[0].adherenceOverride.reason,'Coach-approved modification');
 const overrideBackup=JSON.parse(evaluate(`entries=[normalizeEntry({id:'override',date:'2026-08-03',dayKey:'day2',exercises:[{exerciseId:'overheadPress',type:'weighted',adherenceOverride:{value:'met',reason:'Coach-approved modification'}}]})];JSON.stringify(buildJsonBackup())`));

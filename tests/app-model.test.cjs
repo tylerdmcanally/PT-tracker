@@ -98,7 +98,7 @@ const v148Prescriptions=JSON.parse(evaluate(`JSON.stringify({
 })`));
 assert.deepEqual(v148Prescriptions,{
  day1Deadlift:'165 lb total for 3 × 5',day1LegPress:'140 lb for 3 × 10',day1Bench:'40 lb per hand for 3 × 8',
- day1Row:'Next smallest increment above 88 lb on the same cable setup (approximately 99 lb displayed if it uses 11-lb increments) for 3 × 8–10',day1Carry:'45 lb per hand for 4 trips of approximately 30–40 yd',day1Plank:'3 × 45 sec',
+ day1Row:'Next smallest increment above 88 lb on the same cable setup (approximately 99 lb displayed if it uses 11-lb increments) for 3 × 8–10',day1Carry:'45 lb per hand for 4 trips of approximately 40 yd',day1Plank:'3 × 45 sec',
  day1Preacher:'2 × 10–15; use 40 lb total on the same EZ-bar setup',day1Pressdown:'77 lb for 2 × 15 on the same machine/cable setup',day1Run:'Stage 4 — 1:00 walk / 2:30 run × 6',
  day2Pushups:'5 × 9',day2Pull:'Next smallest increment above 154 lb on the same seated machine (approximately 165 lb displayed if it uses 11-lb increments) for 3 × 8–10',day2Press:'30 lb per hand for 3 × 8',
  day2Row:'Next smallest increment above 88 lb on the same machine (approximately 99 lb displayed if applicable) for 3 × 8–10',day2Lateral:'33 lb displayed per side on the same comparable cable setup for 2 × 18',day2Fly:'Next smallest increment above 66 lb on the same pec-deck setup (approximately 77 lb displayed if applicable) for 2 × 12',
@@ -254,9 +254,9 @@ assert.ok(aboveTargetLoad.reasons.some(reason=>reason.code==='load_above_target'
 assert.equal(evaluate(`prescriptionAdherence({type:'carry',prescription:'Carry with good posture'},{type:'carry',completed:true,load:'45'})`),'not_assessable');
 const day1Carry=`SESSIONS.day1.exercises.find(exercise=>exercise.id==='loadedCarry')`;
 const august9Carry=`{exerciseId:'loadedCarry',name:'Farmer carry',type:'carry',unit:'lb per hand',variation:'Farmer carry',load:'45',sets:'4',distance:'40',carrySeconds:'30',rpe:'6',completed:true}`;
-assert.equal(evaluate(`prescriptionAdherence(${day1Carry},${august9Carry})`),'met','4 prescribed trips at 30–40 yd are met by 4 trips at 40 yd');
+assert.equal(evaluate(`prescriptionAdherence(${day1Carry},${august9Carry})`),'met','4 prescribed trips at approximately 40 yd are met by 4 trips at 40 yd');
 assert.equal(evaluate(`prescriptionAdherence(${day1Carry},{...${august9Carry},sets:'3'})`),'partial','fewer completed trips produce partial adherence');
-assert.equal(evaluate(`prescriptionAdherence(${day1Carry},{...${august9Carry},distance:'25'})`),'below_target','a completed per-trip distance below the prescribed range is below target');
+assert.equal(evaluate(`prescriptionAdherence(${day1Carry},{...${august9Carry},distance:'25'})`),'below_target','a completed per-trip distance below the approximate target is below target');
 assert.equal(evaluate(`prescriptionAdherence(${day1Carry},{...${august9Carry},carrySeconds:'90'})`),'met','carry duration is ignored when the prescription has no duration target');
 assert.equal(evaluate(`prescriptionAdherence({type:'carry',sets:4,prescription:'4 trips of approximately 30–40 yd'},{...${august9Carry},load:'5'})`),'met','carry load is ignored when the prescription has no load target');
 assert.equal(evaluate(`prescriptionAdherence(${day1Carry},{...${august9Carry},load:'5'})`),'modified','the explicit current carry load is assessable');
@@ -1256,12 +1256,12 @@ const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 const styles=fs.readFileSync(path.join(root,'styles.css'),'utf8');
 assert.match(appSource,/Exercise notes<textarea[^>]+data-field="notes"/,'exercise notes must support detailed multiline comments');
 assert.doesNotMatch(styles,/\.sticky-actions\{position:sticky;bottom:calc\(7px/,'mobile workout actions must remain in page flow');
-assert.ok(indexHtml.indexOf('program-config.js?v=39')<indexHtml.indexOf('cloud-config.js?v=39'));
-assert.ok(indexHtml.indexOf('cloud-config.js?v=39')<indexHtml.indexOf('cloud-sync.js?v=39'));
-assert.ok(indexHtml.indexOf('cloud-sync.js?v=39')<indexHtml.indexOf('app.js?v=39'));
-assert.match(serviceWorker,/aft-workout-tracker-v39/);
-assert.match(serviceWorker,/program-config\.js\?v=39/);
-assert.match(serviceWorker,/cloud-sync\.js\?v=39/);
+assert.ok(indexHtml.indexOf('program-config.js?v=40')<indexHtml.indexOf('cloud-config.js?v=40'));
+assert.ok(indexHtml.indexOf('cloud-config.js?v=40')<indexHtml.indexOf('cloud-sync.js?v=40'));
+assert.ok(indexHtml.indexOf('cloud-sync.js?v=40')<indexHtml.indexOf('app.js?v=40'));
+assert.match(serviceWorker,/aft-workout-tracker-v40/);
+assert.match(serviceWorker,/program-config\.js\?v=40/);
+assert.match(serviceWorker,/cloud-sync\.js\?v=40/);
 assert.ok(indexHtml.indexOf('id="preWorkoutCard"')<indexHtml.indexOf('class="card session-timer-card"'));
 assert.ok(indexHtml.indexOf('class="card session-timer-card"')<indexHtml.indexOf('id="exerciseList"'));
 assert.match(appSource,/data-fill-prescribed/,'prescription quick-fill remains available for structured strength and timed work');

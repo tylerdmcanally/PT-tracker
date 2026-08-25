@@ -49,7 +49,7 @@ Set-based strength and calisthenics exercises use mobile-friendly selectors. The
 
 The nonblocking pre-save review flags meaningful data on unchecked exercises and rep/time counts that do not match the selected set count. This includes zero rep or time entries when another meaningful result such as load or RPE was recorded; untouched cards and notes-only cards do not create false warnings.
 
-An optional Recovery Session logs modality, duration, RPE, pre/post soreness, and notes. It appears in history and exports but is ignored by next-day rotation and primary-workout counts.
+The optional Recovery Session prescribes 15–20 minutes of easy stationary biking or walking at RPE 2–3, plus optional 5–10 minutes of gentle mobility. It logs modality, duration, RPE, pre/post soreness, and notes; it appears in history and exports but is ignored by next-day rotation and primary-workout counts.
 
 The optional AFT Skill Microdose prescribes hand-release push-ups 3 × 4, front plank 3 × 20 seconds, and up to five minutes of gentle optional mobility at session RPE 3–4. It is the sole optional extra push-up/plank practice session in version 1.4.8. Historical v1.3 Day 3 bundles still satisfy their saved Monday–Sunday dose, but v1.4 and later Day 3 workouts cannot consume the standalone slot. An additional microdose requires explicit acknowledgement and stores `weeklyFrequencyOverride` plus its reason. Saved microdoses are classified as `skill_microdose`, remain outside primary/recovery counts, never alter the coach-directed run stage, and contribute only to weekly practice volume. There are no air squats, automatic scheduling, automatic progression, or medical/recovery recommendations.
 

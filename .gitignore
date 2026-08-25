@@ -1,0 +1,10 @@
+# The GitHub Pages site is deployed directly from this repository root.
+# These files contain private coaching, health, and workout context and must
+# remain local to the Codex workspace. Never force-add them to Git.
+/AGENTS.md
+/MIGRATION_PROMPT.md
+/PRIVATE_CONTEXT_README.md
+/context/
+/program/
+/templates/
+/workouts/

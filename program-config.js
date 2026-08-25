@@ -179,7 +179,7 @@ window.AFT_PROGRAM_CONFIG={
    targetSessionRpe:'2–3',
    warmup:'Begin at a very easy pace and stay within a comfortable range of motion.',
    exercises:[
-    {id:'recoveryCardio',name:'Easy stationary bike or walk',prescription:'20–30 minutes',type:'cardio',modalities:['Stationary bike','Walk'],targetRpe:'2–3'},
+    {id:'recoveryCardio',name:'Easy stationary bike or walk',prescription:'15–20 minutes',type:'cardio',modalities:['Stationary bike','Walk'],targetRpe:'2–3'},
     {id:'recoveryMobility',name:'Gentle mobility',prescription:'Optional · 5–10 minutes',type:'timed',optional:true}
    ]
   },

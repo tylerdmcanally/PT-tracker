@@ -6,9 +6,9 @@ Maintain and deploy this mobile-first, coach-driven AFT Workout Tracker as a sta
 
 ## Durable system boundary
 
-This repository is canonical for application code, tests, deployment configuration, local/cloud workout storage behavior, and the minimum active runtime prescription. The separate private `tylerdmcanally/aft-coaching` repository is canonical for coaching, recovery, workout history, Health snapshots, nutrition, and the rationale for prescription decisions. For current-day Health questions, a local Codex session queries the directly configured `health-auto-export` MCP server; persisted private Health files are historical snapshots, not a replacement for live current-day data. Codex conversations are temporary and no ChatGPT data bridge is required.
+This repository is canonical for application code, tests, deployment configuration, local/cloud workout storage behavior, and the minimum active runtime prescription. The separate private `tylerdmcanally/aft-coaching` repository is canonical for coaching, recovery, workout history, Health snapshots, nutrition, and the rationale for prescription decisions. For routine current-day Health questions, a local Codex session uses the separate private `aft-health-ingest` Worker/KV cache when it is reasonably fresh; `health-auto-export` MCP remains the optional live/high-resolution path when the cache is stale, incomplete, or insufficiently detailed. Persisted private Health files are durable historical fallback context only. Codex conversations are temporary and no ChatGPT data bridge is required.
 
-Do not copy private coaching, Health, nutrition, symptom, recovery, or workout-history content into this public GitHub Pages repository. Do not add Apple Health UI or MCP integration to the PWA without a separately demonstrated application workflow need.
+Do not copy private coaching, Health, nutrition, symptom, recovery, or workout-history content into this public GitHub Pages repository. Do not add Apple Health UI, automated-cache access, or MCP integration to the PWA without a separately demonstrated application workflow need.
 
 ## Current training constraint
 

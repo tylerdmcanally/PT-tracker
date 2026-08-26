@@ -4,7 +4,7 @@ A small, installable, offline-first web app for the four-day Army fitness traini
 
 ## System boundary
 
-This public repository is canonical for the tracker application, its tests and deployment, workout storage behavior, and the minimum active runtime prescription. Private coaching, Health snapshots, nutrition state, and workout history live in the separate private `tylerdmcanally/aft-coaching` repository. Current-day Apple Health data is queried by local Codex through `health-auto-export` for coaching use; it is not integrated into this PWA and does not require ChatGPT as a bridge.
+This public repository is canonical for the tracker application, its tests and deployment, workout storage behavior, and the minimum active runtime prescription. Private coaching, Health snapshots, nutrition state, and workout history live in the separate private `tylerdmcanally/aft-coaching` repository. For coaching use, local Codex normally reads reasonably fresh current-day Apple Health data from the separate private `aft-health-ingest` cache and uses `health-auto-export` MCP for optional live/high-resolution refreshes. Neither Health path is integrated into this PWA, and neither requires ChatGPT as a bridge.
 
 ## Included
 

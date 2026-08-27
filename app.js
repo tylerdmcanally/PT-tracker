@@ -150,6 +150,7 @@ function bind(){
  };
  document.querySelectorAll('.tab').forEach(button=>button.onclick=()=>tab(button.dataset.tab));
  $('workoutForm').onsubmit=saveWorkout;
+ $('workoutForm').addEventListener('invalid',revealInvalidWorkoutControl,true);
  $('workoutForm').oninput=event=>{
   if(event.target.id==='painDuring')updatePainVisibility();
   if(['bodyWeight','preSoreness','readiness','sleepQuality'].includes(event.target.id))updatePreWorkoutSummary();
@@ -1358,17 +1359,17 @@ function circuitPerformanceFields(component,performance={}){
   circuitInput('load','Load per hand (lb)',performance.load),
   circuitInput('durationSeconds','Duration (sec)',performance.durationSeconds,{step:'1'}),
   circuitCheckbox('durationApproximate','Approximate duration',Boolean(performance.durationApproximate)),
-  circuitInput('rpe','Component RPE',performance.rpe,{min:1,max:10,step:'1'})
+  circuitInput('rpe','Component RPE',performance.rpe,{min:1,max:10,step:'.5'})
  );
  if(type==='reps')return grid(
   circuitInput('repsPerSide','Repetitions per side',performance.repsPerSide,{step:'1'}),
-  circuitInput('rpe','Component RPE',performance.rpe,{min:1,max:10,step:'1'})
+  circuitInput('rpe','Component RPE',performance.rpe,{min:1,max:10,step:'.5'})
  );
  if(type==='cardio')return grid(
   circuitSelect('modality','Modality',performance.modality,component.modalities||['Bike','Rower','Elliptical','Short safe sprint']),
   circuitInput('durationSeconds','Hard interval (sec)',performance.durationSeconds,{step:'1'}),
   circuitCheckbox('durationApproximate','Approximate duration',Boolean(performance.durationApproximate)),
-  circuitInput('rpe','Component RPE',performance.rpe,{min:1,max:10,step:'1'})
+  circuitInput('rpe','Component RPE',performance.rpe,{min:1,max:10,step:'.5'})
  );
  if(type==='rest')return grid(
   circuitInput('durationSeconds','Rest duration (sec)',performance.durationSeconds,{step:'1'})
@@ -1397,7 +1398,7 @@ function circuitPerformanceFields(component,performance={}){
    circuitInput('durationSeconds','Duration (sec)',performance.durationSeconds,{step:'1'}),
    circuitInput('equipmentLabel','Sled / equipment label',performance.equipmentLabel,{type:'text',min:null,placeholder:'Same sled as Aug 5'}),
    circuitInput('surface','Surface',performance.surface,{type:'text',min:null,placeholder:'Turf, rubber floor, etc.'}),
-   circuitInput('rpe','Component RPE',performance.rpe,{min:1,max:10,step:'1'})
+   circuitInput('rpe','Component RPE',performance.rpe,{min:1,max:10,step:'.5'})
   )}<p class="calculated-sled" data-sled-calculation><span data-sled-total-distance>Total distance: —</span><span data-sled-total-load>Total system weight: —</span></p>${commonNotes}`;
  }
  return commonNotes;
@@ -2998,6 +2999,28 @@ function collectWorkoutItem({draft=false}={}){
   exercises,
   updatedAt:new Date().toISOString()
  };
+}
+
+let invalidWorkoutFeedbackPending=false;
+
+function revealInvalidWorkoutControl(event){
+ event.preventDefault();
+ if(invalidWorkoutFeedbackPending)return;
+ invalidWorkoutFeedbackPending=true;
+ setTimeout(()=>{invalidWorkoutFeedbackPending=false},0);
+ const control=event.target;
+ let details=control.closest?.('details');
+ while(details){
+  details.open=true;
+  details=details.parentElement?.closest?.('details');
+ }
+ const label=control.getAttribute?.('aria-label')||control.closest?.('label')?.textContent.trim()||'Workout field';
+ const message=control.validationMessage||'Enter a valid value.';
+ setTimeout(()=>{
+  control.scrollIntoView?.({behavior:'smooth',block:'center'});
+  control.focus?.();
+ },0);
+ toast(`${label}: ${message}`);
 }
 
 async function saveWorkout(event){

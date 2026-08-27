@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=41">
+  <link rel="stylesheet" href="styles.css?v=42">
   <title>AFT Workout Tracker</title>
 </head>
 <body>
@@ -116,7 +116,7 @@
           <h2>Finish the session</h2>
           <div class="form-grid">
             <label>Duration (minutes)<input id="duration" type="number" min="0" step="1" inputmode="numeric"></label>
-            <label>Session RPE (1–10)<input id="sessionRpe" type="number" min="1" max="10" step="1" inputmode="numeric"></label>
+            <label>Session RPE (1–10)<input id="sessionRpe" type="number" min="1" max="10" step="0.5" inputmode="decimal"></label>
             <label>Pain during session (0–10)<input id="painDuring" type="number" min="0" max="10" step="1" inputmode="numeric"></label>
             <label id="painLocationWrap" class="hidden">Pain location / description<input id="painLocation" type="text" placeholder="Where and what did it feel like?"></label>
             <label id="postSorenessWrap" class="hidden">Post-session muscle soreness (0–10)<input id="postSoreness" type="number" min="0" max="10" step="1" inputmode="numeric"></label>
@@ -235,9 +235,9 @@
     <button id="reloadUpdateButton" class="primary subtle" type="button">Reload update</button>
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="program-config.js?v=41"></script>
-  <script src="cloud-config.js?v=41"></script>
-  <script src="cloud-sync.js?v=41"></script>
-  <script src="app.js?v=41"></script>
+  <script src="program-config.js?v=42"></script>
+  <script src="cloud-config.js?v=42"></script>
+  <script src="cloud-sync.js?v=42"></script>
+  <script src="app.js?v=42"></script>
 </body>
 </html>

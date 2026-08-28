@@ -1,8 +1,8 @@
 window.AFT_PROGRAM_CONFIG={
  id:'aft-foundation-block-1',
  name:'AFT Foundation Block 1',
- version:'1.4.9',
- effectiveDate:'2026-08-28',
+ version:'1.5.0',
+ effectiveDate:'2026-08-29',
  currentRunStage:4,
  rotation:['day1','day2','day3','day4'],
  runStages:[
@@ -164,8 +164,8 @@ window.AFT_PROGRAM_CONFIG={
    targetSessionRpe:'6–7',
    warmup:'5–10 minutes of brisk walking plus marches and leg swings. The interval timer then begins with its walk segment.',
    exercises:[
-    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'run',runStage:4,targetRpe:'5–6',coachingNotes:'On a treadmill, use approximately 6.2–6.4 mph while prioritizing completion of each 2:30 running segment with reserve. Do not increase speed simply because the prior Stage 3 session was completed at 6.4 mph; duration progression takes priority over speed progression. Record actual walk and run speeds in the existing run details.'},
-    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 8',type:'body',sets:4,targetRpe:'5–7',coachingNotes:'Use four equal, technically clean sets and stop before failure.'},
+    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'run',runStage:4,targetRpe:'5–6',coachingNotes:'On a treadmill, start the running segments around 6.1–6.2 mph. Move toward 6.3–6.4 mph only if RPE remains at or below 6 and the stride remains relaxed and normal. Prioritize completion with reserve; duration progression takes priority over speed progression or calculated pace. Record actual walk and run speeds in the existing run details.'},
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 9',type:'body',sets:4,targetRpe:'5–7',coachingNotes:'Use four equal, technically clean sets of 9 and stop before failure.'},
     {id:'plank',name:'Front plank',prescription:'3 × 45 sec',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:45','0:45','0:45']},
     {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed'}
    ]

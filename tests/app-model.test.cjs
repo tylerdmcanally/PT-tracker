@@ -45,8 +45,8 @@ vm.runInContext(fs.readFileSync(path.join(root,'app.js'),'utf8'),context,{filena
 const evaluate=source=>vm.runInContext(source,context);
 
 assert.equal(evaluate('PROGRAM.name'),'AFT Foundation Block 1');
-assert.equal(evaluate('PROGRAM.version'),'1.5.3');
-assert.equal(evaluate('PROGRAM.effectiveDate'),'2026-09-04');
+assert.equal(evaluate('PROGRAM.version'),'1.5.4');
+assert.equal(evaluate('PROGRAM.effectiveDate'),'2026-09-06');
 assert.equal(evaluate('PROGRAM.currentRunStage'),4);
 assert.equal(evaluate('SESSIONS.day3.exercises.find(exercise=>exercise.id==="gymConditioningCircuit").prescription.includes("Exactly 2 rounds")'),true);
 assert.equal(evaluate('SESSIONS.day3.targetSessionRpe'),'7–8');
@@ -60,17 +60,17 @@ assert.equal(evaluate('SESSIONS.skillMicrodose.weeklySkillDoseGroupId'),'aft_pus
 assert.equal(evaluate('SESSIONS.skillMicrodose.exercises.some(exercise=>/air squat/i.test(exercise.name))'),false);
 assert.equal(evaluate('sessionProgramMeta(SESSIONS.skillMicrodose).version'),'1.0');
 assert.equal(evaluate('sessionProgramMeta(SESSIONS.skillMicrodose).runStage'),'');
-assert.equal(evaluate('currentProgramMeta().version'),'1.5.3','the auxiliary template version remains independent of the primary program');
+assert.equal(evaluate('currentProgramMeta().version'),'1.5.4','the auxiliary template version remains independent of the primary program');
 assert.equal(evaluate('SESSIONS.day1.exercises.find(exercise=>exercise.id==="runWalkIntervals").runStage'),4);
 assert.equal(evaluate('SESSIONS.day4.exercises.find(exercise=>exercise.id==="primaryRun").runStage'),4);
 assert.equal(evaluate('SESSIONS.day4.exercises.find(exercise=>exercise.id==="handReleasePushups").prescription'),'4 × 9');
 assert.equal(evaluate('SESSIONS.day4.exercises.find(exercise=>exercise.id==="handReleasePushups").targetRpe'),'5–7');
-assert.equal(evaluate('JSON.stringify(SESSIONS.day4.exercises.find(exercise=>exercise.id==="plank").prescribedTimes)'),'["0:45","0:45","0:45"]');
+assert.equal(evaluate('JSON.stringify(SESSIONS.day4.exercises.find(exercise=>exercise.id==="plank").prescribedTimes)'),'["0:50","0:50","0:50"]');
 assert.equal(evaluate('SESSIONS.day4.exercises.find(exercise=>exercise.id==="plank").targetRpe'),'6–8');
 assert.equal(evaluate('SESSIONS.day3.exercises.find(exercise=>exercise.id==="romanianDeadlift").prescription'),'145 lb total for 2 × 8');
 assert.equal(evaluate('SESSIONS.day3.exercises.find(exercise=>exercise.id==="romanianDeadlift").targetLoad'),145);
 assert.equal(evaluate('defaultExerciseState(SESSIONS.day3.exercises.find(exercise=>exercise.id==="romanianDeadlift")).load'),undefined,'the target load is not prefilled as a completed result');
-const v153Prescriptions=JSON.parse(evaluate(`JSON.stringify({
+const v154Prescriptions=JSON.parse(evaluate(`JSON.stringify({
  day1Deadlift:SESSIONS.day1.exercises.find(exercise=>exercise.id==='deadlift').prescription,
  day1LegPress:SESSIONS.day1.exercises.find(exercise=>exercise.id==='squatOrLegPress').prescription,
  day1Bench:SESSIONS.day1.exercises.find(exercise=>exercise.id==='horizontalPress').prescription,
@@ -99,7 +99,7 @@ const v153Prescriptions=JSON.parse(evaluate(`JSON.stringify({
  day4Plank:SESSIONS.day4.exercises.find(exercise=>exercise.id==='plank').prescription,
  day4Mobility:SESSIONS.day4.exercises.find(exercise=>exercise.id==='mobility').prescription
 })`));
-assert.deepEqual(v153Prescriptions,{
+assert.deepEqual(v154Prescriptions,{
  day1Deadlift:'175 lb total for 3 × 5',day1LegPress:'Next smallest comparable increment above 140 lb on the same machine/setup for 3 × 8–10',day1Bench:'40 lb per hand for 3 × 8',
  day1Row:'132 lb displayed on the same cable setup for 3 × 10',day1Carry:'45 lb per hand for 4 trips of approximately 40 yd',day1Plank:'3 × 45 sec',
  day1Preacher:'30 lb total on the same EZ-bar setup, or the next smallest comparable load below 40 lb if 30 lb is unavailable, for 2 × 10–15',day1Pressdown:'Next smallest comparable increment above 77 lb displayed on the same cable setup (approximately 88 lb displayed if it uses 11-lb increments) for 2 × 10–12',day1Run:'Stage 4 — 1:00 walk / 2:30 run × 6',
@@ -107,9 +107,9 @@ assert.deepEqual(v153Prescriptions,{
  day2Row:'Next smallest increment above 99 lb on the same machine (approximately 110 lb displayed if it uses 11-lb increments) for 3 × 8–10',day2Lateral:'33 lb displayed per side on the same comparable cable setup for 2 × 20',day2Fly:'77 lb displayed on the same pec-deck machine/setup for 2 × 15',
  day3Rdl:'145 lb total for 2 × 8',day3Goblet:'55 lb for 3 × 10',day3Incline:'35 lb per hand for 3 × 9',day3Row:'50 lb for 3 × 8–10 each side',
  day3Split:'Body weight for 2 × 12 each leg',day3SidePlank:'3 × 45 sec each side',day3Hammer:'25 lb per hand for 2 × 12',day3OverheadTriceps:'Next smallest comparable increment above 99 lb on the same rope/cable setup (approximately 110 lb displayed if applicable) for 2 × 10–12',
- day4Run:'Stage 4 — 1:00 walk / 2:30 run × 6',day4Pushups:'4 × 9',day4Plank:'3 × 45 sec',day4Mobility:'5–10 minutes'
+ day4Run:'Stage 4 — 1:00 walk / 2:30 run × 6',day4Pushups:'4 × 9',day4Plank:'3 × 50 sec',day4Mobility:'5–10 minutes'
 });
-assert.equal(evaluate('SESSIONS.day3.exercises.some(exercise=>exercise.id==="handReleasePushups"||exercise.id==="plank")'),false,'the optional Day 3 skill bundle remains absent from v1.5.3');
+assert.equal(evaluate('SESSIONS.day3.exercises.some(exercise=>exercise.id==="handReleasePushups"||exercise.id==="plank")'),false,'the optional Day 3 skill bundle remains absent from v1.5.4');
 assert.equal(evaluate('SESSIONS.day3.exercises.find(exercise=>exercise.id==="gymConditioningCircuit").circuitVersion'),'foundation-1.4.5');
 assert.equal(evaluate('CIRCUIT_TEMPLATES["foundation-1.4"].components.length'),6);
 assert.equal(evaluate('CIRCUIT_TEMPLATES["foundation-1.4.5"].components.length'),6);
@@ -136,12 +136,17 @@ assert.equal(evaluate(`SESSIONS.day4.exercises.some(exercise=>['preacherCurl','h
 assert.equal(evaluate('ROTATION.length'),4,'no primary workout day is added');
 assert.equal(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='runWalkIntervals').targetRpe`),'5–6');
 assert.equal(evaluate(`SESSIONS.day4.exercises.find(exercise=>exercise.id==='primaryRun').targetRpe`),'5–6');
-assert.match(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='runWalkIntervals').coachingNotes`),/6\.0–6\.1 mph/);
-assert.match(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='runWalkIntervals').coachingNotes`),/reduce speed rather than forcing pace/);
-assert.doesNotMatch(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='runWalkIntervals').coachingNotes`),/6\.2–6\.4 mph/,'Day 1 uses its post-strength speed guidance');
-assert.match(evaluate(`SESSIONS.day4.exercises.find(exercise=>exercise.id==='primaryRun').coachingNotes`),/6\.1–6\.2 mph/,'Day 4 starts at the coach-directed fresh-session range');
-assert.match(evaluate(`SESSIONS.day4.exercises.find(exercise=>exercise.id==='primaryRun').coachingNotes`),/6\.3–6\.4 mph only if RPE remains at or below 6/,'Day 4 faster running remains conditional on controlled effort');
+assert.match(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='runWalkIntervals').coachingNotes`),/5\.5–5\.6 mph/);
+assert.match(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='runWalkIntervals').coachingNotes`),/5\.7–5\.8 mph only if RPE remains at or below 6/);
+assert.match(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='runWalkIntervals').coachingNotes`),/first three rounds/);
+assert.match(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='runWalkIntervals').coachingNotes`),/[Rr]educe speed rather than forcing pace/);
+assert.doesNotMatch(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='runWalkIntervals').coachingNotes`),/6\.0–6\.1 mph/,'Day 1 no longer uses the superseded pace guidance');
+assert.match(evaluate(`SESSIONS.day4.exercises.find(exercise=>exercise.id==='primaryRun').coachingNotes`),/5\.7–5\.8 mph/,'Day 4 starts at the recalibrated fresh-session range');
+assert.match(evaluate(`SESSIONS.day4.exercises.find(exercise=>exercise.id==='primaryRun').coachingNotes`),/5\.9–6\.0 mph only if RPE is at or below 5 through round 3/,'Day 4 faster running remains conditional on controlled effort');
+assert.match(evaluate(`SESSIONS.day4.exercises.find(exercise=>exercise.id==='primaryRun').coachingNotes`),/Reduce toward 5\.5 mph if RPE exceeds 6/);
+assert.match(evaluate(`SESSIONS.day4.exercises.find(exercise=>exercise.id==='primaryRun').coachingNotes`),/two pain-free Stage 4 completions.*including one fresh Day 4 without a late forced slowdown/);
 assert.match(evaluate(`SESSIONS.day4.exercises.find(exercise=>exercise.id==='primaryRun').coachingNotes`),/duration progression takes priority over speed progression/);
+assert.match(evaluate(`SESSIONS.day4.exercises.find(exercise=>exercise.id==='plank').coachingNotes`),/stop a set rather than extending through lumbar compensation/);
 assert.equal(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='deadlift').targetLoad`),175);
 assert.match(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='deadlift').coachingNotes`),/Hold 175 lb for confirmation.*do not pursue grinders or another load jump next cycle/);
 assert.equal(evaluate(`SESSIONS.day1.exercises.find(exercise=>exercise.id==='squatOrLegPress').targetLoad`),undefined,'the setup-specific next leg-press increment is not universalized');
@@ -245,13 +250,13 @@ assert.equal(evaluate(`prescriptionAdherence(${currentDay3Triceps},{type:'weight
 assert.equal(evaluate(`prescriptionAdherence(${currentDay3Triceps},{type:'weighted',completed:true,variation:'Rope overhead cable extension',load:'99',sets:'2',reps:'10, 10'})`),'met','a different stack number is not judged against the setup-specific next-increment cue');
 assert.equal(evaluate(`prescriptionAdherence(${currentDay4Pushups},{type:'body',completed:true,sets:'4',reps:'9, 9, 9, 9'})`),'met');
 assert.equal(evaluate(`prescriptionAdherence(${currentDay4Pushups},{type:'body',completed:true,sets:'4',reps:'9, 9, 9, 8'})`),'below_target');
-assert.equal(evaluate(`prescriptionAdherence(${currentDay4Plank},{type:'timed',completed:true,sets:'3',times:'45, 45, 45'})`),'met');
-assert.equal(evaluate(`prescriptionAdherence(${currentDay4Plank},{type:'timed',completed:true,sets:'3',times:'45, 40, 45'})`),'below_target');
+assert.equal(evaluate(`prescriptionAdherence(${currentDay4Plank},{type:'timed',completed:true,sets:'3',times:'50, 50, 50'})`),'met');
+assert.equal(evaluate(`prescriptionAdherence(${currentDay4Plank},{type:'timed',completed:true,sets:'3',times:'45, 45, 45'})`),'below_target');
 const v146RunMarkdown=evaluate(`markdownExercise(SESSIONS.day4.exercises.find(exercise=>exercise.id==='primaryRun'),{
  exerciseId:'primaryRun',name:'Walk / run intervals',type:'run',completed:true,runStage:'4',walkMinutes:'1',runMinutes:'2.5',rounds:'6',completedRounds:'6',runSpeed:'6.2',rpe:'5'
 },{date:'2026-08-23',dayKey:'day4',programVersion:'1.4.6'})`);
 assert.match(v146RunMarkdown,/target RPE 5–6/);
-assert.match(v146RunMarkdown,/6\.1–6\.2 mph/);
+assert.match(v146RunMarkdown,/5\.7–5\.8 mph/);
 assert.match(v146RunMarkdown,/Programmed interval time: 21:00/);
 assert.match(v146RunMarkdown,/Running speed: 6\.2 mph/,'the existing run-speed field carries the current guidance into coach exports');
 
@@ -534,7 +539,7 @@ assert.equal(evaluate(`circuitDirectiveAdherenceDetail(legacyCircuitDefinition,d
 assert.equal(evaluate(`circuitAdherenceDetail(legacyCircuitDefinition,directiveFixture.exercises[0]).value`),'modified','baseline prescription and directive adherence remain separate');
 evaluate(`entries=[directiveFixture]`);
 assert.equal(evaluate(`activeCoachOverlay('1.3','day3','gymConditioningCircuit','2026-08-12')`),null,'a saved completed occurrence consumes the directive');
-assert.equal(evaluate('PROGRAM.version'),'1.5.3','consuming a historical directive does not change the current program version');
+assert.equal(evaluate('PROGRAM.version'),'1.5.4','consuming a historical directive does not change the current program version');
 evaluate(`entries=[];activeProgramContext=currentProgramMeta();activeSessionDefinition=SESSIONS.day3;activeWorkoutDate='2026-08-08'`);
 
 const fakeCard={
@@ -953,6 +958,25 @@ assert.equal(syntheticSep3V151Definition.exercises.find(exercise=>exercise.id===
 assert.match(syntheticSep3V151Definition.exercises.find(exercise=>exercise.id==='overheadTricepsExtension').prescription,/above 88 lb.*approximately 99 lb/);
 assert.equal(syntheticSep3V151Definition.exercises.find(exercise=>exercise.id==='gymConditioningCircuit').circuitVersion,'foundation-1.4.5');
 
+const syntheticSep5V153Day4Fixture=`{
+ id:'synthetic-sep5-v153-day4',date:'2026-09-05',dayKey:'day4',dayLabel:'Day 4 — Run and Calisthenics',sessionType:'primary',
+ programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.3',programEffectiveDate:'2026-09-04',activeRunStage:4,
+ prescriptionSnapshot:{sessionKey:'day4',sessionType:'primary',label:'Day 4 — Run and Calisthenics',targetSessionRpe:'6–7',exercises:[
+  {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'run',runStage:4,targetRpe:'5–6',coachingNotes:'On a treadmill, start the running segments around 6.1–6.2 mph. Move toward 6.3–6.4 mph only if RPE remains at or below 6 and the stride remains relaxed and normal. Prioritize completion with reserve; duration progression takes priority over speed progression or calculated pace. Record actual walk and run speeds in the existing run details.'},
+  {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 9',type:'body',sets:4,targetRpe:'5–7'},
+  {id:'plank',name:'Front plank',prescription:'3 × 45 sec',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:45','0:45','0:45']},
+  {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed'}
+ ]},exercises:[]
+}`;
+const syntheticSep5V153Entry=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${syntheticSep5V153Day4Fixture}))`));
+const syntheticSep5V153Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry(${syntheticSep5V153Day4Fixture}))`));
+assert.equal(syntheticSep5V153Entry.programVersion,'1.5.3','the September 5 workout keeps its saved public-app version');
+assert.equal(syntheticSep5V153Entry.programEffectiveDate,'2026-09-04');
+assert.equal(syntheticSep5V153Definition.exercises.find(exercise=>exercise.id==='plank').prescription,'3 × 45 sec','the September 5 plank target remains frozen at v1.5.3');
+assert.deepEqual(syntheticSep5V153Definition.exercises.find(exercise=>exercise.id==='plank').prescribedTimes,['0:45','0:45','0:45']);
+assert.match(syntheticSep5V153Definition.exercises.find(exercise=>exercise.id==='primaryRun').coachingNotes,/6\.1–6\.2 mph/,'the September 5 run retains its saved pace guidance');
+assert.doesNotMatch(syntheticSep5V153Definition.exercises.find(exercise=>exercise.id==='primaryRun').coachingNotes,/5\.7–5\.8 mph/);
+
 assert.equal(evaluate(`(()=>{
  const prior=entries;
  entries=[
@@ -1062,13 +1086,13 @@ context.document={
  querySelectorAll:()=>[]
 };
 
-elements.sessionDate={value:'2026-09-04'};
+elements.sessionDate={value:'2026-09-06'};
 evaluate(`activeProgramContext=currentProgramMeta();activeSessionDefinition=SESSIONS.day3;activeSavedExercises=[];editing=null`);
-const newV153Workout=JSON.parse(evaluate('JSON.stringify(collectWorkoutItem())'));
-assert.equal(newV153Workout.programVersion,'1.5.3','new primary workouts capture the synchronized program version');
-assert.equal(newV153Workout.programEffectiveDate,'2026-09-04','new primary workouts capture the synchronized effective date');
-assert.equal(newV153Workout.prescriptionSnapshot.exercises.find(exercise=>exercise.id==='romanianDeadlift').targetLoad,145,'new primary workouts snapshot the v1.5.3 Day 3 prescription');
-assert.equal(newV153Workout.prescriptionSnapshot.exercises.find(exercise=>exercise.id==='gymConditioningCircuit').circuitVersion,'foundation-1.4.5','new snapshots retain the unchanged conditioning template');
+const newV154Workout=JSON.parse(evaluate('JSON.stringify(collectWorkoutItem())'));
+assert.equal(newV154Workout.programVersion,'1.5.4','new primary workouts capture the synchronized program version');
+assert.equal(newV154Workout.programEffectiveDate,'2026-09-06','new primary workouts capture the synchronized effective date');
+assert.equal(newV154Workout.prescriptionSnapshot.exercises.find(exercise=>exercise.id==='romanianDeadlift').targetLoad,145,'new primary workouts retain the unchanged v1.5.4 Day 3 prescription');
+assert.equal(newV154Workout.prescriptionSnapshot.exercises.find(exercise=>exercise.id==='gymConditioningCircuit').circuitVersion,'foundation-1.4.5','new snapshots retain the unchanged conditioning template');
 
 elements.exportFrom.value='2026-08-07';
 elements.exportTo.value='2026-08-07';
@@ -1263,7 +1287,7 @@ evaluate(`entries=[{
  ]
 }]`);
 const markdown=evaluate('buildMd()');
-assert.match(markdown,/AFT Foundation Block 1 · version 1\.5\.3/);
+assert.match(markdown,/AFT Foundation Block 1 · version 1\.5\.4/);
 assert.match(markdown,/Program: AFT Foundation Block 1 · version 1\.2/,'historical entry version must remain visible');
 assert.match(markdown,/Planned:/);
 assert.match(markdown,/Status: Completed/);
@@ -1287,7 +1311,7 @@ assert.match(csv,/"14:16"/);
 assert.match(csv,/"Relaxed pace\.\nNo pain\."/);
 const jsonBackup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
 assert.equal(jsonBackup.version,11);
-assert.equal(jsonBackup.currentProgram.version,'1.5.3');
+assert.equal(jsonBackup.currentProgram.version,'1.5.4');
 assert.equal(jsonBackup.currentProgram.runStage,4);
 assert.equal(jsonBackup.entries[0].exercises[0].deviceReportedPace,'14:16');
 
@@ -1295,10 +1319,19 @@ elements.exportFrom.value='2026-09-03';
 elements.exportTo.value='2026-09-03';
 evaluate(`entries=[normalizeEntry(${syntheticSep3V151Day3Fixture})]`);
 const sep3Markdown=evaluate('buildMd()');
-assert.match(sep3Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.3/,'the export header uses the current public-app version');
+assert.match(sep3Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.4/,'the export header uses the current public-app version');
 assert.match(sep3Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.1/,'the September 3 session retains its immutable saved version');
 assert.match(sep3Markdown,/Romanian deadlift[\s\S]*Planned: 135 lb total for 2 × 8/,'the September 3 export uses its saved prescription snapshot');
 assert.doesNotMatch(sep3Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.2/,'the unapplied v1.5.2 app version is never synthesized');
+
+elements.exportFrom.value='2026-09-05';
+elements.exportTo.value='2026-09-05';
+evaluate(`entries=[normalizeEntry(${syntheticSep5V153Day4Fixture})]`);
+const sep5Markdown=evaluate('buildMd()');
+assert.match(sep5Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.4/,'the export header uses the current v1.5.4 program');
+assert.match(sep5Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.3/,'the September 5 session retains its immutable saved version');
+assert.match(sep5Markdown,/Front plank[\s\S]*Planned: 3 × 45 sec/,'the September 5 export uses its saved plank prescription');
+assert.doesNotMatch(sep5Markdown,/Front plank[\s\S]*Planned: 3 × 50 sec/,'the active plank target does not rewrite September 5 history');
 
 const normalized=evaluate(`normalizeEntry({
  id:'old',date:'2026-07-01',dayKey:'day1',painScore:'4',
@@ -1365,12 +1398,12 @@ const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 const styles=fs.readFileSync(path.join(root,'styles.css'),'utf8');
 assert.match(appSource,/Exercise notes<textarea[^>]+data-field="notes"/,'exercise notes must support detailed multiline comments');
 assert.doesNotMatch(styles,/\.sticky-actions\{position:sticky;bottom:calc\(7px/,'mobile workout actions must remain in page flow');
-assert.ok(indexHtml.indexOf('program-config.js?v=46')<indexHtml.indexOf('cloud-config.js?v=46'));
-assert.ok(indexHtml.indexOf('cloud-config.js?v=46')<indexHtml.indexOf('cloud-sync.js?v=46'));
-assert.ok(indexHtml.indexOf('cloud-sync.js?v=46')<indexHtml.indexOf('app.js?v=46'));
-assert.match(serviceWorker,/aft-workout-tracker-v46/);
-assert.match(serviceWorker,/program-config\.js\?v=46/);
-assert.match(serviceWorker,/cloud-sync\.js\?v=46/);
+assert.ok(indexHtml.indexOf('program-config.js?v=47')<indexHtml.indexOf('cloud-config.js?v=47'));
+assert.ok(indexHtml.indexOf('cloud-config.js?v=47')<indexHtml.indexOf('cloud-sync.js?v=47'));
+assert.ok(indexHtml.indexOf('cloud-sync.js?v=47')<indexHtml.indexOf('app.js?v=47'));
+assert.match(serviceWorker,/aft-workout-tracker-v47/);
+assert.match(serviceWorker,/program-config\.js\?v=47/);
+assert.match(serviceWorker,/cloud-sync\.js\?v=47/);
 assert.match(indexHtml,/id="sessionRpe"[^>]+step="0\.5"[^>]+inputmode="decimal"/,'session RPE accepts half-point values');
 assert.match(appSource,/addEventListener\('invalid',revealInvalidWorkoutControl,true\)/,'invalid workout values must produce visible feedback');
 assert.equal((appSource.match(/Component RPE',performance\.rpe,\{min:1,max:10,step:'\.5'\}/g)||[]).length,4,'all circuit component RPE inputs accept half-point values');

@@ -1,8 +1,8 @@
 window.AFT_PROGRAM_CONFIG={
  id:'aft-foundation-block-1',
  name:'AFT Foundation Block 1',
- version:'1.5.4',
- effectiveDate:'2026-09-06',
+ version:'1.5.5',
+ effectiveDate:'2026-09-10',
  currentRunStage:4,
  rotation:['day1','day2','day3','day4'],
  runStages:[
@@ -117,6 +117,27 @@ window.AFT_PROGRAM_CONFIG={
     {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'interval',runStage:4,targetRpe:'5–6',coachingNotes:'This run follows the primary strength work and is not a pace test. On a treadmill, start the running segments around 5.5–5.6 mph and stay controlled through at least the first three rounds. Move toward 5.7–5.8 mph only if RPE remains at or below 6 with relaxed stride and breathing. Reduce speed rather than forcing pace. Do not chase total distance or overall average pace; the purpose is extending continuous-running tolerance after lifting. Finish each 2:30 running segment with reserve and record actual walk and run speeds in the existing run details.'},
     {id:'preacherCurl',name:'Preacher curl',prescription:'30 lb total on the same EZ-bar setup, or the next smallest comparable load below 40 lb if 30 lb is unavailable, for 2 × 10–15',type:'weighted',unit:'lb total',sets:2,targetLoad:30,targetLoadVariation:'EZ-bar preacher curl',targetRpe:'7–9',variations:['Machine preacher curl','EZ-bar preacher curl','Dumbbell preacher curl','Cable preacher curl'],defaultVariation:'EZ-bar preacher curl',variationUnits:{'Machine preacher curl':'lb total','EZ-bar preacher curl':'lb total','Dumbbell preacher curl':'lb per hand','Cable preacher curl':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use 30 lb total on the same EZ-bar setup when available; otherwise use the next smallest comparable load below 40 lb. Other variations are not directly load-comparable. Use controlled full repetitions and return to 40 lb only after a future coach-directed progression.'},
     {id:'tricepsPressdown',name:'Cable triceps pressdown',prescription:'Next smallest comparable increment above 77 lb displayed on the same cable setup (approximately 88 lb displayed if it uses 11-lb increments) for 2 × 10–12',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',group:'armSuperset',optional:true,coachingNotes:'Use the next smallest increment above 77 lb only on the same comparable machine and cable setup. Approximately 88 lb is guidance for the same 11-lb increment stack, not a universal cable load. Progression remains coach-directed.'}
+   ]
+  },
+  day1IllnessRecovery:{
+   key:'day1IllnessRecovery',
+   sessionType:'primary',
+   coachDirectedAlternative:true,
+   advancesPrimaryRotation:true,
+   rotationDayKey:'day1',
+   label:'Day 1 — Illness Recovery',
+   focus:'Coach-directed reduced-volume Day 1 alternative for a controlled return to training.',
+   targetDuration:'No more than approximately 45 minutes',
+   targetSessionRpe:'5–6',
+   coachInstructions:'Stop for symptom recurrence, disproportionate effort, unusual fatigue, breathlessness, chest discomfort, dizziness, palpitations, or exertional headache. Do not add the omitted run or accessory work.',
+   exercises:[
+    {id:'illnessReturnCheck',name:'Return-to-exercise check',prescription:'10 minutes easy stationary bike or walk',type:'cardio',modalities:['Stationary bike','Walk'],targetRpe:'2–3',coachingNotes:'Continue only if breathing, heart-rate response, energy, and symptoms feel normal. Stop rather than push through an abnormal response.'},
+    {id:'deadlift',name:'Trap-bar deadlift',prescription:'175 lb total for 2 × 5',type:'weighted',unit:'lb',sets:2,targetLoad:175,targetLoadVariation:'Trap / hex bar',targetRpe:'≤6',variations:['Trap / hex bar','Conventional barbell','Sumo barbell','Dumbbells'],defaultVariation:'Trap / hex bar',barWeights:{'Trap / hex bar':45,'Conventional barbell':45,'Sumo barbell':45},perSideVariations:['Trap / hex bar'],barWeightOptions:[45,55,60],coachingNotes:'Use the trap/hex bar when available. Keep every repetition technically clean, do not grind, and do not progress the load. Record the actual bar weight and plate weight per side; use another listed variation when equipment requires it.'},
+    {id:'squatOrLegPress',name:'Leg press',prescription:'140 lb on the same comparable machine/setup for 2 × 8',type:'weighted',unit:'lb',sets:2,variations:['Leg press','Lying leg press','Upright leg press','Plate-loaded leg press','Selectorized leg press','Other leg press'],defaultVariation:'Leg press',targetRpe:'≤6',coachingNotes:'Use the last confirmed 140-lb load only on the same comparable leg-press machine and setup. Do not treat the displayed value as comparable on other equipment.'},
+    {id:'horizontalPress',name:'Dumbbell bench press',prescription:'40 lb per hand for 2 × 8',type:'weighted',unit:'lb per hand',sets:2,targetLoad:40,targetLoadVariation:'Dumbbell bench press',targetRpe:'≤6',variations:['Dumbbell bench press','Chest-press machine','Barbell bench press'],defaultVariation:'Dumbbell bench press',barWeights:{'Barbell bench press':45},coachingNotes:'Use controlled repetitions and stop before effort rises above the target range.'},
+    {id:'seatedRow',name:'Seated cable row',prescription:'132 lb displayed on the same cable setup for 2 × 10',type:'weighted',unit:'lb',sets:2,targetRpe:'≤6',variations:['Seated cable row','Chest-supported machine row'],defaultVariation:'Seated cable row',coachingNotes:'Use 132 lb displayed only on the same seated cable-row setup. Do not treat it as directly comparable on another cable, pulley, or machine setup.'},
+    {id:'loadedCarry',name:'Farmer carry',prescription:'45 lb per hand for 2 trips of approximately 40 yd',type:'carry',unit:'lb per hand',sets:2,targetRpe:'≤6',variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry',coachingNotes:'Use approximately 40 yd per trip with controlled posture. Do not progress the load.'},
+    {id:'plank',name:'Front plank',prescription:'2 × 45 sec',type:'timed',sets:2,targetRpe:'≤6',prescribedTimes:['0:45','0:45'],coachingNotes:'Maintain clean front-plank technique and stop before form degrades.'}
    ]
   },
   day2:{

@@ -43,7 +43,8 @@ const EXERCISE_NAME_IDS={
  'Lateral step-ups':'lateralStepUps','Hard cardio':'hardCardio','Rest':'circuitRest',
  'Backward sled drag':'backwardSledDrag','Forward sled push':'forwardSledPush',
  'Primary run':'primaryRun','Mobility':'mobility',
- 'Easy stationary bike or walk':'recoveryCardio','Gentle mobility':'recoveryMobility'
+ 'Easy stationary bike or walk':'recoveryCardio','Gentle mobility':'recoveryMobility',
+ 'Return-to-exercise check':'illnessReturnCheck'
 };
 
 const EXERCISE_ID_ALIASES={
@@ -132,7 +133,8 @@ function populateSessionSelect(){
   const suffix=session.optional&&!/^optional\b/i.test(session.label)?' — Optional':'';
   return `<option value="${attr(key)}">${esc(session.label+suffix)}</option>`;
  }).join('');
- $('daySelect').innerHTML=`<optgroup label="Primary rotation">${options(ROTATION)}</optgroup><optgroup label="Optional sessions">${options(['recovery','skillMicrodose'])}</optgroup>`;
+ const alternatives=Object.keys(SESSIONS).filter(key=>SESSIONS[key].coachDirectedAlternative);
+ $('daySelect').innerHTML=`<optgroup label="Primary rotation">${options(ROTATION)}</optgroup>${alternatives.length?`<optgroup label="Coach-directed alternatives">${options(alternatives)}</optgroup>`:''}<optgroup label="Optional sessions">${options(['recovery','skillMicrodose'])}</optgroup>`;
 }
 
 function bind(){
@@ -279,6 +281,8 @@ function snapshotSession(definition){
  return {
   sessionKey:definition.key,
   sessionType:definition.sessionType,
+  ...(definition.rotationDayKey?{rotationDayKey:definition.rotationDayKey}:{}),
+  ...(definition.coachDirectedAlternative?{coachDirectedAlternative:true}:{}),
   label:definition.label,
   focus:definition.focus,
   warmup:definition.warmup,
@@ -310,6 +314,8 @@ function definitionForSavedEntry(entry){
   return {
    key:snapshot.sessionKey||entry.dayKey,
    sessionType:snapshot.sessionType||entry.sessionType||'primary',
+   rotationDayKey:snapshot.rotationDayKey||entry.rotationDayKey||current?.rotationDayKey||'',
+   coachDirectedAlternative:Boolean(snapshot.coachDirectedAlternative||entry.coachDirectedAlternative||current?.coachDirectedAlternative),
    label:snapshot.label||entry.dayLabel,
    focus:snapshot.focus||'Saved prescription',
    warmup:snapshot.warmup||'',
@@ -347,12 +353,14 @@ function definitionForSavedEntry(entry){
  return {
   key:entry.dayKey,
   sessionType:entry.sessionType||'primary',
+  rotationDayKey:entry.rotationDayKey||current?.rotationDayKey||'',
+  coachDirectedAlternative:Boolean(entry.coachDirectedAlternative||current?.coachDirectedAlternative),
   label:entry.dayLabel||current?.label||'Saved workout',
   focus:'Historical workout using its saved exercise list.',
   warmup:'',
   targetSessionRpe:entry.targetSessionRpe||'',
   optional:['recovery','skill_microdose'].includes(entry.sessionType),
-  advancesPrimaryRotation:entry.sessionType==='primary',
+  advancesPrimaryRotation:entry.advancesPrimaryRotation!==false&&(entry.sessionType||'primary')==='primary',
   templateId:entry.templateId||'',
   templateName:entry.templateName||'',
   templateVersion:entry.templateVersion||'',
@@ -406,6 +414,7 @@ function renderWorkout(saved=null,{preserveSession=false}={}){
  const session=activeSessionDefinition;
  const parts=session.label.split('—');
  const isTemplate=session.sessionType==='skill_microdose';
+ const isAlternative=Boolean(session.coachDirectedAlternative);
  const summaryEyebrow=isTemplate?'OPTIONAL SESSION':`${parts[0].trim()}${session.optional?' · OPTIONAL':''}`;
  const contextName=saved?.templateName||session.templateName||activeProgramContext.name;
  const contextVersion=saved?.templateVersion||session.templateVersion||activeProgramContext.version;
@@ -418,7 +427,7 @@ function renderWorkout(saved=null,{preserveSession=false}={}){
   <h2>${esc(parts.slice(1).join('—').trim()||session.label)}</h2>
   <p>${esc(session.focus)}</p>
   <p class="program-line">${isTemplate?'Auxiliary template: ':'Program: '}${esc(programLine)}${session.targetSessionRpe?` · target session RPE ${esc(session.targetSessionRpe)}`:''}${session.targetDuration?` · ${esc(session.targetDuration)}`:''}</p>
-  ${isTemplate?'<p class="rotation-note">Does not advance the primary workout rotation or running stage.</p>':''}
+  ${isTemplate?'<p class="rotation-note">Does not advance the primary workout rotation or running stage.</p>':isAlternative?'<p class="rotation-note">Coach-directed alternative to standard Day 1. Saving it advances the primary rotation to Day 2.</p>':''}
   ${session.coachInstructions?`<aside class="microdose-instructions"><strong>Coach instructions</strong><p>${esc(session.coachInstructions)}</p></aside>`:''}
   <div data-weekly-skill-status></div>
   <div id="microdoseCaution" class="microdose-caution hidden" role="status"></div>
@@ -2969,6 +2978,8 @@ function collectWorkoutItem({draft=false}={}){
   dayKey:activeSessionDefinition.key,
   dayLabel:activeSessionDefinition.label,
   sessionType:activeSessionDefinition.sessionType||'primary',
+  ...(activeSessionDefinition.rotationDayKey?{rotationDayKey:activeSessionDefinition.rotationDayKey}:{}),
+  ...(activeSessionDefinition.coachDirectedAlternative?{coachDirectedAlternative:true}:{}),
   targetSessionRpe:activeSessionDefinition.targetSessionRpe||'',
   programId:program.id,
   programName:program.name,
@@ -3150,12 +3161,19 @@ function confirmDiscardCurrentWorkout(action){
 
 function nextWorkoutDay(source=entries){
  const recent=source.filter(isPrimaryEntry).slice().sort(compareEntries)[0];
- if(!recent||!ROTATION.includes(recent.dayKey))return ROTATION[0];
- return ROTATION[(ROTATION.indexOf(recent.dayKey)+1)%ROTATION.length];
+ const recentRotationKey=rotationKeyForEntry(recent);
+ if(!recent||!ROTATION.includes(recentRotationKey))return ROTATION[0];
+ return ROTATION[(ROTATION.indexOf(recentRotationKey)+1)%ROTATION.length];
+}
+
+function rotationKeyForEntry(entry){
+ return entry?.rotationDayKey||entry?.dayKey||'';
 }
 
 function isPrimaryEntry(entry){
- return (!entry?.sessionType||entry.sessionType==='primary')&&ROTATION.includes(entry?.dayKey);
+ return (!entry?.sessionType||entry.sessionType==='primary')
+  &&entry?.advancesPrimaryRotation!==false
+  &&ROTATION.includes(rotationKeyForEntry(entry));
 }
 
 function compareEntries(a,b){
@@ -3789,6 +3807,7 @@ function buildMd(){
    }else{
     output+=`Session category: ${sessionCategoryLabel(entry)}  \n`;
     output+=`Program: ${entry.programName||'Legacy program'}${entry.programVersion?` · version ${entry.programVersion}`:''}  \n`;
+    if(entry.rotationDayKey&&entry.rotationDayKey!==entry.dayKey)output+=`Rotation equivalent: ${SESSIONS[entry.rotationDayKey]?.label||entry.rotationDayKey}  \n`;
    }
    const metadata=[];
    if(entry.duration)metadata.push(`${entry.duration} min`);
@@ -4045,7 +4064,7 @@ function exportJson(){
 
 function buildCsv(){
  const headers=[
-  'date','session_type','day','program_id','program_name','program_version','program_effective_date',
+  'date','session_type','session_key','day','rotation_day_key','advances_primary_rotation','coach_directed_alternative','program_id','program_name','program_version','program_effective_date',
   'template_id','template_name','template_version','template_effective_date','weekly_skill_dose_group_id','weekly_skill_dose_week',
   'weekly_frequency_override','weekly_frequency_override_reason','active_run_stage',
   'target_session_rpe','duration_minutes','session_rpe','body_weight_lb','pre_session_soreness',
@@ -4078,7 +4097,7 @@ function buildCsv(){
    const completedRounds=exercise.type==='circuit'?exercise.rounds||'':exercise.completedRounds||'';
    const pain=exercise.exercisePain||{};
    rows.push([
-    entry.date,entry.sessionType||'primary',entry.dayLabel,entry.programId||'',entry.programName||'',
+    entry.date,entry.sessionType||'primary',entry.dayKey,entry.dayLabel,entry.rotationDayKey||'',entry.advancesPrimaryRotation===false?'no':'yes',entry.coachDirectedAlternative?'yes':'no',entry.programId||'',entry.programName||'',
     entry.programVersion||'',entry.programEffectiveDate||'',entry.templateId||'',entry.templateName||'',entry.templateVersion||'',
     entry.templateEffectiveDate||'',entry.weeklySkillDoseGroupId||'',entry.weeklySkillDoseWeek||'',entry.weeklyFrequencyOverride?'yes':'no',
     entry.weeklyFrequencyOverrideReason||'',entry.activeRunStage??'',entry.targetSessionRpe||'',entry.duration,
@@ -4239,8 +4258,10 @@ function applyKnownHistoricalCorrections(entry){
 function normalizeEntry(entry){
  if(!entry||typeof entry!=='object'||typeof entry.id!=='string'||!entry.id||typeof entry.date!=='string'||!entry.date||!SESSIONS[entry.dayKey])return null;
  const current=SESSIONS[entry.dayKey];
+ const rotationDayKey=typeof entry.rotationDayKey==='string'&&entry.rotationDayKey?entry.rotationDayKey:current.rotationDayKey||'';
  const normalized={
   ...entry,
+  ...(rotationDayKey?{rotationDayKey,advancesPrimaryRotation:entry.advancesPrimaryRotation!==false}:{}),
   dayLabel:typeof entry.dayLabel==='string'&&entry.dayLabel?entry.dayLabel:current.label,
   sessionType:entry.sessionType||current.sessionType||'primary',
   duration:entry.duration??'',

@@ -47,6 +47,31 @@ const workout=(id,updatedAt,extra={})=>({
 }
 
 {
+ const alternative=workout('illness-recovery','2026-09-10T18:00:00.000Z',{
+  date:'2026-09-10',
+  dayKey:'day1IllnessRecovery',
+  dayLabel:'Day 1 — Illness Recovery',
+  rotationDayKey:'day1',
+  sessionType:'primary',
+  advancesPrimaryRotation:true,
+  coachDirectedAlternative:true,
+  programVersion:'1.5.5',
+  programEffectiveDate:'2026-09-10',
+  prescriptionSnapshot:{
+   sessionKey:'day1IllnessRecovery',sessionType:'primary',rotationDayKey:'day1',coachDirectedAlternative:true,
+   label:'Day 1 — Illness Recovery',exercises:[{id:'illnessReturnCheck',prescription:'10 minutes easy stationary bike or walk'}]
+  }
+ });
+ const upload=model.mergeWorkoutRecords([alternative],[],null).uploads[0];
+ assert.deepEqual(upload.payload,alternative,'Firebase upload queues the complete alternative workout document');
+ const pulled=model.mergeWorkoutRecords([], [{...upload,changedAt:'2026-09-10T19:00:00.000Z'}], null);
+ assert.equal(pulled.entries[0].dayKey,'day1IllnessRecovery');
+ assert.equal(pulled.entries[0].rotationDayKey,'day1');
+ assert.equal(pulled.entries[0].prescriptionSnapshot.rotationDayKey,'day1','Firebase round trips preserve immutable rotation mapping');
+ assert.equal(pulled.entries[0].prescriptionSnapshot.exercises[0].id,'illnessReturnCheck');
+}
+
+{
  const local=[workout('shared','2026-08-17T10:00:00.000Z',{notes:'device'})];
  const state=model.ensureStateForEntries(local,null);
  const remote=[{

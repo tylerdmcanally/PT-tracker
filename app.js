@@ -4256,14 +4256,19 @@ function applyKnownHistoricalCorrections(entry){
 }
 
 function normalizeEntry(entry){
- if(!entry||typeof entry!=='object'||typeof entry.id!=='string'||!entry.id||typeof entry.date!=='string'||!entry.date||!SESSIONS[entry.dayKey])return null;
- const current=SESSIONS[entry.dayKey];
- const rotationDayKey=typeof entry.rotationDayKey==='string'&&entry.rotationDayKey?entry.rotationDayKey:current.rotationDayKey||'';
+ const snapshot=entry?.prescriptionSnapshot;
+ const hasSavedDefinition=Boolean(snapshot&&typeof snapshot==='object'&&typeof snapshot.label==='string'&&snapshot.label&&Array.isArray(snapshot.exercises));
+ if(!entry||typeof entry!=='object'||typeof entry.id!=='string'||!entry.id||typeof entry.date!=='string'||!entry.date||(!SESSIONS[entry.dayKey]&&!hasSavedDefinition))return null;
+ const current=SESSIONS[entry.dayKey]||{};
+ const rotationDayKey=typeof entry.rotationDayKey==='string'&&entry.rotationDayKey
+  ?entry.rotationDayKey
+  :snapshot?.rotationDayKey||current.rotationDayKey||'';
+ const advancesPrimaryRotation=entry.advancesPrimaryRotation??snapshot?.advancesPrimaryRotation??current.advancesPrimaryRotation??true;
  const normalized={
   ...entry,
-  ...(rotationDayKey?{rotationDayKey,advancesPrimaryRotation:entry.advancesPrimaryRotation!==false}:{}),
-  dayLabel:typeof entry.dayLabel==='string'&&entry.dayLabel?entry.dayLabel:current.label,
-  sessionType:entry.sessionType||current.sessionType||'primary',
+  ...(rotationDayKey?{rotationDayKey,advancesPrimaryRotation:Boolean(advancesPrimaryRotation)}:{}),
+  dayLabel:typeof entry.dayLabel==='string'&&entry.dayLabel?entry.dayLabel:snapshot?.label||current.label||entry.dayKey,
+  sessionType:entry.sessionType||snapshot?.sessionType||current.sessionType||'primary',
   duration:entry.duration??'',
   sessionRpe:entry.sessionRpe??'',
   bodyWeight:entry.bodyWeight??'',

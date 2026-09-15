@@ -1,6 +1,8 @@
 const PROGRAM=window.AFT_PROGRAM_CONFIG;
 const RUN_STAGES=PROGRAM.runStages;
 const SESSIONS=PROGRAM.sessions;
+const LEGACY_SESSIONS=PROGRAM.legacySessions||{};
+const ALL_SESSIONS={...LEGACY_SESSIONS,...SESSIONS};
 const ROTATION=PROGRAM.rotation;
 const CIRCUIT_TEMPLATES=PROGRAM.circuitTemplates||{};
 
@@ -139,7 +141,7 @@ function populateSessionSelect(){
 
 function bind(){
  $('daySelect').onchange=event=>{
-  const previousKey=activeSessionDefinition?.key||'day1';
+  const previousKey=activeSessionDefinition?.key||ROTATION[0];
   if(!confirmDiscardCurrentWorkout('switch workout days')){
    event.target.value=previousKey;
    return;
@@ -274,7 +276,7 @@ function sessionProgramMeta(definition){
 }
 
 function currentSessionDefinition(key){
- return clone(SESSIONS[key]||SESSIONS.day1);
+ return clone(SESSIONS[key]||SESSIONS[ROTATION[0]]);
 }
 
 function snapshotSession(definition){
@@ -304,7 +306,7 @@ function snapshotSession(definition){
 function definitionForSavedEntry(entry){
  const snapshot=entry?.prescriptionSnapshot;
  if(snapshot&&Array.isArray(snapshot.exercises)){
-  const current=SESSIONS[snapshot.sessionKey||entry.dayKey];
+  const current=ALL_SESSIONS[snapshot.sessionKey||entry.dayKey];
   const exercises=snapshot.exercises.map(saved=>{
    const savedId=exerciseIdentity(saved);
    const currentDefinition=current?.exercises?.find(exercise=>canonicalExerciseId(exercise.id)===savedId)
@@ -333,7 +335,7 @@ function definitionForSavedEntry(entry){
    exercises
   };
  }
- const current=SESSIONS[entry.dayKey];
+ const current=ALL_SESSIONS[entry.dayKey];
  const savedExercises=Array.isArray(entry.exercises)?entry.exercises:[];
  const exercises=savedExercises.map((saved,index)=>{
   const savedId=exerciseIdentity(saved);
@@ -398,7 +400,7 @@ function mergeCurrentLoggingOptions(saved,current){
 function renderWorkout(saved=null,{preserveSession=false}={}){
  suppressDraft=true;
  expandAllExercises=false;
- const key=saved?.dayKey||$('daySelect').value||'day1';
+ const key=saved?.dayKey||$('daySelect').value||ROTATION[0];
  activeSessionDefinition=saved?definitionForSavedEntry(saved):currentSessionDefinition(key);
  activeWeeklyOverride=Boolean(saved?.weeklyFrequencyOverride);
  activeProgramContext=saved?{
@@ -2718,7 +2720,7 @@ function getRunStage(stageId){
 }
 
 function renderRunProgress(key){
- const hasRun=(SESSIONS[key]?.exercises||[]).some(exercise=>['interval','run'].includes(exercise.type));
+ const hasRun=(ALL_SESSIONS[key]?.exercises||[]).some(exercise=>['interval','run'].includes(exercise.type));
  $('runProgressCard').classList.toggle('hidden',!hasRun);
  if(!hasRun)return;
  const stage=getRunStage(PROGRAM.currentRunStage);
@@ -3172,8 +3174,7 @@ function rotationKeyForEntry(entry){
 
 function isPrimaryEntry(entry){
  return (!entry?.sessionType||entry.sessionType==='primary')
-  &&entry?.advancesPrimaryRotation!==false
-  &&ROTATION.includes(rotationKeyForEntry(entry));
+  &&entry?.advancesPrimaryRotation!==false;
 }
 
 function compareEntries(a,b){
@@ -3743,7 +3744,7 @@ function appendExercisePainSummary(parts,exercise){
 }
 
 function circuitDefinitionForResult(exercise){
- return Object.values(SESSIONS).flatMap(session=>session.exercises||[]).find(definition=>
+ return Object.values(ALL_SESSIONS).flatMap(session=>session.exercises||[]).find(definition=>
   definition.type==='circuit'&&canonicalExerciseId(definition.id)===exerciseIdentity(exercise)
  )||{...exercise,circuitVersion:exercise.circuitVersion};
 }
@@ -3807,7 +3808,7 @@ function buildMd(){
    }else{
     output+=`Session category: ${sessionCategoryLabel(entry)}  \n`;
     output+=`Program: ${entry.programName||'Legacy program'}${entry.programVersion?` · version ${entry.programVersion}`:''}  \n`;
-    if(entry.rotationDayKey&&entry.rotationDayKey!==entry.dayKey)output+=`Rotation equivalent: ${SESSIONS[entry.rotationDayKey]?.label||entry.rotationDayKey}  \n`;
+    if(entry.rotationDayKey&&entry.rotationDayKey!==entry.dayKey)output+=`Rotation equivalent: ${ALL_SESSIONS[entry.rotationDayKey]?.label||entry.rotationDayKey}  \n`;
    }
    const metadata=[];
    if(entry.duration)metadata.push(`${entry.duration} min`);
@@ -4188,7 +4189,7 @@ function applyAugust5CircuitCorrection(entry){
  if(!circuit)return entry;
  const savedDefinition=definitionForSavedEntry(entry);
  const definition=savedDefinition.exercises.find(exercise=>exercise.id==='gymConditioningCircuit')
-  ||SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit');
+  ||LEGACY_SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit');
  const components=circuitResultComponents(definition,circuit);
  const byId=new Map(components.map(component=>[component.id,component]));
  const cardio=byId.get('hardCardio');
@@ -4258,8 +4259,8 @@ function applyKnownHistoricalCorrections(entry){
 function normalizeEntry(entry){
  const snapshot=entry?.prescriptionSnapshot;
  const hasSavedDefinition=Boolean(snapshot&&typeof snapshot==='object'&&typeof snapshot.label==='string'&&snapshot.label&&Array.isArray(snapshot.exercises));
- if(!entry||typeof entry!=='object'||typeof entry.id!=='string'||!entry.id||typeof entry.date!=='string'||!entry.date||(!SESSIONS[entry.dayKey]&&!hasSavedDefinition))return null;
- const current=SESSIONS[entry.dayKey]||{};
+ if(!entry||typeof entry!=='object'||typeof entry.id!=='string'||!entry.id||typeof entry.date!=='string'||!entry.date||(!ALL_SESSIONS[entry.dayKey]&&!hasSavedDefinition))return null;
+ const current=ALL_SESSIONS[entry.dayKey]||{};
  const rotationDayKey=typeof entry.rotationDayKey==='string'&&entry.rotationDayKey
   ?entry.rotationDayKey
   :snapshot?.rotationDayKey||current.rotationDayKey||'';
@@ -4424,7 +4425,7 @@ function saveDraftNow(){
 function loadDraft(){
  try{
   const parsed=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');
-  if(!parsed?.item||!SESSIONS[parsed.item.dayKey])return null;
+  if(!parsed?.item||!ALL_SESSIONS[parsed.item.dayKey])return null;
   if(!parsed.editingId&&!draftHasMeaningfulProgress(parsed.item,storedSessionTimerElapsed())){
    localStorage.removeItem(DRAFT_KEY);
    return null;

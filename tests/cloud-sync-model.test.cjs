@@ -105,6 +105,59 @@ const workout=(id,updatedAt,extra={})=>({
 }
 
 {
+ const legacyV157=workout('synthetic-v157-legacy-day3','2000-01-01T12:00:00.000Z',{
+  date:'2000-01-01',dayKey:'day3',dayLabel:'Day 3 — Lower Strength and Gym Conditioning',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.7',programEffectiveDate:'2026-09-14',
+  activeRunStage:4,targetSessionRpe:'7–8',duration:'63',sessionRpe:'7',painDuring:'0',notes:'Invented compatibility result.',
+  prescriptionSnapshot:{sessionKey:'day3',sessionType:'primary',label:'Day 3 — Lower Strength and Gym Conditioning',targetSessionRpe:'7–8',advancesPrimaryRotation:true,optional:false,exercises:[
+   {id:'romanianDeadlift',name:'Romanian deadlift',prescription:'145 lb total for 2 × 8',type:'weighted',unit:'lb',sets:2,targetLoad:145,targetLoadVariation:'Barbell',targetRpe:'6–8'},
+   {id:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 2 rounds',type:'circuit',circuitVersion:'foundation-1.4.5',targetRpe:'7–8'},
+   {id:'sidePlank',name:'Side plank',prescription:'3 × 45 sec each side',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:45','0:45','0:45']}
+  ]},
+  exercises:[
+   {exerciseId:'romanianDeadlift',name:'Romanian deadlift',type:'weighted',variation:'Barbell',variationId:'barbell',load:'50',loadMode:'plates',barWeight:'45',sets:'2',reps:'8, 8',rpe:'7',completed:true,notes:'Invented clean-repetition result.'},
+   {exerciseId:'gymConditioningCircuit',name:'Gym conditioning circuit',type:'circuit',circuitVersion:'foundation-1.4.5',rounds:'2',rpe:'7',completed:true,notes:'Invented two-round result.'},
+   {exerciseId:'sidePlank',name:'Side plank',type:'timed',sets:'3',times:'45, 45, 45',rpe:'7',completed:true}
+  ]
+ });
+ const upload=model.mergeWorkoutRecords([legacyV157],[],null).uploads[0];
+ assert.deepEqual(upload.payload,legacyV157,'Firebase upload preserves the complete invented v1.5.7 legacy document');
+ const pulled=model.mergeWorkoutRecords([], [{...upload,changedAt:'2000-01-01T13:00:00.000Z'}], null);
+ assert.deepEqual(pulled.entries[0],legacyV157,'Firebase round trips preserve the invented v1.5.7 snapshot and results');
+}
+
+{
+ const active=workout('synthetic-active-run','2000-03-01T12:00:00.000Z',{
+  date:'2000-03-01',dayKey:'runStageB',dayLabel:'Run 2 — Controlled Stage 4 and Mobility',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.9',programEffectiveDate:'2026-09-17',
+  activeRunStage:4,targetSessionRpe:'5–6',duration:'34',sessionRpe:'5',painDuring:'0',notes:'Invented active-session result.',
+  prescriptionSnapshot:{sessionKey:'runStageB',sessionType:'primary',label:'Run 2 — Controlled Stage 4 and Mobility',targetSessionRpe:'5–6',advancesPrimaryRotation:true,optional:false,exercises:[
+   {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'run',runStage:4,targetRpe:'5–6'},
+   {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed'}
+  ]},
+  exercises:[{exerciseId:'primaryRun',name:'Walk / run intervals',type:'run',runStage:'4',walkMinutes:'1',runMinutes:'2.5',rounds:'6',completedRounds:'6',programmedIntervalTime:'21:00',totalTime:'23:00',rpe:'5',completed:true,notes:'Invented controlled run result.'}]
+ });
+ const upload=model.mergeWorkoutRecords([active],[],null).uploads[0];
+ const pulled=model.mergeWorkoutRecords([], [{...upload,changedAt:'2000-03-01T13:00:00.000Z'}], null);
+ assert.deepEqual(pulled.entries[0],active,'Firebase round trips preserve a completed v1.5.9 session as a full document');
+ assert.equal(pulled.entries[0].exercises[0].programmedIntervalTime,'21:00');
+ assert.equal(pulled.entries[0].exercises[0].totalTime,'23:00','cloud persistence does not conflate programmed and elapsed run time');
+}
+
+{
+ const legacyDays=['day1','day2','day3','day4'].map((dayKey,index)=>workout(`synthetic-legacy-${dayKey}`,`2000-02-0${index+1}T12:00:00.000Z`,{
+  date:`2000-02-0${index+1}`,dayKey,dayLabel:`Synthetic ${dayKey}`,sessionType:'primary',advancesPrimaryRotation:true,programVersion:'1.5.7',
+  prescriptionSnapshot:{sessionKey:dayKey,sessionType:'primary',label:`Synthetic ${dayKey}`,advancesPrimaryRotation:true,exercises:[{id:`exercise-${index+1}`,prescription:'Invented prescription'}]},
+  exercises:[{exerciseId:`exercise-${index+1}`,completed:true,notes:'Invented legacy result.'}]
+ }));
+ const uploads=model.mergeWorkoutRecords(legacyDays,[],null).uploads;
+ const remote=uploads.map((upload,index)=>({...upload,changedAt:`2000-02-0${index+1}T13:00:00.000Z`}));
+ const pulled=model.mergeWorkoutRecords([],remote,null).entries;
+ assert.equal(JSON.stringify(pulled.map(entry=>entry.dayKey).sort()),JSON.stringify(['day1','day2','day3','day4']),'Firebase retains representative legacy Day 1–Day 4 keys');
+ legacyDays.forEach(entry=>assert.deepEqual(pulled.find(candidate=>candidate.id===entry.id),entry,'Firebase preserves each representative legacy workout document'));
+}
+
+{
  const local=[workout('shared','2026-08-17T10:00:00.000Z',{notes:'device'})];
  const state=model.ensureStateForEntries(local,null);
  const remote=[{

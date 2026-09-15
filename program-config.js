@@ -1,10 +1,10 @@
 window.AFT_PROGRAM_CONFIG={
  id:'aft-foundation-block-1',
  name:'AFT Foundation Block 1',
- version:'1.5.7',
- effectiveDate:'2026-09-14',
+ version:'1.5.9',
+ effectiveDate:'2026-09-17',
  currentRunStage:4,
- rotation:['day1','day2','day3','day4'],
+ rotation:['strengthUpperAft','runStageA','strengthHeavyCarry','aerobicBase','strengthLowerSdc','runStageB'],
  runStages:[
   {id:1,label:'1:00 walk / 1:00 run × 10',runMinutes:'1',walkMinutes:'1',rounds:'10'},
   {id:2,label:'1:00 walk / 1:30 run × 8',runMinutes:'1.5',walkMinutes:'1',rounds:'8'},
@@ -99,7 +99,7 @@ window.AFT_PROGRAM_CONFIG={
    }
   }
  ],
- sessions:{
+ legacySessions:{
   day1:{
    key:'day1',
    sessionType:'primary',
@@ -170,12 +170,121 @@ window.AFT_PROGRAM_CONFIG={
     {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed'}
    ]
   },
+ },
+ sessions:{
+  strengthUpperAft:{
+   key:'strengthUpperAft',
+   sessionType:'primary',
+   advancesPrimaryRotation:true,
+   optional:false,
+   label:'Strength 1 — Upper Body and AFT Calisthenics',
+   focus:'Upper-body strength and AFT calisthenics with optional arm accessories. No cardio or running follows this session.',
+   targetDuration:'Approximately 60–75 minutes',
+   targetSessionRpe:'6–7',
+   warmup:'5–8 minutes of easy cardio, shoulder and upper-back movement preparation, then 1–2 easy push-up and pull ramp-up sets.',
+   exercises:[
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'5 × 11',type:'body',sets:5,targetRpe:'6–8',coachingNotes:'Keep all five sets equal, technically clean, and submaximal. Maintain strong whole-body bracing, stop before failure, and do not turn any set into a maximal test.'},
+    {id:'verticalPull',name:'Lat pulldown',prescription:'Next smallest increment above 176 lb on the same seated machine (approximately 187 lb displayed if it uses 11-lb increments) for 3 × 8–10',type:'weighted',unit:'lb',sets:3,targetRpe:'6–8',variations:['Seated lat pulldown','Modified standing lat pulldown','Assisted pull-up','Band-assisted pull-up'],defaultVariation:'Seated lat pulldown',coachingNotes:'Use the next smallest machine increment above 176 lb only on the same seated machine and setup. Approximately 187 lb is guidance for an 11-lb stack increment, not a universal target for a different cable or pulley setup. Cap every set at 10 repetitions.'},
+    {id:'overheadPress',name:'Seated dumbbell overhead press',prescription:'30 lb per hand for 3 × 9',type:'weighted',unit:'lb per hand',sets:3,targetLoad:30,targetLoadVariation:'Seated dumbbell press',targetRpe:'7–9',variations:['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],defaultVariation:'Seated dumbbell press',coachingNotes:'Hold the current 30 lb-per-hand load until all three sets of 9 are completed cleanly. Do not increase the load, add make-up repetitions, or turn the target into a failure test.'},
+    {id:'chestSupportedRow',name:'Machine row',prescription:'110 lb displayed on the same confirmed machine/setup for 3 × 9',type:'weighted',unit:'lb',sets:3,targetRpe:'7–8',variations:['Dumbbell row','Machine row','T-bar row'],defaultVariation:'Machine row',coachingNotes:'Progress repetitions at 110 lb displayed only on the same confirmed machine and setup. Do not treat 110 lb as comparable on another machine.'},
+    {id:'lateralRaise',name:'Cable lateral raise',prescription:'Next smallest comparable increment above 33 lb displayed per side on the same pain-free cable setup (approximately 44 lb if applicable) for 2 × 12–15',type:'weighted',unit:'lb per side',sets:2,targetRpe:'7–8',variations:['Cable lateral raise','Cuffed-cable lateral raise','Machine lateral raise','Dumbbell lateral raise'],defaultVariation:'Cable lateral raise',variationUnits:{'Cable lateral raise':'lb per side','Cuffed-cable lateral raise':'lb per side','Machine lateral raise':'lb total','Dumbbell lateral raise':'lb per hand'},coachingNotes:'Use the next smallest comparable increment above 33 lb displayed per side only on the same pain-free cable setup. Approximately 44 lb is setup-specific guidance, not a universal target. Maintain pain-free technique.'},
+    {id:'chestFly',name:'Cable fly / pec deck',prescription:'Next smallest comparable increment above 77 lb displayed on the same pec-deck machine/setup (approximately 88 lb if applicable) for 2 × 10–12',type:'weighted',unit:'lb per side',sets:2,targetRpe:'7–9',variations:['Pec deck / machine fly','Cable chest fly'],defaultVariation:'Pec deck / machine fly',variationUnits:{'Cable chest fly':'lb per side','Pec deck / machine fly':'lb total'},coachingNotes:'Use the next smallest comparable increment above 77 lb displayed only on the same pec-deck machine and setup. Approximately 88 lb is setup-specific guidance. Keep the stretch and contraction controlled and stop with approximately 1–3 good repetitions in reserve.'},
+    {id:'trunkStability',name:'Dead bug or Pallof press',prescription:'3 × 10 each side',type:'body',sets:3,variations:['Dead bug','Pallof press'],defaultVariation:'Dead bug',coachingNotes:'Keep the movement slow and controlled. Use a full exhale and deliberate brace rather than increasing repetitions because the current variation feels easy.'},
+    {id:'preacherCurl',name:'Preacher curl',prescription:'30 lb total on the same EZ-bar setup, or the next smallest comparable load below 40 lb if 30 lb is unavailable, for 2 × 10–15',type:'weighted',unit:'lb total',sets:2,targetLoad:30,targetLoadVariation:'EZ-bar preacher curl',targetRpe:'7–9',variations:['Machine preacher curl','EZ-bar preacher curl','Dumbbell preacher curl','Cable preacher curl'],defaultVariation:'EZ-bar preacher curl',variationUnits:{'Machine preacher curl':'lb total','EZ-bar preacher curl':'lb total','Dumbbell preacher curl':'lb per hand','Cable preacher curl':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use 30 lb total on the same EZ-bar setup when available; otherwise use the next smallest comparable load below 40 lb. Other variations are not directly load-comparable. Use controlled full repetitions and return to 40 lb only after a future coach-directed progression.'},
+    {id:'tricepsPressdown',name:'Cable triceps pressdown',prescription:'Next smallest comparable increment above 77 lb displayed on the same cable setup (approximately 88 lb displayed if it uses 11-lb increments) for 2 × 10–12',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',group:'armSuperset',optional:true,coachingNotes:'Use the next smallest increment above 77 lb only on the same comparable machine and cable setup. Approximately 88 lb is guidance for the same 11-lb increment stack, not a universal cable load. Progression remains coach-directed.'}
+   ]
+  },
+  runStageA:{
+   key:'runStageA',
+   sessionType:'primary',
+   advancesPrimaryRotation:true,
+   optional:false,
+   label:'Run 1 — Easy Aerobic Stage 4',
+   focus:'Easy aerobic walk/run work using relaxed mechanics and a full-sentence talk test; this is not tempo, threshold, or HIIT.',
+   targetSessionRpe:'4–5',
+   warmup:'5–10 minutes of brisk walking plus dynamic hip and ankle preparation at RPE 2–3. The interval timer then begins with its walk segment.',
+   exercises:[
+    {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'interval',runStage:4,targetRpe:'4–5',coachingNotes:'Use a full-sentence talk test and relaxed mechanics. On a treadmill, begin around 5.4–5.5 mph or slower as needed. Do not chase distance or calculated pace. Reduce running speed first rather than exceed RPE 5. If more than the programmed 1:00 walk is needed, take it as a safety modification and mark the exposure modified rather than completed-as-prescribed Stage 4; it does not satisfy a future progression gate. Use dedicated running shoes. Stop if pain exceeds 1/10, increases, or alters gait. Hold or regress the next run if focal knee or arch pain or stiffness remains the following morning or lasts longer than 24 hours.'}
+   ]
+  },
+  strengthHeavyCarry:{
+   key:'strengthHeavyCarry',
+   sessionType:'primary',
+   advancesPrimaryRotation:true,
+   optional:false,
+   label:'Strength 2 — Heavy Strength and Carries',
+   focus:'Heavy strength and loaded carries without a post-lift run or arm accessories.',
+   targetDuration:'Approximately 60–70 minutes',
+   targetSessionRpe:'6–8',
+   warmup:'5–8 minutes of easy cardio, dynamic hip and ankle preparation, then 2–4 progressive deadlift warm-up sets.',
+   exercises:[
+    {id:'deadlift',name:'Trap-bar deadlift',prescription:'175 lb total for 3 × 5',type:'weighted',unit:'lb',sets:3,targetLoad:175,targetLoadVariation:'Trap / hex bar',targetRpe:'6–8',variations:['Trap / hex bar','Conventional barbell','Sumo barbell','Dumbbells'],defaultVariation:'Trap / hex bar',barWeights:{'Trap / hex bar':45,'Conventional barbell':45,'Sumo barbell':45},perSideVariations:['Trap / hex bar'],barWeightOptions:[45,55,60],coachingNotes:'Use the trap/hex bar when available. Hold 175 lb for confirmation, maintain technically clean repetitions, and do not pursue grinders or another load jump next cycle. Record the actual bar weight and plate weight per side; use another listed variation when equipment requires it. Future progression remains coach-directed and performance-based.'},
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 9',type:'body',sets:4,targetRpe:'5–7',coachingNotes:'Use four equal, technically clean sets of 9 and stop before failure.'},
+    {id:'squatOrLegPress',name:'Leg press',prescription:'Next smallest comparable increment above 140 lb on the same machine/setup for 3 × 8–10',type:'weighted',unit:'lb',sets:3,variations:['Leg press','Lying leg press','Upright leg press','Plate-loaded leg press','Selectorized leg press','Other leg press'],defaultVariation:'Leg press',targetRpe:'7',coachingNotes:'Use the next smallest increment above 140 lb only on the same comparable leg-press machine and setup. Do not treat the displayed value as comparable on other equipment, and keep all three sets controlled at approximately RPE 7.'},
+    {id:'horizontalPress',name:'Dumbbell bench press',prescription:'40 lb per hand for 3 × 8',type:'weighted',unit:'lb per hand',sets:3,targetLoad:40,targetLoadVariation:'Dumbbell bench press',targetRpe:'7–8',variations:['Dumbbell bench press','Chest-press machine','Barbell bench press'],defaultVariation:'Dumbbell bench press',barWeights:{'Barbell bench press':45},coachingNotes:'Use controlled repetitions and finish with approximately 2–3 technically good repetitions remaining.'},
+    {id:'seatedRow',name:'Seated cable row',prescription:'132 lb displayed on the same cable setup for 3 × 10',type:'weighted',unit:'lb',sets:3,targetRpe:'6–8',variations:['Seated cable row','Chest-supported machine row'],defaultVariation:'Seated cable row',coachingNotes:'Hold 132 lb displayed for confirmation only on the same seated cable-row setup. Do not treat it as directly comparable on another cable, pulley, or machine setup.'},
+    {id:'loadedCarry',name:'Farmer carry',prescription:'45 lb per hand for 4 trips of approximately 40 yd',type:'carry',unit:'lb per hand',sets:4,targetRpe:'6–8',variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry',coachingNotes:'Aim for approximately 40 yd per trip. Keep the current load and do not progress it while Strength 3 includes the SDC circuit.'},
+    {id:'plank',name:'Front plank',prescription:'3 × 45 sec',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:45','0:45','0:45'],coachingNotes:'Maintain clean front-plank technique throughout each set.'}
+   ]
+  },
+  aerobicBase:{
+   key:'aerobicBase',
+   sessionType:'primary',
+   advancesPrimaryRotation:true,
+   optional:false,
+   label:'Aerobic Base — Low-Impact Cardio',
+   focus:'Steady low-impact aerobic work with optional gentle mobility; this session does not automatically convert to a run.',
+   targetDuration:'Approximately 25–40 minutes including optional mobility',
+   targetSessionRpe:'4–5',
+   warmup:'Begin at an easy pace and gradually settle into steady conversational effort.',
+   exercises:[
+    {id:'easyCardio',name:'Easy cardio',prescription:'25–30 minutes',type:'cardio',modalities:['Bike','Elliptical','Rower','Incline walk','Other'],targetRpe:'4–5',coachingNotes:'Use steady, conversational low-impact aerobic work throughout. Hold the 25–30 minute duration and do not add make-up volume. This session is not a run and does not automatically convert to Run 3.'},
+    {id:'mobility',name:'Gentle mobility',prescription:'Optional · 5–10 minutes',type:'timed',targetRpe:'1–2',optional:true,coachingNotes:'Keep the mobility gentle and within a comfortable range of motion.'}
+   ]
+  },
+  strengthLowerSdc:{
+   key:'strengthLowerSdc',
+   sessionType:'primary',
+   advancesPrimaryRotation:true,
+   optional:false,
+   label:'Strength 3 — Lower / Full Body and SDC',
+   focus:'Lower and full-body strength followed by the capped two-round SDC circuit and trunk work.',
+   targetDuration:'Approximately 60–75 minutes',
+   targetSessionRpe:'7–8',
+   warmup:'Approximately 10 progressive minutes: easy cardio, dynamic hip and ankle preparation, then 2–4 Romanian-deadlift warm-up sets.',
+   exercises:[
+    {id:'romanianDeadlift',name:'Romanian deadlift',prescription:'155 lb total for 2 × 8',type:'weighted',unit:'lb',sets:2,targetLoad:155,targetLoadVariation:'Barbell',targetRpe:'6–8',variations:['Barbell','Dumbbells','Smith machine'],defaultVariation:'Barbell',barWeights:{'Barbell':45,'Smith machine':20},coachingNotes:'Hold 155 lb for confirmation. Use chalk if available, maintain clean hinge technique, and do not progress again until 155 lb has been completed cleanly within the target effort range. No grinders.'},
+    {id:'squatPattern',name:'Goblet squat',prescription:'55 lb for 3 × 10',type:'weighted',unit:'lb',sets:3,targetLoad:55,targetLoadVariation:'Goblet squat',targetRpe:'7–8',variations:['Goblet squat','Front squat','Hack squat','Leg press'],defaultVariation:'Goblet squat',barWeights:{'Front squat':45},coachingNotes:'Hold the goblet-squat load and repetitions while the Romanian deadlift progresses, and preserve leg quality for the conditioning circuit.'},
+    {id:'inclinePress',name:'Incline dumbbell press',prescription:'35 lb per hand for 3 × 9',type:'weighted',unit:'lb per hand',sets:3,targetLoad:35,targetLoadVariation:'Incline dumbbell press',targetRpe:'7–8',variations:['Incline dumbbell press','Incline chest-press machine'],defaultVariation:'Incline dumbbell press',coachingNotes:'Repeat 35 lb per hand until all three sets of 9 are completed cleanly. Do not increase load or add make-up repetitions. Use adequate rest and stop before grinding or technical failure.'},
+    {id:'oneArmRow',name:'One-arm dumbbell row',prescription:'50 lb for 3 × 9 each side',type:'weighted',unit:'lb',sets:3,targetLoad:50,targetLoadVariation:'One-arm dumbbell row',targetRpe:'6–8',variations:['One-arm dumbbell row','One-arm cable row'],defaultVariation:'One-arm dumbbell row',coachingNotes:'Progress repetitions at the confirmed 50 lb load. Keep both sides technically clean and do not increase load yet.'},
+    {id:'singleLegStrength',name:'Split squat',prescription:'Body weight for 2 × 12 each leg with a 3-second descent and 1-second pause',type:'weighted',unit:'lb total',sets:2,targetRpe:'5–7',variations:['Body-weight split squat','Light dumbbell split squat','Forward step-up','Lateral step-up'],defaultVariation:'Body-weight split squat',coachingNotes:'Use body weight for two sets of 12 each leg with a deliberate 3-second descent and 1-second pause at the bottom of every repetition. This is a tempo and quality progression only; do not add external load or extra repetitions.'},
+    {id:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 rest',type:'circuit',circuitVersion:'foundation-1.4.5',targetRpe:'7–8',defaults:{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'30',restSeconds:'150'},modalities:['Bike','Rower','Elliptical','Short safe sprint'],coachingNotes:'Keep exactly two rounds. Use the Torque Fitness TANK M4 at Level 3 on the same approximately 20-yard gym lane when available, and record that equipment label in the existing sled fields. Level 3 is a resistance setting, not a weight. Do not use total circuit time to auto-progress, add a third round, extend hard-cardio duration, or increase TANK resistance.'},
+    {id:'plank',name:'Front plank',prescription:'3 × 50 sec',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:50','0:50','0:50'],coachingNotes:'Maintain a clean position and stop a set rather than extending through lumbar compensation.'},
+    {id:'sidePlank',name:'Side plank',prescription:'3 × 50 sec each side',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:50','0:50','0:50'],coachingNotes:'Maintain a clean position and stop a set rather than extending through lumbar or hip-position compensation.'},
+    {id:'hammerCurl',name:'Hammer curl',prescription:'25 lb per hand for 2 × 15',type:'weighted',unit:'lb per hand',sets:2,targetLoad:25,targetLoadVariation:'Dumbbell hammer curl',targetRpe:'7–9',variations:['Dumbbell hammer curl','Rope cable hammer curl'],defaultVariation:'Dumbbell hammer curl',variationUnits:{'Dumbbell hammer curl':'lb per hand','Rope cable hammer curl':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use 25 lb per hand for two controlled sets of 15. Progress repetitions at the confirmed working load and do not increase load yet.'},
+    {id:'overheadTricepsExtension',name:'Overhead cable triceps extension',prescription:'110 lb displayed on the same confirmed rope/cable setup for 2 × 12',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',variations:['Rope overhead cable extension','Single-arm overhead cable extension','Other equivalent cable variation'],defaultVariation:'Rope overhead cable extension',variationUnits:{'Rope overhead cable extension':'lb total','Single-arm overhead cable extension':'lb per side','Other equivalent cable variation':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use 110 lb displayed only on the same confirmed rope and cable setup for two sets of 12. Progress repetitions at this confirmed displayed load before another stack increase. Do not transfer the displayed value to another cable, pulley, attachment, or machine setup. Keep a pain-free shoulder position and controlled stretch.'}
+   ]
+  },
+  runStageB:{
+   key:'runStageB',
+   sessionType:'primary',
+   advancesPrimaryRotation:true,
+   optional:false,
+   label:'Run 2 — Controlled Stage 4 and Mobility',
+   focus:'Controlled Stage 4 interval running with post-run mobility; this is not all-out or threshold work.',
+   targetSessionRpe:'5–6',
+   warmup:'5–10 minutes of brisk walking plus dynamic hip and ankle preparation at RPE 2–3. The interval timer then begins with its walk segment.',
+   exercises:[
+    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'run',runStage:4,targetRpe:'5–6',coachingNotes:'On a treadmill, start around 5.7–5.8 mph and hold through at least round 3. Move toward 5.9–6.0 mph only if RPE remains at or below 5 with relaxed stride and breathing. Reduce toward 5.5 mph or lower if RPE exceeds 6. Duration and reserve take priority over pace. Use dedicated running shoes. Stop if pain exceeds 1/10, increases, or alters gait. Hold or regress the next run if focal knee or arch pain or stiffness remains the following morning or lasts longer than 24 hours.'},
+    {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed',targetRpe:'1–2',coachingNotes:'Use gentle post-run mobility within a comfortable range of motion.'}
+   ]
+  },
   recovery:{
    key:'recovery',
    sessionType:'recovery',
    optional:true,
    label:'Recovery Session',
-   focus:'Optional low-intensity recovery work that does not advance the four-day rotation.',
+   focus:'Optional low-intensity recovery work that does not advance the active primary rotation.',
    targetSessionRpe:'2–3',
    warmup:'Begin at a very easy pace and stay within a comfortable range of motion.',
    exercises:[

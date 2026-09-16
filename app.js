@@ -242,7 +242,12 @@ function registerServiceWorker(){
 }
 
 function tab(name){
- document.querySelectorAll('.tab').forEach(button=>button.classList.toggle('active',button.dataset.tab===name));
+ document.querySelectorAll('.tab').forEach(button=>{
+  const active=button.dataset.tab===name;
+  button.classList.toggle('active',active);
+  if(active)button.setAttribute('aria-current','page');
+  else button.removeAttribute('aria-current');
+ });
  document.querySelectorAll('.tab-panel').forEach(panel=>panel.classList.remove('active'));
  $(`${name}Tab`).classList.add('active');
  if(name==='history')renderHistory();
@@ -427,13 +432,17 @@ function renderWorkout(saved=null,{preserveSession=false}={}){
  $('workoutSummary').innerHTML=`
   <p class="eyebrow">${esc(summaryEyebrow)}</p>
   <h2>${esc(parts.slice(1).join('—').trim()||session.label)}</h2>
-  <p>${esc(session.focus)}</p>
-  <p class="program-line">${isTemplate?'Auxiliary template: ':'Program: '}${esc(programLine)}${session.targetSessionRpe?` · target session RPE ${esc(session.targetSessionRpe)}`:''}${session.targetDuration?` · ${esc(session.targetDuration)}`:''}</p>
+  <div class="session-targets">${session.targetDuration?`<span>${esc(session.targetDuration.replace(/^Approximately /i,''))}</span>`:''}${session.targetSessionRpe?`<span>RPE ${esc(session.targetSessionRpe)}</span>`:''}</div>
+  <details class="session-brief">
+   <summary>${isTemplate?'Session guidance':'Warm-up & session plan'}</summary>
+   ${session.warmup?`<p class="workout-warmup"><strong>${isTemplate?'Getting started':'Warm-up before Exercise 1'}:</strong> ${esc(session.warmup)}</p>`:''}
+   <p>${esc(session.focus)}</p>
+   <p class="program-line">${isTemplate?'Auxiliary template: ':'Program: '}${esc(programLine)}</p>
+  </details>
   ${isTemplate?'<p class="rotation-note">Does not advance the primary workout rotation or running stage.</p>':isAlternative?'<p class="rotation-note">Coach-directed alternative to standard Day 1. Saving it advances the primary rotation to Day 2.</p>':''}
   ${session.coachInstructions?`<aside class="microdose-instructions"><strong>Coach instructions</strong><p>${esc(session.coachInstructions)}</p></aside>`:''}
   <div data-weekly-skill-status></div>
-  <div id="microdoseCaution" class="microdose-caution hidden" role="status"></div>
-  ${session.warmup?`<p class="workout-warmup"><strong>${isTemplate?'Getting started':'Warm-up before Exercise 1'}:</strong> ${esc(session.warmup)}</p>`:''}`;
+  <div id="microdoseCaution" class="microdose-caution hidden" role="status"></div>`;
  renderRunProgress(key);
  clearRunTimer();
  $('exerciseList').innerHTML=renderExerciseList(session,saved);
@@ -691,28 +700,29 @@ function updateWorkoutFlow(){
  const total=flow.required.length;
  const complete=flow.completedRequired;
  const allRequired=total>0&&complete===total;
- $('workoutFlowTitle').textContent=allRequired?'Required work complete':`${complete} of ${total} required complete`;
+ $('workoutFlowTitle').textContent=allRequired?'Required work complete':`${complete} / ${total} required done`;
  $('workoutFlowProgress').max=Math.max(1,total);
  $('workoutFlowProgress').value=complete;
  $('workoutFlowNext').textContent=flow.next
-  ?`Up next: ${flow.next.definition.name} · ${flow.next.definition.prescription}`
+  ?`Next: ${flow.next.definition.name}`
   :(total?'Everything on this workout is marked done.':'No exercises in this session.');
  $('workoutFlowOptional').textContent=flow.optional.length
   ?`${flow.completedOptional} of ${flow.optional.length} optional exercises complete`
-  :'Complete each card in order, then finish the session details.';
+  :'';
  $('nextExerciseButton').disabled=!flow.next?.card;
- $('nextExerciseButton').textContent=flow.next?.card?'Go to next':'All done';
+ $('nextExerciseButton').textContent=flow.next?.card?(complete?'Continue workout':'Begin workout'):'All done';
  $('stickyNextExerciseButton').disabled=!flow.next?.card;
  $('stickyNextExerciseButton').textContent=flow.next?.card?'Next exercise':'Required work done';
  document.querySelectorAll('.exercise-card').forEach((card,index)=>{
   const completed=Boolean(card.querySelector('.exercise-complete')?.checked);
   const status=card.querySelector('[data-exercise-status]');
   if(status){
-   status.textContent=completed?'Done':'To do';
+   status.textContent=completed?'Done':card===flow.next?.card?'Up next':'To do';
    status.classList.toggle('is-complete',completed);
   }
   const completionLabel=card.querySelector('[data-completion-label]');
   if(completionLabel)completionLabel.textContent=completed?'Completed':'Mark done';
+  card.classList.toggle('is-next',card===flow.next?.card);
   updateExerciseCardSummary(card,index);
  });
 }
@@ -1197,8 +1207,10 @@ function exerciseCard(definition,index,state,{showPrevious=false,expanded=false}
    <span class="exercise-summary-meta"><span class="exercise-status" data-exercise-status>${state.completed?'Done':'To do'}</span><span class="exercise-chevron" aria-hidden="true">⌄</span></span>
   </summary>
   <div class="exercise-card-body" role="group" aria-labelledby="exercise-title-${index}">
+  <div class="exercise-guidance">
   ${definition.targetRpe?`<p class="target-rpe">Target RPE ${esc(definition.targetRpe)}</p>`:''}
-  ${definition.coachingNotes?`<p class="coaching-note">${esc(definition.coachingNotes)}</p>`:''}
+  ${definition.coachingNotes?`<details class="coach-guidance"><summary>Coach guidance</summary><p class="coaching-note">${esc(definition.coachingNotes)}</p></details>`:''}
+  </div>
   ${coachOverlayMarkup(definition,renderState)}
   <div data-result-reference>${previous}</div>
   <div class="today-result-heading"><p class="today-result-label">Today's result</p>${canFillPrescribedResult(definition)?'<button class="secondary subtle fill-prescribed" type="button" data-fill-prescribed>Fill prescribed result</button>':''}</div>
@@ -2032,8 +2044,9 @@ function applyPreviousLoad(card,definition,exercise,variation){
   if(panel)updateWeightedLoad(panel,variation,false);
  }
  updateCardAdherence(card);
+ updateExerciseCardSummary(card);
  scheduleDraft();
- toast('Last load applied. Sets, reps, RPE, and notes were left blank.');
+ toast('Last load applied. Other results unchanged.');
 }
 
 function bindWeightedLoadControls(){
@@ -2612,6 +2625,8 @@ function finishRunTimer(){
  updateRunCalculations(state.card);
  signalRunTimer(true);
  updateRunTimer();
+ updateCardAdherence(state.card);
+ updateWorkoutFlow();
  saveDraftNow();
  toast('Walk/run timer complete · exercise marked done');
 }
@@ -2783,6 +2798,8 @@ function updateSessionTimer(){
  if(!$('sessionTimerClock'))return;
  const elapsed=sessionTimerElapsed();
  $('sessionTimerClock').textContent=formatElapsed(elapsed);
+ $('sessionTimerClock').closest('.session-timer-card')?.setAttribute('data-running',String(sessionTimerState.running));
+ $('sessionTimerClock').setAttribute('aria-label',`${sessionTimerState.running?'Running':elapsed>0?'Paused':'Not started'} · ${formatElapsed(elapsed)} elapsed`);
  $('sessionTimerStatus').textContent=sessionTimerState.running
   ?'Timer running. Pausing or reloading will preserve the elapsed time.'
   :elapsed>0?'Paused. Resume when ready, or finish and save.':'Not started. Manual duration entry is always available.';
@@ -3221,17 +3238,17 @@ function previousResultReference(definition,variation){
   :!comparable&&isRun?`<p class="comparison-warning">Most recent run used Stage ${esc(exercise.runStage||'unknown')}. Pace is not directly comparable with today's stage.</p>`:'';
  const canReuseLoad=comparable&&['weighted','carry'].includes(definition.type)&&exercise.load!==''&&exercise.load!=null;
  const recent=data.recent.map(item=>`<li>${esc(shortDateFmt(item.entry.date))} · ${esc(resultSessionSource(item.entry,item.exercise))} · ${esc(resultContext(item.exercise))}${resultContext(item.exercise)?' · ':''}${esc(compactResultSummary(definition,item.exercise))}${item.comparable?'':' · not directly comparable'}</li>`).join('');
- return `<details class="previous-result">
+ return `<div class="previous-reference"><details class="previous-result">
   <summary>
    <span class="previous-result-heading"><strong>${esc(label)}</strong><small>${esc(shortDateFmt(entry.date))} · ${esc(resultSessionSource(entry,exercise))}</small></span>
    <span class="previous-result-summary">${esc(compactResultSummary(definition,exercise))}</span>
+   ${!comparable?`<span class="previous-comparison">${isRun?'Different run stage':'Different equipment'} · not directly comparable</span>`:''}
   </summary>
   <div class="previous-result-body">
    ${fallback}
-   ${canReuseLoad?'<button class="secondary subtle use-last-load" type="button" data-use-last-load>Use last load</button>':''}
    <details class="recent-results"><summary>Recent results</summary><ul>${recent}</ul></details>
   </div>
- </details>`;
+ </details>${canReuseLoad?'<button class="secondary subtle use-last-load" type="button" data-use-last-load>Use last load</button>':''}</div>`;
 }
 
 function resultContext(exercise){

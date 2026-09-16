@@ -1,12 +1,12 @@
 {
   "name": "AFT Workout Tracker",
   "short_name": "AFT Log",
-  "description": "Offline-first four-day Army fitness workout tracker.",
+  "description": "Offline-first strength and conditioning workout tracker.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f2f5f1",
-  "theme_color": "#18251b",
+  "background_color": "#111516",
+  "theme_color": "#111516",
   "icons": [
     {"src":"icons/icon-192.png","sizes":"192x192","type":"image/png"},
     {"src":"icons/icon-512.png","sizes":"512x512","type":"image/png"},

@@ -692,6 +692,80 @@ assert.equal(stage4Plan[1].kind,'run');
 assert.equal(stage4Plan[1].seconds,150);
 assert.equal(stage4Plan.reduce((sum,segment)=>sum+segment.seconds,0),1260);
 
+const timerMarkup=evaluate('runTimerMarkup()');
+assert.match(timerMarkup,/data-timer-alert[^>]+role="alert"[^>]+aria-live="assertive"/,'interval changes have an assertive visual announcement');
+assert.doesNotMatch(timerMarkup,/data-timer-current[^>]+aria-live/,'the phase heading does not duplicate the dedicated live alert');
+assert.match(timerMarkup,/Voice \+ tones/,'the default interval cue combines speech with stronger tones');
+assert.match(timerMarkup,/data-timer-action="test-cue"/,'runners can test alert volume before starting');
+const cueProfiles=JSON.parse(evaluate(`JSON.stringify({
+ walk:runTimerCueProfile('walk'),
+ run:runTimerCueProfile('run'),
+ complete:runTimerCueProfile('complete')
+})`));
+assert.equal(cueProfiles.walk.visual,'WALK · RECOVER');
+assert.equal(cueProfiles.run.visual,'RUN NOW');
+assert.equal(cueProfiles.complete.visual,'INTERVALS COMPLETE');
+assert.deepEqual(cueProfiles.walk.vibration,[280,100,280]);
+assert.deepEqual(cueProfiles.run.vibration,[160,70,160,70,280]);
+assert.notDeepEqual(cueProfiles.walk.tones.map(tone=>tone.frequency),cueProfiles.run.tones.map(tone=>tone.frequency),'walk and run use audibly distinct tone patterns');
+assert.ok(cueProfiles.run.tones.length>1,'the run cue is no longer a single soft chirp');
+assert.equal(evaluate('runTimerCueMode()'),'voice','voice plus tones is the device-local default');
+evaluate(`saveRunTimerCueMode('tones')`);
+assert.equal(storage.get('aftRunTimerCue.v1'),'tones');
+assert.equal(evaluate('runTimerCueMode()'),'tones');
+storage.delete('aftRunTimerCue.v1');
+
+const cueCalls={contexts:0,resumed:0,started:0,vibrated:[],spoken:[]};
+let cueModeValue='visual';
+const cueAlertAttributes={};
+context.fakeCueTimer={
+ querySelector(selector){
+  if(selector==='[data-timer-cue-mode]')return {value:cueModeValue};
+  if(selector==='[data-timer-alert]')return {
+   textContent:'',dataset:{},offsetWidth:0,
+   classList:{add(){},remove(){}},
+   setAttribute(name,value){cueAlertAttributes[name]=value},
+   removeAttribute(name){delete cueAlertAttributes[name]}
+  };
+  return null;
+ }
+};
+context.navigator.vibrate=pattern=>cueCalls.vibrated.push([...pattern]);
+context.window.SpeechSynthesisUtterance=function(text){this.text=text};
+context.window.speechSynthesis={cancel(){},speak:utterance=>cueCalls.spoken.push(utterance.text)};
+context.window.AudioContext=class{
+ constructor(){this.state='interrupted';this.currentTime=1;this.destination={};cueCalls.contexts++}
+ resume(){this.state='running';cueCalls.resumed++;return {then:callback=>{callback();return {catch(){}}}}}
+ createOscillator(){return {frequency:{setValueAtTime(){}},connect:node=>node,start:()=>cueCalls.started++,stop(){}}}
+ createGain(){return {gain:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect:node=>node}}
+};
+const originalSetTimeout=context.setTimeout;
+const originalClearTimeout=context.clearTimeout;
+context.setTimeout=callback=>{callback();return 1};
+context.clearTimeout=()=>{};
+evaluate(`runTimerAudioContext=null;signalRunTimer('run',fakeCueTimer)`);
+assert.deepEqual(cueCalls,{contexts:0,resumed:0,started:0,vibrated:[],spoken:[]},'visual-only mode does not invoke audio, vibration, or speech');
+cueModeValue='tones';
+evaluate(`signalRunTimer('run',fakeCueTimer)`);
+assert.equal(cueCalls.contexts,1);
+assert.equal(cueCalls.resumed,1,'an interrupted audio context resumes before tones are scheduled');
+assert.equal(cueCalls.started,3);
+assert.deepEqual(cueCalls.vibrated,[cueProfiles.run.vibration]);
+assert.deepEqual(cueCalls.spoken,[],'tones mode does not invoke speech synthesis');
+cueModeValue='voice';
+evaluate(`signalRunTimer('run',fakeCueTimer)`);
+assert.equal(cueCalls.started,6);
+assert.deepEqual(cueCalls.spoken,['Run']);
+assert.equal(cueAlertAttributes['aria-hidden'],'true','the visual live region is muted while the spoken cue is active');
+context.setTimeout=originalSetTimeout;
+context.clearTimeout=originalClearTimeout;
+delete context.navigator.vibrate;
+delete context.window.AudioContext;
+delete context.window.SpeechSynthesisUtterance;
+delete context.window.speechSynthesis;
+delete context.fakeCueTimer;
+evaluate('runTimerAudioContext=null');
+
 const pace=evaluate(`calculatedPaceDetails({
  totalTime:'24:00',distance:'1.86',programmedIntervalTime:'20:00'
 })`);
@@ -1825,12 +1899,12 @@ const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 const styles=fs.readFileSync(path.join(root,'styles.css'),'utf8');
 assert.match(appSource,/Exercise notes<textarea[^>]+data-field="notes"/,'exercise notes must support detailed multiline comments');
 assert.doesNotMatch(styles,/\.sticky-actions\{position:sticky;bottom:calc\(7px/,'mobile workout actions must remain in page flow');
-assert.ok(indexHtml.indexOf('program-config.js?v=52')<indexHtml.indexOf('cloud-config.js?v=52'));
-assert.ok(indexHtml.indexOf('cloud-config.js?v=52')<indexHtml.indexOf('cloud-sync.js?v=52'));
-assert.ok(indexHtml.indexOf('cloud-sync.js?v=52')<indexHtml.indexOf('app.js?v=52'));
-assert.match(serviceWorker,/aft-workout-tracker-v52/);
-assert.match(serviceWorker,/program-config\.js\?v=52/);
-assert.match(serviceWorker,/cloud-sync\.js\?v=52/);
+assert.ok(indexHtml.indexOf('program-config.js?v=53')<indexHtml.indexOf('cloud-config.js?v=53'));
+assert.ok(indexHtml.indexOf('cloud-config.js?v=53')<indexHtml.indexOf('cloud-sync.js?v=53'));
+assert.ok(indexHtml.indexOf('cloud-sync.js?v=53')<indexHtml.indexOf('app.js?v=53'));
+assert.match(serviceWorker,/aft-workout-tracker-v53/);
+assert.match(serviceWorker,/program-config\.js\?v=53/);
+assert.match(serviceWorker,/cloud-sync\.js\?v=53/);
 assert.match(indexHtml,/id="sessionRpe"[^>]+step="0\.5"[^>]+inputmode="decimal"/,'session RPE accepts half-point values');
 assert.match(appSource,/addEventListener\('invalid',revealInvalidWorkoutControl,true\)/,'invalid workout values must produce visible feedback');
 assert.equal((appSource.match(/Component RPE',performance\.rpe,\{min:1,max:10,step:'\.5'\}/g)||[]).length,4,'all circuit component RPE inputs accept half-point values');

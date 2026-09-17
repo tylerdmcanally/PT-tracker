@@ -10,6 +10,7 @@ const KEY='aftWorkoutEntries.v1';
 const DRAFT_KEY='aftWorkoutDraft.v1';
 const SNAPSHOT_KEY='aftWorkoutSnapshots.v1';
 const TIMER_KEY='aftSessionTimer.v1';
+const RUN_TIMER_CUE_KEY='aftRunTimerCue.v1';
 const BACKUP_META_KEY='aftBackupMeta.v1';
 const DATA_VERSION_KEY='aftDataVersion.v1';
 const CLOUD_STATE_KEY='aftCloudSyncState.v1';
@@ -86,6 +87,8 @@ let runTimerState=null;
 let runTimerTick=null;
 let runTimerWakeLock=null;
 let runTimerAudioContext=null;
+let runTimerAlertTimeout=null;
+let runTimerSpeechTimeout=null;
 let sessionTimerState={elapsedMs:0,running:false,startedAt:null};
 let sessionTimerTick=null;
 let draftTimer=null;
@@ -2439,8 +2442,9 @@ function paceDifferenceIsMaterial(calculatedSeconds,deviceSeconds){
 
 function runTimerMarkup(){
  return `<section class="run-timer" data-phase="ready" aria-label="Walk and run interval timer">
+  <div class="run-timer-alert" data-timer-alert role="alert" aria-live="assertive" aria-atomic="true"></div>
   <div class="run-timer-heading">
-   <div><p class="eyebrow">WALK / RUN TIMER</p><h3 data-timer-current aria-live="polite">Ready</h3></div>
+   <div><p class="eyebrow">WALK / RUN TIMER</p><h3 data-timer-current>Ready</h3></div>
    <span class="run-timer-phase" data-timer-phase>READY</span>
   </div>
   <div class="run-timer-clock" data-timer-clock aria-label="Time remaining">0:00</div>
@@ -2453,6 +2457,15 @@ function runTimerMarkup(){
    <button class="secondary" data-timer-action="next" type="button" disabled>Next segment</button>
    <button class="secondary" data-timer-action="reset" type="button">Reset</button>
   </div>
+  <div class="run-timer-cue-controls">
+   <label>Interval alerts<select data-timer-cue-mode>
+    <option value="voice">Voice + tones</option>
+    <option value="tones">Strong tones only</option>
+    <option value="visual">Visual only</option>
+   </select></label>
+   <button class="secondary" data-timer-action="test-cue" type="button">Test RUN alert</button>
+  </div>
+  <p class="run-timer-cue-note muted">Distinct WALK and RUN cues · vibration also plays when supported</p>
  </section>`;
 }
 
@@ -2463,6 +2476,13 @@ function bindRunTimers(){
   timer.querySelector('[data-timer-action="pause"]').onclick=pauseRunTimer;
   timer.querySelector('[data-timer-action="next"]').onclick=()=>nextRunTimerSegment(true);
   timer.querySelector('[data-timer-action="reset"]').onclick=()=>prepareRunTimer(card,{clearCompletedRounds:true});
+  const cueMode=timer.querySelector('[data-timer-cue-mode]');
+  cueMode.value=runTimerCueMode();
+  cueMode.onchange=()=>{
+   saveRunTimerCueMode(cueMode.value);
+   document.querySelectorAll('[data-timer-cue-mode]').forEach(select=>select.value=cueMode.value);
+  };
+  timer.querySelector('[data-timer-action="test-cue"]').onclick=()=>signalRunTimer('run',timer);
   ['runMinutes','walkMinutes','rounds','continuousMinutes'].forEach(field=>{
    card.querySelector(`[data-field="${field}"]`)?.addEventListener('change',()=>{
     const wasRunning=Boolean(runTimerState?.running);
@@ -2528,7 +2548,7 @@ function startRunTimer(card){
  clearInterval(runTimerTick);
  runTimerTick=setInterval(tickRunTimer,250);
  requestRunTimerWakeLock();
- signalRunTimer();
+ signalRunTimer(state.plan[state.index].kind);
  updateRunTimer();
  saveDraftNow();
 }
@@ -2551,7 +2571,7 @@ function nextRunTimerSegment(manual=false){
  if(!state.complete){
   state.remainingMs=state.plan[state.index].seconds*1000;
   if(state.running)state.deadline=Date.now()+state.remainingMs;
-  signalRunTimer();
+  signalRunTimer(state.plan[state.index].kind);
   updateRunTimer();
  }else if(manual){
   finishRunTimer();
@@ -2579,7 +2599,7 @@ function tickRunTimer(){
   if(overshoot<duration){
    state.remainingMs=duration-overshoot;
    state.deadline=Date.now()+state.remainingMs;
-   signalRunTimer();
+   signalRunTimer(state.plan[state.index].kind);
    updateRunTimer();
    return;
   }
@@ -2623,7 +2643,7 @@ function finishRunTimer(){
  const programmedTime=state.card.querySelector('[data-field="programmedIntervalTime"]');
  if(programmedTime)programmedTime.value=formatTimerSeconds(state.plan.reduce((sum,segment)=>sum+segment.seconds,0));
  updateRunCalculations(state.card);
- signalRunTimer(true);
+ signalRunTimer('complete');
  updateRunTimer();
  updateCardAdherence(state.card);
  updateWorkoutFlow();
@@ -2634,6 +2654,9 @@ function finishRunTimer(){
 function clearRunTimer(){
  clearInterval(runTimerTick);
  runTimerTick=null;
+ clearTimeout(runTimerAlertTimeout);
+ clearTimeout(runTimerSpeechTimeout);
+ window.speechSynthesis?.cancel?.();
  if(runTimerState?.running)releaseRunTimerWakeLock();
  runTimerState=null;
 }
@@ -2681,19 +2704,113 @@ function formatTimerSeconds(seconds){
  return `${minutes}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
 }
 
-function signalRunTimer(finished=false){
- if(navigator.vibrate)navigator.vibrate(finished?[200,100,200]:120);
+function runTimerCueMode(timer=null){
+ const selected=timer?.querySelector?.('[data-timer-cue-mode]')?.value;
+ if(['voice','tones','visual'].includes(selected))return selected;
  try{
-  runTimerAudioContext=runTimerAudioContext||new (window.AudioContext||window.webkitAudioContext)();
-  const oscillator=runTimerAudioContext.createOscillator();
-  const gain=runTimerAudioContext.createGain();
-  oscillator.frequency.value=finished?880:660;
-  gain.gain.setValueAtTime(.08,runTimerAudioContext.currentTime);
-  gain.gain.exponentialRampToValueAtTime(.001,runTimerAudioContext.currentTime+.18);
-  oscillator.connect(gain).connect(runTimerAudioContext.destination);
-  oscillator.start();
-  oscillator.stop(runTimerAudioContext.currentTime+.18);
+  const stored=localStorage.getItem(RUN_TIMER_CUE_KEY);
+  if(['voice','tones','visual'].includes(stored))return stored;
  }catch{}
+ return 'voice';
+}
+
+function saveRunTimerCueMode(mode){
+ if(!['voice','tones','visual'].includes(mode))return;
+ try{localStorage.setItem(RUN_TIMER_CUE_KEY,mode)}catch{}
+}
+
+function runTimerCueProfile(kind){
+ if(kind==='walk')return {
+  kind:'walk',visual:'WALK · RECOVER',speech:'Walk',vibration:[280,100,280],
+  tones:[{frequency:523,offset:0,duration:.24},{frequency:392,offset:.34,duration:.3}]
+ };
+ if(kind==='complete')return {
+  kind:'complete',visual:'INTERVALS COMPLETE',speech:'Intervals complete',vibration:[220,80,220,80,500],
+  tones:[{frequency:659,offset:0,duration:.2},{frequency:880,offset:.25,duration:.2},{frequency:1047,offset:.5,duration:.42}]
+ };
+ return {
+  kind:'run',visual:'RUN NOW',speech:'Run',vibration:[160,70,160,70,280],
+  tones:[{frequency:880,offset:0,duration:.16},{frequency:1109,offset:.22,duration:.16},{frequency:1319,offset:.44,duration:.3}]
+ };
+}
+
+function showRunTimerAlert(timer,profile,{announce=true}={}){
+ const alert=timer?.querySelector?.('[data-timer-alert]');
+ if(!alert)return;
+ clearTimeout(runTimerAlertTimeout);
+ if(announce){
+  alert.setAttribute('role','alert');
+  alert.setAttribute('aria-live','assertive');
+  alert.removeAttribute('aria-hidden');
+ }else{
+  alert.removeAttribute('role');
+  alert.setAttribute('aria-live','off');
+  alert.setAttribute('aria-hidden','true');
+ }
+ alert.textContent=profile.visual;
+ alert.dataset.kind=profile.kind;
+ alert.classList.remove('is-visible');
+ void alert.offsetWidth;
+ alert.classList.add('is-visible');
+ runTimerAlertTimeout=setTimeout(()=>{
+  alert.classList.remove('is-visible');
+  alert.textContent='';
+ },1400);
+}
+
+function playRunTimerTones(profile){
+ try{
+  const AudioContext=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContext)return;
+  if(runTimerAudioContext?.state==='closed')runTimerAudioContext=null;
+  runTimerAudioContext=runTimerAudioContext||new AudioContext();
+  const play=()=>{
+   const start=runTimerAudioContext.currentTime+.02;
+   profile.tones.forEach(tone=>{
+    const oscillator=runTimerAudioContext.createOscillator();
+    const gain=runTimerAudioContext.createGain();
+    const toneStart=start+tone.offset;
+    const toneEnd=toneStart+tone.duration;
+    oscillator.type='triangle';
+    oscillator.frequency.setValueAtTime(tone.frequency,toneStart);
+    gain.gain.setValueAtTime(.0001,toneStart);
+    gain.gain.exponentialRampToValueAtTime(.24,toneStart+.018);
+    gain.gain.setValueAtTime(.24,Math.max(toneStart+.018,toneEnd-.04));
+    gain.gain.exponentialRampToValueAtTime(.0001,toneEnd);
+    oscillator.connect(gain).connect(runTimerAudioContext.destination);
+    oscillator.start(toneStart);
+    oscillator.stop(toneEnd+.02);
+   });
+  };
+  if(runTimerAudioContext.state!=='running')runTimerAudioContext.resume().then(play).catch(()=>{});
+  else play();
+ }catch{}
+}
+
+function speakRunTimerCue(profile){
+ if(!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;
+ clearTimeout(runTimerSpeechTimeout);
+ runTimerSpeechTimeout=setTimeout(()=>{
+  try{
+   window.speechSynthesis.cancel();
+   const utterance=new window.SpeechSynthesisUtterance(profile.speech);
+   utterance.rate=1.05;
+   utterance.volume=1;
+   window.speechSynthesis.speak(utterance);
+  }catch{}
+ },180);
+}
+
+function signalRunTimer(kind='run',timer=runTimerState?.card?.querySelector('.run-timer')){
+ const profile=runTimerCueProfile(kind);
+ const mode=runTimerCueMode(timer);
+ const willSpeak=mode==='voice'&&Boolean(window.speechSynthesis&&window.SpeechSynthesisUtterance);
+ showRunTimerAlert(timer,profile,{announce:!willSpeak});
+ if(mode==='visual')return profile;
+ try{navigator.vibrate?.(profile.vibration)}catch{}
+ playRunTimerTones(profile);
+ if(willSpeak)speakRunTimerCue(profile);
+ return profile;
 }
 
 async function requestRunTimerWakeLock(){

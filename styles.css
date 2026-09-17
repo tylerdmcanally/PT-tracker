@@ -158,10 +158,20 @@ progress::-moz-progress-bar{background:var(--army);border-radius:99px}
 .exercise-group{background:none;border-color:var(--line);padding:10px;margin-top:18px}
 .exercise-group-heading h2{font-size:1.05rem}
 .exercise-group-heading p{font-size:.8rem}
-.run-timer{background:#141c19;border-color:#40503b}
+.run-timer{position:relative;background:#141c19;border-color:#40503b}
 .run-timer-clock{color:var(--ink)}
 .run-timer-phase,.run-timer[data-phase=run] .run-timer-phase,.logging-section-heading>span,.circuit-component-order{color:#152016;background:var(--army)}
 .run-timer[data-phase=walk] .run-timer-phase{color:#ebd18b;background:#373421}
+.run-timer-alert{position:absolute;inset:0;z-index:4;display:grid;place-items:center;padding:20px;border:2px solid var(--army);border-radius:inherit;background:rgba(20,28,25,.97);color:var(--army);font-size:clamp(2rem,10vw,4rem);font-weight:950;line-height:1;text-align:center;letter-spacing:.04em;opacity:0;pointer-events:none;transform:scale(.96);transition:opacity .12s ease,transform .12s ease}
+.run-timer-alert.is-visible{opacity:1;transform:scale(1)}
+.run-timer-alert[data-kind=run]{background:rgba(184,227,148,.98);color:#152016}
+.run-timer-alert[data-kind=walk]{border-color:#ebd18b;background:rgba(55,52,33,.98);color:#f2dda0}
+.run-timer-alert[data-kind=complete]{background:rgba(28,40,34,.98);color:var(--army)}
+.run-timer-cue-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.run-timer-cue-controls label{margin:0;color:var(--muted);font-size:.76rem;font-weight:700}
+.run-timer-cue-controls select{margin-top:5px}
+.run-timer-cue-controls button{min-height:48px;white-space:nowrap}
+.run-timer-cue-note{margin:7px 0 0;font-size:.72rem;line-height:1.4}
 .session-details-card h2{margin-bottom:18px}
 .session-details-card>label{margin-top:4px;margin-bottom:0}
 .sticky-actions{position:static;padding:0;border:0;background:none;backdrop-filter:none;box-shadow:none;margin-top:16px;grid-template-columns:minmax(0,.8fr) minmax(0,1fr)}
@@ -187,3 +197,4 @@ progress::-moz-progress-bar{background:var(--army);border-radius:99px}
 .coach-guidance[open]>summary:after{content:'−'}
 .coach-guidance .coaching-note{margin:0}
 .previous-comparison{grid-column:1;font-size:.72rem;color:#ebd18b;line-height:1.4;margin-top:4px}
+@media(max-width:360px){.run-timer-cue-controls{grid-template-columns:1fr}}

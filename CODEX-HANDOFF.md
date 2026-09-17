@@ -75,11 +75,11 @@ Progress and exports include Monday–Sunday hand-release push-up volume, front-
 
 The coaching Markdown export includes every planned exercise, completion status, derived prescription adherence and all reasons, ordered circuit components, baseline and directive adherence, explicit unknown sled measurements, one chronologically prior directly comparable result, active coach overlays, detailed result fields, exercise-specific pain, sleep quality, coach instructions, exercise RPE, run metrics, full multiline exercise notes, and full post-session notes. Structured walk/run adherence compares stage, walk duration, run duration, interval rounds, and completed rounds; total elapsed time is intentionally excluded from adherence. CSV includes a compact component summary plus the lossless component JSON and directive/adherence fields. JSON carries the same underlying values without conflating device and calculated pace. The practice section is named **AFT-event practice volume** and explicitly states that accumulated work is not a benchmark or official event result.
 
-The PWA uses versioned CSS/JavaScript/config URLs and network-first same-origin fetching with offline cache fallback. Version 1.5.9 uses service-worker cache **v52**. When a newly activated service worker takes control, a persistent **Reload update** banner appears. Reloading first autosaves the active draft.
+The PWA uses versioned CSS/JavaScript/config URLs and network-first same-origin fetching with offline cache fallback. Version 1.5.9 uses service-worker cache **v53**. When a newly activated service worker takes control, a persistent **Reload update** banner appears. Reloading first autosaves the active draft.
 
 Cloud backup is implemented as a local-first Firebase/Firestore adapter and is configured for the account-owned `fitness-tracker-16dfb` project in `cloud-config.js`. The app remains fully usable when cloud code is disabled, signed out, offline, or unavailable. On sign-in, completed workouts sync as full JSON documents under `users/{uid}/workouts/{encodedEntryId}`. A separate per-entry `changedAt` clock resolves conflicts and deleted workouts remain as tombstones so stale devices cannot resurrect them. The local sync state binds to the first authenticated UID and refuses to upload to a different account. Active drafts and both timers never leave the device. `firestore.rules` restricts every workout path to its authenticated owner; never place an Admin SDK or service-account credential in this static repository.
 
-## Mobile design baseline — cache v52
+## Mobile design baseline — cache v53
 
 The approved design prioritizes use as an installed iPhone app during workouts. Preserve these choices in future development:
 
@@ -89,7 +89,9 @@ The approved design prioritizes use as an installed iPhone app during workouts. 
 - Keep editable inputs at least 16px, primary touch controls at least 44px tall, numeric fields in two columns where appropriate, and per-set fields in three columns. Preserve visible keyboard focus, reduced-motion support, and iPhone safe-area spacing.
 - Keep the prescription and target RPE visible. Expandable Coach guidance must retain the entire instruction text; active coach overlays remain fully visible. Keep prior results separate from today's entries, and keep compatible Use last load available without opening the history drawer. Mismatched equipment/stages must remain explicitly non-comparable.
 - Preserve the full-width completion control, optional notes/pain drawer, and compact history/export tools. A style change must not alter prescriptions, historical snapshots, equipment identities, progression decisions, backup behavior, or the private/public boundary.
-- Bump cached asset URLs and the service-worker cache together for releases. This design release uses cache v52; the program remains v1.5.9 and the data schema remains 11.
+- Bump cached asset URLs and the service-worker cache together for releases. The current release uses cache v53; the program remains v1.5.9 and the data schema remains 11.
+
+The walk/run timer now provides phase-specific repeated tones, an optional spoken WALK/RUN announcement, a large transient visual alert, and a Test RUN alert control. The selected alert mode is device-local and does not enter workout exports or Firebase. Browser vibration remains feature-detected only; iPhone Safari and this static PWA cannot directly trigger Apple Watch haptics.
 
 Verification for this design pass covered all eight active session options and all four tabs at 320px, 390px, and 768px; result entry, next-exercise navigation, saving/editing, draft recovery, compatible load reuse, Markdown report generation, session/run timers, and offline reload. All three repository test suites and syntax/diff checks passed. Browser checks used isolated synthetic data; physical iPhone Safari and authenticated Firebase sign-in were not repeated in this pass.
 
@@ -114,6 +116,7 @@ The canonical workout array stays under the existing `aftWorkoutEntries.v1` loca
 
 - `aftWorkoutDraft.v1` — autosaved active form
 - `aftSessionTimer.v1` — reload-safe total session timer
+- `aftRunTimerCue.v1` — device-local walk/run alert preference
 - `aftWorkoutSnapshots.v1` — up to five local restore points
 - `aftBackupMeta.v1` — last downloaded JSON backup metadata
 - `aftDataVersion.v1` — app data migration marker

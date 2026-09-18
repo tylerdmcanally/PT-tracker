@@ -127,9 +127,25 @@ const workout=(id,updatedAt,extra={})=>({
 }
 
 {
+ const sep18V159=workout('synthetic-sep18-v159-strength1','2026-09-18T18:00:00.000Z',{
+  date:'2026-09-18',dayKey:'strengthUpperAft',dayLabel:'Strength 1 — Upper Body and AFT Calisthenics',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.9',programEffectiveDate:'2026-09-17',
+  activeRunStage:4,targetSessionRpe:'6–7',duration:'64',sessionRpe:'7',painDuring:'0',notes:'Invented September 18 cloud fixture.',
+  prescriptionSnapshot:{sessionKey:'strengthUpperAft',sessionType:'primary',label:'Strength 1 — Upper Body and AFT Calisthenics',targetSessionRpe:'6–7',advancesPrimaryRotation:true,optional:false,exercises:[
+   {id:'overheadPress',name:'Seated dumbbell overhead press',prescription:'30 lb per hand for 3 × 9',type:'weighted',unit:'lb per hand',sets:3,targetLoad:30,targetLoadVariation:'Seated dumbbell press',targetRpe:'7–9',variations:['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],defaultVariation:'Seated dumbbell press'}
+  ]},
+  exercises:[{exerciseId:'overheadPress',name:'Seated dumbbell overhead press',type:'weighted',unit:'lb per hand',variation:'Seated dumbbell press',load:'30',sets:'3',reps:'9, 9, 9',rpe:'8',completed:true,notes:'Invented historical press result.'}]
+ });
+ const upload=model.mergeWorkoutRecords([sep18V159],[],null).uploads[0];
+ assert.deepEqual(upload.payload,sep18V159,'Firebase upload preserves the complete invented September 18 v1.5.9 document');
+ const pulled=model.mergeWorkoutRecords([], [{...upload,changedAt:'2026-09-18T19:00:00.000Z'}], null);
+ assert.deepEqual(pulled.entries[0],sep18V159,'Firebase round trips preserve the invented v1.5.9 snapshot and results');
+}
+
+{
  const active=workout('synthetic-active-run','2000-03-01T12:00:00.000Z',{
   date:'2000-03-01',dayKey:'runStageB',dayLabel:'Run 2 — Controlled Stage 4 and Mobility',sessionType:'primary',advancesPrimaryRotation:true,
-  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.9',programEffectiveDate:'2026-09-17',
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.10',programEffectiveDate:'2026-09-19',
   activeRunStage:4,targetSessionRpe:'5–6',duration:'34',sessionRpe:'5',painDuring:'0',notes:'Invented active-session result.',
   prescriptionSnapshot:{sessionKey:'runStageB',sessionType:'primary',label:'Run 2 — Controlled Stage 4 and Mobility',targetSessionRpe:'5–6',advancesPrimaryRotation:true,optional:false,exercises:[
    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'run',runStage:4,targetRpe:'5–6'},
@@ -139,7 +155,7 @@ const workout=(id,updatedAt,extra={})=>({
  });
  const upload=model.mergeWorkoutRecords([active],[],null).uploads[0];
  const pulled=model.mergeWorkoutRecords([], [{...upload,changedAt:'2000-03-01T13:00:00.000Z'}], null);
- assert.deepEqual(pulled.entries[0],active,'Firebase round trips preserve a completed v1.5.9 session as a full document');
+ assert.deepEqual(pulled.entries[0],active,'Firebase round trips preserve a completed v1.5.10 session as a full document');
  assert.equal(pulled.entries[0].exercises[0].programmedIntervalTime,'21:00');
  assert.equal(pulled.entries[0].exercises[0].totalTime,'23:00','cloud persistence does not conflate programmed and elapsed run time');
 }

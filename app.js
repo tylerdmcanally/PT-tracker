@@ -4,6 +4,11 @@ const SESSIONS=PROGRAM.sessions;
 const LEGACY_SESSIONS=PROGRAM.legacySessions||{};
 const ALL_SESSIONS={...LEGACY_SESSIONS,...SESSIONS};
 const ROTATION=PROGRAM.rotation;
+const RETIRED_ROTATION_ANCHORS={
+ runStageA:'strengthUpperAft',
+ aerobicBase:'strengthHeavyCarry',
+ runStageB:'strengthLowerSdc'
+};
 const CIRCUIT_TEMPLATES=PROGRAM.circuitTemplates||{};
 
 const KEY='aftWorkoutEntries.v1';
@@ -1171,8 +1176,9 @@ function defaultExerciseState(definition){
  if(definition.prescribedLoad!=null)state.load=String(definition.prescribedLoad);
  if(definition.defaults&&definition.type!=='circuit')Object.assign(state,clone(definition.defaults));
  if(definition.type==='interval'||definition.type==='run'){
-  const stageId=definition.runStage||PROGRAM.currentRunStage;
-  Object.assign(state,runDefaults(stageId),{runStage:String(stageId)});
+  const stageId=definition.runStage??PROGRAM.currentRunStage;
+  if(stageId!=null&&stageId!=='')Object.assign(state,runDefaults(stageId),{runStage:String(stageId)});
+  else state.runStage='manual';
  }
  return state;
 }
@@ -2329,7 +2335,8 @@ function runFields(type,state){
 }
 
 function runStageSelect(value){
- return select('runStage','Stage completed',value||String(PROGRAM.currentRunStage),[
+ const selected=value||(PROGRAM.currentRunStage==null?'manual':String(PROGRAM.currentRunStage));
+ return select('runStage','Stage completed',selected,[
   ...RUN_STAGES.map(stage=>({value:String(stage.id),label:`Stage ${stage.id} — ${stage.label}`})),
   {value:'manual',label:'Manual / modified session'}
  ]);
@@ -2835,6 +2842,7 @@ function applyRunStageDefaults(card,stageId){
 
 function runDefaults(stageId){
  const stage=getRunStage(stageId);
+ if(!stage)return {runMinutes:'',walkMinutes:'',rounds:'',continuousMinutes:'',structure:''};
  if(stage.performance)return {
   runMinutes:'',walkMinutes:'',rounds:'',continuousMinutes:'',structure:stage.label
  };
@@ -2848,13 +2856,15 @@ function runDefaults(stageId){
 }
 
 function getRunStage(stageId){
+ if(stageId==null||stageId==='')return null;
  return RUN_STAGES.find(stage=>stage.id===Number(stageId))||RUN_STAGES[0];
 }
 
 function renderRunProgress(key){
  const hasRun=(ALL_SESSIONS[key]?.exercises||[]).some(exercise=>['interval','run'].includes(exercise.type));
- $('runProgressCard').classList.toggle('hidden',!hasRun);
- if(!hasRun)return;
+ const hasCurrentStage=PROGRAM.currentRunStage!=null&&PROGRAM.currentRunStage!=='';
+ $('runProgressCard').classList.toggle('hidden',!hasRun||!hasCurrentStage);
+ if(!hasRun||!hasCurrentStage)return;
  const stage=getRunStage(PROGRAM.currentRunStage);
  const completions=runStageCompletionCount(stage.id);
  $('runStageBadge').textContent=`COACH-PRESCRIBED STAGE ${stage.id}`;
@@ -3303,7 +3313,8 @@ function nextWorkoutDay(source=entries){
 }
 
 function rotationKeyForEntry(entry){
- return entry?.rotationDayKey||entry?.dayKey||'';
+ const key=entry?.rotationDayKey||entry?.dayKey||'';
+ return RETIRED_ROTATION_ANCHORS[key]||key;
 }
 
 function isPrimaryEntry(entry){
@@ -3586,7 +3597,8 @@ function renderProgress(){
  const currentRpes=currentProgramEntries.map(entry=>Number(entry.sessionRpe)).filter(Boolean);
  const averageRpe=currentRpes.length?(currentRpes.reduce((a,b)=>a+b,0)/currentRpes.length).toFixed(1):'—';
  const weight=entries.find(entry=>Number(entry.bodyWeight))?.bodyWeight||'—';
- const stage=getRunStage(PROGRAM.currentRunStage);
+ const hasCurrentRunStage=PROGRAM.currentRunStage!=null&&PROGRAM.currentRunStage!=='';
+ const stage=hasCurrentRunStage?getRunStage(PROGRAM.currentRunStage):null;
  const weeks=weeklyMetrics(entries);
  const currentWeek=weeks.find(week=>week.week===weekStart(today()))||{pushups:0,plankSeconds:0};
  const runs=runRecords(entries);
@@ -3602,20 +3614,16 @@ function renderProgress(){
  ];
  if(recentRun?.exercise.deviceReportedPace)runMetricCards.splice(2,0,['Most recent device pace',`${recentRun.exercise.deviceReportedPace}/mi`]);
  runMetricCards.push(...bestPaceByStage(runs).map(item=>[`Stage ${item.stage} best calculated pace`,`${item.pace}/mi`]));
- const currentStageCompletions=runStageCompletionCount(stage.id);
+ const currentStageCompletions=stage?runStageCompletionCount(stage.id):null;
  const headlineCards=[
   ['Primary workouts',primaryEntries.length],
   ['Training time',minutes?`${minutes} min`:'—'],
-  ['Current run stage',`Stage ${stage.id}`],
-  ['Stage completions',currentStageCompletions||'—'],
-  ['Latest run/walk',recentRun?.exercise.distance?`${formatDistance(recentRun.exercise.distance)} mi`:'—'],
+  ['Latest AFT-tracker run/walk',recentRun?.exercise.distance?`${formatDistance(recentRun.exercise.distance)} mi`:'—'],
   ['Avg. session RPE',allAverageRpe]
  ];
+ if(stage)headlineCards.splice(2,0,['Current run stage',`Stage ${stage.id}`],['Stage completions',currentStageCompletions||'—']);
  const progressGroups=[
-  ['Running',[
-   ...runMetricCards,
-   ['Current-stage completions',currentStageCompletions||'—']
-  ]],
+  ['AFT Tracker run history',stage?[...runMetricCards,['Current-stage completions',currentStageCompletions||'—']]:runMetricCards],
   ['AFT practice & strength',[
    ['This week push-ups',currentWeek.pushups||'—'],
    ['This week front plank',currentWeek.plankSeconds?fmtSec(currentWeek.plankSeconds):'—'],
@@ -3908,7 +3916,8 @@ function buildMd(){
  const minutes=selected.reduce((total,entry)=>total+Number(entry.duration||0),0);
  const rpes=selected.map(entry=>Number(entry.sessionRpe)).filter(Boolean);
  const averageRpe=rpes.length?(rpes.reduce((a,b)=>a+b,0)/rpes.length).toFixed(1):'not recorded';
- const stage=getRunStage(PROGRAM.currentRunStage);
+ const hasCurrentRunStage=PROGRAM.currentRunStage!=null&&PROGRAM.currentRunStage!=='';
+ const stage=hasCurrentRunStage?getRunStage(PROGRAM.currentRunStage):null;
  const weeks=weeklyMetricsForSelection(selected,entries);
  let output=`# AFT Training Update\n\n`;
  output+=`**Program:** ${PROGRAM.name} · version ${PROGRAM.version}  \n`;
@@ -3918,8 +3927,8 @@ function buildMd(){
  output+=`**Recovery sessions:** ${recovery.length}  \n`;
  output+=`**Skill microdose sessions:** ${skillMicrodoses.length}  \n`;
  output+=`**Logged training time:** ${minutes?`${minutes} minutes`:'not recorded'}  \n`;
- output+=`**Average session RPE:** ${averageRpe}  \n`;
- output+=`**Current coach-directed run stage:** Stage ${stage.id} — ${stage.label}\n\n`;
+ output+=`**Average session RPE:** ${averageRpe}`;
+ output+=stage?`  \n**Current coach-directed run stage:** Stage ${stage.id} — ${stage.label}\n\n`:'\n\n';
  if(weeks.length){
   output+='## AFT-event practice volume\n\nPractice volume reflects accumulated training work and is not a benchmark or official AFT event result.\n\n| Week of | Hand-release push-ups | Front-plank time |\n|---|---:|---:|\n';
   weeks.slice().reverse().forEach(week=>{

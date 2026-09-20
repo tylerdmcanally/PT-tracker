@@ -1,10 +1,10 @@
 window.AFT_PROGRAM_CONFIG={
  id:'aft-foundation-block-1',
  name:'AFT Foundation Block 1',
- version:'1.5.10',
- effectiveDate:'2026-09-19',
- currentRunStage:4,
- rotation:['strengthUpperAft','runStageA','strengthHeavyCarry','aerobicBase','strengthLowerSdc','runStageB'],
+ version:'1.5.11',
+ effectiveDate:'2026-09-21',
+ currentRunStage:null,
+ rotation:['strengthUpperAft','strengthHeavyCarry','strengthLowerSdc'],
  runStages:[
   {id:1,label:'1:00 walk / 1:00 run × 10',runMinutes:'1',walkMinutes:'1',rounds:'10'},
   {id:2,label:'1:00 walk / 1:30 run × 8',runMinutes:'1.5',walkMinutes:'1',rounds:'8'},
@@ -170,6 +170,48 @@ window.AFT_PROGRAM_CONFIG={
     {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed'}
    ]
   },
+  runStageA:{
+   key:'runStageA',
+   sessionType:'primary',
+   advancesPrimaryRotation:true,
+   optional:false,
+   label:'Run 1 — Easy Aerobic Stage 4',
+   focus:'Easy aerobic walk/run work using relaxed mechanics and a full-sentence talk test; this is not tempo, threshold, or HIIT.',
+   targetSessionRpe:'4–5',
+   warmup:'5–10 minutes of brisk walking plus dynamic hip and ankle preparation at RPE 2–3. The interval timer then begins with its walk segment.',
+   exercises:[
+    {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'interval',runStage:4,targetRpe:'4–5',coachingNotes:'Use a full-sentence talk test and relaxed mechanics. On a treadmill, begin around 5.4–5.5 mph or slower as needed. Do not chase distance or calculated pace. Reduce running speed first rather than exceed RPE 5. If more than the programmed 1:00 walk is needed, take it as a safety modification and mark the exposure modified rather than completed-as-prescribed Stage 4; it does not satisfy a future progression gate. Use dedicated running shoes. Stop if pain exceeds 1/10, increases, or alters gait. Hold or regress the next run if focal knee or arch pain or stiffness remains the following morning or lasts longer than 24 hours.'}
+   ]
+  },
+  aerobicBase:{
+   key:'aerobicBase',
+   sessionType:'primary',
+   advancesPrimaryRotation:true,
+   optional:false,
+   label:'Aerobic Base — Low-Impact Cardio',
+   focus:'Steady low-impact aerobic work with optional gentle mobility; this session does not automatically convert to a run.',
+   targetDuration:'Approximately 25–40 minutes including optional mobility',
+   targetSessionRpe:'4–5',
+   warmup:'Begin at an easy pace and gradually settle into steady conversational effort.',
+   exercises:[
+    {id:'easyCardio',name:'Easy cardio',prescription:'25–30 minutes',type:'cardio',modalities:['Bike','Elliptical','Rower','Incline walk','Other'],targetRpe:'4–5',coachingNotes:'Use steady, conversational low-impact aerobic work throughout. Hold the 25–30 minute duration and do not add make-up volume. This session is not a run and does not automatically convert to Run 3.'},
+    {id:'mobility',name:'Gentle mobility',prescription:'Optional · 5–10 minutes',type:'timed',targetRpe:'1–2',optional:true,coachingNotes:'Keep the mobility gentle and within a comfortable range of motion.'}
+   ]
+  },
+  runStageB:{
+   key:'runStageB',
+   sessionType:'primary',
+   advancesPrimaryRotation:true,
+   optional:false,
+   label:'Run 2 — Controlled Stage 4 and Mobility',
+   focus:'Controlled Stage 4 interval running with post-run mobility; this is not all-out or threshold work.',
+   targetSessionRpe:'5–6',
+   warmup:'5–10 minutes of brisk walking plus dynamic hip and ankle preparation at RPE 2–3. The interval timer then begins with its walk segment.',
+   exercises:[
+    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'run',runStage:4,targetRpe:'5–6',coachingNotes:'On a treadmill, start around 5.7–5.8 mph and hold through at least round 3. Move toward 5.9–6.0 mph only if RPE remains at or below 5 with relaxed stride and breathing. Reduce toward 5.5 mph or lower if RPE exceeds 6. Duration and reserve take priority over pace. Use dedicated running shoes. Stop if pain exceeds 1/10, increases, or alters gait. Hold or regress the next run if focal knee or arch pain or stiffness remains the following morning or lasts longer than 24 hours.'},
+    {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed',targetRpe:'1–2',coachingNotes:'Use gentle post-run mobility within a comfortable range of motion.'}
+   ]
+  },
  },
  sessions:{
   strengthUpperAft:{
@@ -194,19 +236,6 @@ window.AFT_PROGRAM_CONFIG={
     {id:'tricepsPressdown',name:'Cable triceps pressdown',prescription:'Next smallest comparable increment above 77 lb displayed on the same cable setup (approximately 88 lb displayed if it uses 11-lb increments) for 2 × 10–12',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',group:'armSuperset',optional:true,coachingNotes:'Use the next smallest increment above 77 lb only on the same comparable machine and cable setup. Approximately 88 lb is guidance for the same 11-lb increment stack, not a universal cable load. Progression remains coach-directed.'}
    ]
   },
-  runStageA:{
-   key:'runStageA',
-   sessionType:'primary',
-   advancesPrimaryRotation:true,
-   optional:false,
-   label:'Run 1 — Easy Aerobic Stage 4',
-   focus:'Easy aerobic walk/run work using relaxed mechanics and a full-sentence talk test; this is not tempo, threshold, or HIIT.',
-   targetSessionRpe:'4–5',
-   warmup:'5–10 minutes of brisk walking plus dynamic hip and ankle preparation at RPE 2–3. The interval timer then begins with its walk segment.',
-   exercises:[
-    {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'interval',runStage:4,targetRpe:'4–5',coachingNotes:'Use a full-sentence talk test and relaxed mechanics. On a treadmill, begin around 5.4–5.5 mph or slower as needed. Do not chase distance or calculated pace. Reduce running speed first rather than exceed RPE 5. If more than the programmed 1:00 walk is needed, take it as a safety modification and mark the exposure modified rather than completed-as-prescribed Stage 4; it does not satisfy a future progression gate. Use dedicated running shoes. Stop if pain exceeds 1/10, increases, or alters gait. Hold or regress the next run if focal knee or arch pain or stiffness remains the following morning or lasts longer than 24 hours.'}
-   ]
-  },
   strengthHeavyCarry:{
    key:'strengthHeavyCarry',
    sessionType:'primary',
@@ -225,21 +254,6 @@ window.AFT_PROGRAM_CONFIG={
     {id:'seatedRow',name:'Seated cable row',prescription:'132 lb displayed on the same cable setup for 3 × 10',type:'weighted',unit:'lb',sets:3,targetRpe:'6–8',variations:['Seated cable row','Chest-supported machine row'],defaultVariation:'Seated cable row',coachingNotes:'Hold 132 lb displayed for confirmation only on the same seated cable-row setup. Do not treat it as directly comparable on another cable, pulley, or machine setup.'},
     {id:'loadedCarry',name:'Farmer carry',prescription:'45 lb per hand for 4 trips of approximately 40 yd',type:'carry',unit:'lb per hand',sets:4,targetRpe:'6–8',variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry',coachingNotes:'Aim for approximately 40 yd per trip. Keep the current load and do not progress it while Strength 3 includes the SDC circuit.'},
     {id:'plank',name:'Front plank',prescription:'3 × 45 sec',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:45','0:45','0:45'],coachingNotes:'Maintain clean front-plank technique throughout each set.'}
-   ]
-  },
-  aerobicBase:{
-   key:'aerobicBase',
-   sessionType:'primary',
-   advancesPrimaryRotation:true,
-   optional:false,
-   label:'Aerobic Base — Low-Impact Cardio',
-   focus:'Steady low-impact aerobic work with optional gentle mobility; this session does not automatically convert to a run.',
-   targetDuration:'Approximately 25–40 minutes including optional mobility',
-   targetSessionRpe:'4–5',
-   warmup:'Begin at an easy pace and gradually settle into steady conversational effort.',
-   exercises:[
-    {id:'easyCardio',name:'Easy cardio',prescription:'25–30 minutes',type:'cardio',modalities:['Bike','Elliptical','Rower','Incline walk','Other'],targetRpe:'4–5',coachingNotes:'Use steady, conversational low-impact aerobic work throughout. Hold the 25–30 minute duration and do not add make-up volume. This session is not a run and does not automatically convert to Run 3.'},
-    {id:'mobility',name:'Gentle mobility',prescription:'Optional · 5–10 minutes',type:'timed',targetRpe:'1–2',optional:true,coachingNotes:'Keep the mobility gentle and within a comfortable range of motion.'}
    ]
   },
   strengthLowerSdc:{
@@ -263,20 +277,6 @@ window.AFT_PROGRAM_CONFIG={
     {id:'sidePlank',name:'Side plank',prescription:'3 × 50 sec each side',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:50','0:50','0:50'],coachingNotes:'Maintain a clean position and stop a set rather than extending through lumbar or hip-position compensation.'},
     {id:'hammerCurl',name:'Hammer curl',prescription:'25 lb per hand for 2 × 15',type:'weighted',unit:'lb per hand',sets:2,targetLoad:25,targetLoadVariation:'Dumbbell hammer curl',targetRpe:'7–9',variations:['Dumbbell hammer curl','Rope cable hammer curl'],defaultVariation:'Dumbbell hammer curl',variationUnits:{'Dumbbell hammer curl':'lb per hand','Rope cable hammer curl':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use 25 lb per hand for two controlled sets of 15. Progress repetitions at the confirmed working load and do not increase load yet.'},
     {id:'overheadTricepsExtension',name:'Overhead cable triceps extension',prescription:'110 lb displayed on the same confirmed rope/cable setup for 2 × 12',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',variations:['Rope overhead cable extension','Single-arm overhead cable extension','Other equivalent cable variation'],defaultVariation:'Rope overhead cable extension',variationUnits:{'Rope overhead cable extension':'lb total','Single-arm overhead cable extension':'lb per side','Other equivalent cable variation':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use 110 lb displayed only on the same confirmed rope and cable setup for two sets of 12. Progress repetitions at this confirmed displayed load before another stack increase. Do not transfer the displayed value to another cable, pulley, attachment, or machine setup. Keep a pain-free shoulder position and controlled stretch.'}
-   ]
-  },
-  runStageB:{
-   key:'runStageB',
-   sessionType:'primary',
-   advancesPrimaryRotation:true,
-   optional:false,
-   label:'Run 2 — Controlled Stage 4 and Mobility',
-   focus:'Controlled Stage 4 interval running with post-run mobility; this is not all-out or threshold work.',
-   targetSessionRpe:'5–6',
-   warmup:'5–10 minutes of brisk walking plus dynamic hip and ankle preparation at RPE 2–3. The interval timer then begins with its walk segment.',
-   exercises:[
-    {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'run',runStage:4,targetRpe:'5–6',coachingNotes:'On a treadmill, start around 5.7–5.8 mph and hold through at least round 3. Move toward 5.9–6.0 mph only if RPE remains at or below 5 with relaxed stride and breathing. Reduce toward 5.5 mph or lower if RPE exceeds 6. Duration and reserve take priority over pace. Use dedicated running shoes. Stop if pain exceeds 1/10, increases, or alters gait. Hold or regress the next run if focal knee or arch pain or stiffness remains the following morning or lasts longer than 24 hours.'},
-    {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed',targetRpe:'1–2',coachingNotes:'Use gentle post-run mobility within a comfortable range of motion.'}
    ]
   },
   recovery:{

@@ -143,21 +143,38 @@ const workout=(id,updatedAt,extra={})=>({
 }
 
 {
- const active=workout('synthetic-active-run','2000-03-01T12:00:00.000Z',{
-  date:'2000-03-01',dayKey:'runStageB',dayLabel:'Run 2 — Controlled Stage 4 and Mobility',sessionType:'primary',advancesPrimaryRotation:true,
+ const retiredRun=workout('synthetic-sep20-v1510-run1','2026-09-20T12:00:00.000Z',{
+  date:'2026-09-20',dayKey:'runStageA',dayLabel:'Run 1 — Easy Aerobic Stage 4',sessionType:'primary',advancesPrimaryRotation:true,
   programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.10',programEffectiveDate:'2026-09-19',
-  activeRunStage:4,targetSessionRpe:'5–6',duration:'34',sessionRpe:'5',painDuring:'0',notes:'Invented active-session result.',
-  prescriptionSnapshot:{sessionKey:'runStageB',sessionType:'primary',label:'Run 2 — Controlled Stage 4 and Mobility',targetSessionRpe:'5–6',advancesPrimaryRotation:true,optional:false,exercises:[
-   {id:'primaryRun',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'run',runStage:4,targetRpe:'5–6'},
-   {id:'mobility',name:'Mobility',prescription:'5–10 minutes',type:'timed'}
+  activeRunStage:4,targetSessionRpe:'4–5',duration:'27',sessionRpe:'4',painDuring:'0',notes:'Invented retired-session result.',
+  prescriptionSnapshot:{sessionKey:'runStageA',sessionType:'primary',label:'Run 1 — Easy Aerobic Stage 4',targetSessionRpe:'4–5',advancesPrimaryRotation:true,optional:false,exercises:[
+   {id:'runWalkIntervals',name:'Walk / run intervals',prescription:'Stage 4 — 1:00 walk / 2:30 run × 6',type:'interval',runStage:4,targetRpe:'4–5'}
   ]},
-  exercises:[{exerciseId:'primaryRun',name:'Walk / run intervals',type:'run',runStage:'4',walkMinutes:'1',runMinutes:'2.5',rounds:'6',completedRounds:'6',programmedIntervalTime:'21:00',totalTime:'23:00',rpe:'5',completed:true,notes:'Invented controlled run result.'}]
+  exercises:[{exerciseId:'runWalkIntervals',name:'Walk / run intervals',type:'interval',runStage:'4',walkMinutes:'1',runMinutes:'2.5',rounds:'6',completedRounds:'6',programmedIntervalTime:'21:00',totalTime:'24:00',rpe:'4',completed:true,notes:'Invented historical run result.'}]
  });
- const upload=model.mergeWorkoutRecords([active],[],null).uploads[0];
- const pulled=model.mergeWorkoutRecords([], [{...upload,changedAt:'2000-03-01T13:00:00.000Z'}], null);
- assert.deepEqual(pulled.entries[0],active,'Firebase round trips preserve a completed v1.5.10 session as a full document');
+ const upload=model.mergeWorkoutRecords([retiredRun],[],null).uploads[0];
+ const pulled=model.mergeWorkoutRecords([], [{...upload,changedAt:'2026-09-20T13:00:00.000Z'}], null);
+ assert.deepEqual(pulled.entries[0],retiredRun,'Firebase round trips preserve the retired September 20 v1.5.10 Run 1 document');
+ assert.equal(pulled.entries[0].activeRunStage,4,'historical AFT run-stage metadata remains intact');
  assert.equal(pulled.entries[0].exercises[0].programmedIntervalTime,'21:00');
- assert.equal(pulled.entries[0].exercises[0].totalTime,'23:00','cloud persistence does not conflate programmed and elapsed run time');
+ assert.equal(pulled.entries[0].exercises[0].totalTime,'24:00','cloud persistence does not conflate programmed and elapsed run time');
+}
+
+{
+ const activeStrength=workout('synthetic-v1511-strength1','2026-09-21T12:00:00.000Z',{
+  date:'2026-09-21',dayKey:'strengthUpperAft',dayLabel:'Strength 1 — Upper Body and AFT Calisthenics',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.11',programEffectiveDate:'2026-09-21',
+  activeRunStage:'',targetSessionRpe:'6–7',duration:'62',sessionRpe:'7',painDuring:'0',notes:'Invented current strength result.',
+  prescriptionSnapshot:{sessionKey:'strengthUpperAft',sessionType:'primary',label:'Strength 1 — Upper Body and AFT Calisthenics',targetSessionRpe:'6–7',advancesPrimaryRotation:true,optional:false,exercises:[
+   {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'5 × 11',type:'body',sets:5,targetRpe:'6–8'},
+   {id:'overheadPress',name:'Seated dumbbell overhead press',prescription:'25 lb per hand for 3 × 8–10',type:'weighted',sets:3,targetLoad:25,targetLoadVariation:'Seated dumbbell press',targetRpe:'7–8'}
+  ]},
+  exercises:[{exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'5',reps:'11, 11, 11, 11, 11',rpe:'7',completed:true,notes:'Invented current strength result.'}]
+ });
+ const upload=model.mergeWorkoutRecords([activeStrength],[],null).uploads[0];
+ const pulled=model.mergeWorkoutRecords([], [{...upload,changedAt:'2026-09-21T13:00:00.000Z'}], null);
+ assert.deepEqual(pulled.entries[0],activeStrength,'Firebase round trips preserve a v1.5.11 strength document without an active AFT run stage');
+ assert.equal(pulled.entries[0].activeRunStage,'');
 }
 
 {

@@ -33,4 +33,23 @@ for (const privateRoot of privateRoots) {
   );
 }
 
+const publicRuntimeFiles = [
+  'index.html',
+  'app.js',
+  'program-config.js',
+  'cloud-config.js',
+  'cloud-sync.js',
+  'styles.css',
+  'sw.js',
+  'manifest.webmanifest'
+];
+for (const file of publicRuntimeFiles) {
+  const source = fs.readFileSync(path.join(root, file), 'utf8');
+  assert.doesNotMatch(
+    source,
+    /runna|strava|runna:\/\/|oauth|access[_-]?token|refresh[_-]?token/i,
+    `${file} must not embed Runna/Strava integration, deep links, OAuth, or credentials`
+  );
+}
+
 console.log('Privacy boundary tests passed.');

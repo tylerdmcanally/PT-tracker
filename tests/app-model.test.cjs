@@ -635,7 +635,9 @@ assert.deepEqual(baseOnlyPlateOptions.lower.plates,[]);
 const nearestPlateOptions=JSON.parse(evaluate(`JSON.stringify(plateCalculatorOptions(187.5,45))`));
 assert.equal(nearestPlateOptions.exact,false);
 assert.equal(nearestPlateOptions.lower.total,185);
+assert.deepEqual(nearestPlateOptions.lower.plates,[{weight:45,count:1},{weight:25,count:1}]);
 assert.equal(nearestPlateOptions.higher.total,190);
+assert.deepEqual(nearestPlateOptions.higher.plates,[{weight:45,count:1},{weight:25,count:1},{weight:2.5,count:1}]);
 assert.equal(evaluate(`plateCalculatorOptions(40,45)`),null,'a planned barbell total below the bar is invalid');
 assert.equal(evaluate(`plateCalculatorOptions('not-a-load',45)`),null,'a nonnumeric planned load is invalid');
 assert.equal(evaluate(`plateCalculatorKind({'Trap / hex bar':45},'Trap / hex bar')`),'bar');
@@ -648,6 +650,47 @@ assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(plateCalculatorLoadFields('
 assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(plateCalculatorLoadFields('platesOnly',plateCalculatorOptions(160,0).lower,'',0))`)),{load:'160',loadMode:'',barWeight:''},'leg-press Apply stores only the existing direct combined-plate value');
 assert.equal(evaluate(`plateCalculatorBase({querySelector:selector=>({value:selector.includes('barWeight')?'':'total'})},'Trap / hex bar',{'Trap / hex bar':45})`),null,'a legacy direct total with no saved bar never infers the definition default');
 assert.equal(evaluate(`plateCalculatorBase({querySelector:selector=>({value:selector.includes('barWeight')?'':'platesPerSide'})},'Trap / hex bar',{'Trap / hex bar':45})`),45,'a plate-entry mode may use its configured bar default');
+const deadliftBarWeights={'Trap / hex bar':45,'Conventional barbell':45,'Sumo barbell':45};
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(weightedVariationTransition('Trap / hex bar','Conventional barbell',{load:'70',loadMode:'platesPerSide',barWeight:'45'},${JSON.stringify(deadliftBarWeights)},['Trap / hex bar']))`)),{
+ load:'140',loadMode:'plates',barWeight:'45',cleared:false,preservedTotal:185
+},'changing compatible bar variations preserves the 185-lb total while converting the entry mode');
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(weightedVariationTransition('Conventional barbell','Trap / hex bar',{load:'140',loadMode:'plates',barWeight:'45'},${JSON.stringify(deadliftBarWeights)},['Trap / hex bar']))`)),{
+ load:'70',loadMode:'platesPerSide',barWeight:'45',cleared:false,preservedTotal:185
+},'returning to the trap bar restores per-side entry without changing total load');
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(weightedVariationTransition('Barbell','Smith machine',{load:'110',loadMode:'plates',barWeight:'45'},{Barbell:45,'Smith machine':20},[]))`)),{
+ load:'135',loadMode:'plates',barWeight:'20',cleared:false,preservedTotal:155
+},'compatible bar changes account for different known starting weights');
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(weightedVariationTransition('Conventional barbell','Trap / hex bar',{load:'30',loadMode:'total',barWeight:''},${JSON.stringify(deadliftBarWeights)},['Trap / hex bar']))`)),{
+ load:'30',loadMode:'total',barWeight:'',cleared:false,preservedTotal:30
+},'a total below the next bar weight remains an explicit total instead of producing negative plates');
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(weightedVariationTransition('Trap / hex bar','Dumbbells',{load:'70',loadMode:'platesPerSide',barWeight:'45'},${JSON.stringify(deadliftBarWeights)},['Trap / hex bar']))`)),{
+ load:'',loadMode:'',barWeight:'',cleared:true,preservedTotal:null
+},'changing from bar equipment to an incompatible variation clears only the load fields');
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(weightedVariationTransition('Dumbbells','Trap / hex bar',{load:'40',loadMode:'',barWeight:''},${JSON.stringify(deadliftBarWeights)},['Trap / hex bar']))`)),{
+ load:'',loadMode:'',barWeight:'',cleared:true,preservedTotal:null
+},'changing from non-bar equipment to a bar does not reinterpret the old raw number');
+assert.equal(evaluate(`weightedVariationTransition('Trap / hex bar','Trap / hex bar',{load:'70',loadMode:'platesPerSide',barWeight:'45'},${JSON.stringify(deadliftBarWeights)},['Trap / hex bar'])`),null,'initial and unchanged variation renders never transform saved fields');
+assert.equal(evaluate(`shouldSyncPlateCalculatorTarget(true,'true')`),false,'a manually edited planner target survives load-mode and bar-setting refreshes');
+assert.equal(evaluate(`shouldSyncPlateCalculatorTarget(true,undefined)`),true,'a clean planner target follows the canonical load');
+assert.equal(evaluate(`shouldSyncPlateCalculatorTarget(false,undefined)`),false);
+assert.equal(evaluate(`plateCalculatorPlanSurvivesVariation('Trap / hex bar','Conventional barbell',${JSON.stringify(deadliftBarWeights)})`),true,'a manually edited plan survives compatible bar-to-bar variation changes');
+assert.equal(evaluate(`plateCalculatorPlanSurvivesVariation('Trap / hex bar','Dumbbells',${JSON.stringify(deadliftBarWeights)})`),false,'a plan resets when the next equipment does not use the bar calculator');
+assert.equal(evaluate(`plateCalculatorPlanSurvivesVariation('Leg press','Plate-loaded leg press',{})`),false,'machine changes do not imply plate-only load comparability');
+
+const activeLegPress=`${activeStrength2}.find(exercise=>exercise.id==='squatOrLegPress')`;
+const plateOnlyResult=`{type:'weighted',variation:'Leg press',variationId:'unspecifiedLegPress',load:'165',loadMode:'',barWeight:'',sets:'3',reps:'10, 10, 10',rpe:'7',completed:true}`;
+assert.equal(evaluate(`compactLoadResult(${activeLegPress},${plateOnlyResult})`),'165 lb plates total (82.5 lb/side; carriage excluded)','current and previous-result summaries retain plate-only leg-press meaning');
+assert.match(evaluate(`summary(${plateOnlyResult},${activeLegPress})`),/165 lb plates total \(82\.5 lb\/side; carriage excluded\)/,'history and coaching summaries retain plate-only leg-press meaning');
+assert.equal(evaluate(`compactLoadResult(${activeLegPress},{type:'weighted',variation:'Leg press',load:'160',loadMode:'',barWeight:''})`),'160 lb plates total (80 lb/side; carriage excluded)','legacy text-only generic leg press retains plate-only meaning');
+assert.equal(evaluate(`compactLoadResult(${activeLegPress},{type:'weighted',name:'Leg press',load:'160',loadMode:'',barWeight:''})`),'160 lb plates total (80 lb/side; carriage excluded)','a variation-less generic leg-press result uses the saved definition meaning');
+assert.equal(evaluate(`compactLoadResult(${activeLegPress},{type:'weighted',variation:'Plate-loaded leg press',variationId:'plateLoadedLegPress',load:'160',loadMode:'',barWeight:''})`),'160 lb plates total (80 lb/side; carriage excluded)');
+assert.equal(evaluate(`compactLoadResult(${activeLegPress},{type:'weighted',variation:'Selectorized leg press',variationId:'selectorizedLegPress',load:'160',loadMode:'',barWeight:''})`),'160 lb','selectorized leg-press values retain setup-specific generic load formatting');
+['Lying leg press','Upright leg press','Other leg press'].forEach(variation=>{
+ assert.equal(evaluate(`compactLoadResult(${activeLegPress},{type:'weighted',variation:${JSON.stringify(variation)},load:'160',loadMode:'',barWeight:''})`),'160 lb',`${variation} retains setup-specific generic load formatting`);
+});
+const aboveTargetPlateOnly=JSON.parse(evaluate(`JSON.stringify(prescriptionAdherenceDetail(${activeLegPress},${plateOnlyResult}))`));
+assert.ok(aboveTargetPlateOnly.reasons.some(reason=>reason.code==='load_above_target'&&reason.plateOnly===true));
+assert.match(evaluate(`formatAdherenceReason(${JSON.stringify(aboveTargetPlateOnly.reasons.find(reason=>reason.code==='load_above_target'))})`),/165 lb plates total completed vs 160 lb plates total prescribed \(carriage excluded\)/);
 
 const august11PulldownRaw={
  id:'august-11-day-2',date:'2026-08-11',updatedAt:'2026-08-11T19:00:00.000Z',dayKey:'day2',
@@ -1735,7 +1778,7 @@ const sep22V1511Markdown=evaluate('buildMd()');
 assert.match(sep22V1511Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.12/,'the export header uses the current public-app version');
 assert.match(sep22V1511Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.11/,'the September 22 session retains its immutable saved version');
 assert.match(sep22V1511Markdown,/Trap-bar deadlift[\s\S]*Planned: 175 lb total for 3 × 5[\s\S]*Prescription adherence: Modified[\s\S]*Load above target: 185 lb completed vs 175 lb prescribed[\s\S]*185 lb total/);
-assert.match(sep22V1511Markdown,/Leg press[\s\S]*Planned: Next smallest comparable increment above 140 lb[\s\S]*Completed result: Leg press · 160 lb/);
+assert.match(sep22V1511Markdown,/Leg press[\s\S]*Planned: Next smallest comparable increment above 140 lb[\s\S]*Completed result: Leg press · 160 lb plates total \(80 lb\/side; carriage excluded\)/);
 assert.match(sep22V1511Markdown,/Seated cable row[\s\S]*Planned: 132 lb displayed[\s\S]*Completed result: Seated cable row · 154 lb/);
 assert.doesNotMatch(sep22V1511Markdown,/Current coach-directed run stage/);
 const sep22V1511Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
@@ -1747,6 +1790,7 @@ const sep22V1511Csv=evaluate('buildCsv()');
 assert.match(sep22V1511Csv,/"1\.5\.11"/);
 assert.match(sep22V1511Csv,/"175 lb total for 3 × 5"/);
 assert.match(sep22V1511Csv,/"Next smallest comparable increment above 140 lb on the same machine\/setup for 3 × 8–10"/);
+assert.match(sep22V1511Csv,/"Leg press · 160 lb plates total \(80 lb\/side; carriage excluded\) · 3 sets · reps 10, 10, 10 · RPE 7"/);
 assert.match(sep22V1511Csv,/"132 lb displayed on the same cable setup for 3 × 10"/);
 assert.equal(evaluate(`persistEntries('Before synthetic September 22 persistence test')`),true);
 const reloadedSep22V1511=JSON.parse(evaluate('JSON.stringify(loadEntries()[0])'));
@@ -2267,18 +2311,31 @@ const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 const styles=fs.readFileSync(path.join(root,'styles.css'),'utf8');
 assert.match(appSource,/Exercise notes<textarea[^>]+data-field="notes"/,'exercise notes must support detailed multiline comments');
 assert.match(appSource,/<details class="plate-calculator hidden" data-plate-calculator>/,'eligible weighted lifts include a collapsed inline plate calculator');
-assert.match(appSource,/data-plate-result aria-live="polite"/,'plate calculations are announced without interrupting other workout status');
+assert.match(appSource,/data-plate-result role="status" aria-live="polite" aria-atomic="true"/,'plate calculations are announced atomically without interrupting other workout status');
 assert.match(appSource,/data-plate-target type="text"[^>]+inputmode="decimal"/,'planned plate totals remain directly editable without participating in workout-form validation');
+assert.match(appSource,/data-plate-target type="text"[^>]+aria-describedby=/,'the planner target is explicitly described by its result and helper note');
+assert.match(appSource,/class="plate-adjustments" role="group" aria-label="Adjust planned total weight"/,'plate adjustments expose a named control group');
+assert.match(appSource,/button\.textContent=`Choose \$\{formatLoad\(option\.total\)\} lb · \$\{formatPlateStack\(option\.plates\)\} \/ side/,'nearby load choices distinguish planning from applying and show both plate stacks');
+assert.match(appSource,/setApplyLabel\(`Apply \$\{formatLoad\(exact\.total\)\} lb/,'the final action identifies the exact load it will apply');
+assert.match(appSource,/applyButton\.focus\(\{preventScroll:true\}\)/,'focus moves to Apply after a generated nearby choice disappears');
+assert.match(appSource,/calculator\.open=false;[\s\S]*calculator\.querySelector\('summary'\)\.focus/,'the calculator collapses and restores focus after Apply');
+assert.match(appSource,/target\.disabled=unavailable;[\s\S]*adjustButtons\.forEach\(button=>button\.disabled=unavailable\)/,'legacy direct totals disable futile planner controls until a bar is explicit');
 assert.doesNotMatch(appSource,/data-field="plate(?:Target|Combination|Calculator)/,'transient plate-calculator state must not enter saved workout records');
 assert.match(appSource,/calculatedLabel\.textContent=plateOnly\?'Combined plate weight':'Total training load'/,'leg press labels its direct value as combined plates rather than carriage-inclusive training load');
+assert.match(styles,/\.plate-calculator>summary\{[^}]*min-height:48px/,'the collapsed plate calculator remains a full mobile touch target');
+assert.match(styles,/input,select,textarea\{[^}]*min-width:0;min-height:48px/,'plate targets inherit the mobile-safe input height');
 assert.match(styles,/\.plate-adjustments button\{[^}]*min-height:44px/,'plate adjustment controls retain mobile touch targets');
+assert.match(styles,/\.subtle\{[^}]*min-height:44px/,'generated load choices retain mobile touch targets');
+assert.match(styles,/\.primary,\.secondary,\.danger,\.file-button\{[^}]*min-height:46px/,'the primary Apply action retains a mobile touch target');
+assert.match(styles,/button:focus-visible,summary:focus-visible,a:focus-visible\{[^}]*outline:/,'calculator buttons and summaries retain visible keyboard focus');
+assert.match(styles,/\.plate-calculator input,\.plate-adjustments button,\.plate-alternatives button\{border-color:#596768\}/,'plate planner controls retain visible non-text boundaries');
 assert.doesNotMatch(styles,/\.sticky-actions\{position:sticky;bottom:calc\(7px/,'mobile workout actions must remain in page flow');
-assert.ok(indexHtml.indexOf('program-config.js?v=57')<indexHtml.indexOf('cloud-config.js?v=57'));
-assert.ok(indexHtml.indexOf('cloud-config.js?v=57')<indexHtml.indexOf('cloud-sync.js?v=57'));
-assert.ok(indexHtml.indexOf('cloud-sync.js?v=57')<indexHtml.indexOf('app.js?v=57'));
-assert.match(serviceWorker,/aft-workout-tracker-v57/);
-assert.match(serviceWorker,/program-config\.js\?v=57/);
-assert.match(serviceWorker,/cloud-sync\.js\?v=57/);
+assert.ok(indexHtml.indexOf('program-config.js?v=58')<indexHtml.indexOf('cloud-config.js?v=58'));
+assert.ok(indexHtml.indexOf('cloud-config.js?v=58')<indexHtml.indexOf('cloud-sync.js?v=58'));
+assert.ok(indexHtml.indexOf('cloud-sync.js?v=58')<indexHtml.indexOf('app.js?v=58'));
+assert.match(serviceWorker,/aft-workout-tracker-v58/);
+assert.match(serviceWorker,/program-config\.js\?v=58/);
+assert.match(serviceWorker,/cloud-sync\.js\?v=58/);
 assert.match(indexHtml,/id="sessionRpe"[^>]+step="0\.5"[^>]+inputmode="decimal"/,'session RPE accepts half-point values');
 assert.match(appSource,/addEventListener\('invalid',revealInvalidWorkoutControl,true\)/,'invalid workout values must produce visible feedback');
 assert.equal((appSource.match(/Component RPE',performance\.rpe,\{min:1,max:10,step:'\.5'\}/g)||[]).length,4,'all circuit component RPE inputs accept half-point values');

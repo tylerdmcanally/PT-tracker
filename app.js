@@ -24,6 +24,7 @@ const MAX_SNAPSHOTS=5;
 const WEEKLY_SKILL_DOSE_GROUP_ID='aft_pushup_plank_microdose';
 const PLATE_CALCULATOR_DENOMINATIONS=[45,35,25,10,5,2.5];
 const PLATE_ONLY_VARIATIONS=new Set(['Leg press','Plate-loaded leg press']);
+const PLATE_ONLY_VARIATION_IDS=new Set(['unspecifiedLegPress','plateLoadedLegPress']);
 
 const EXERCISE_NAME_IDS={
  'Deadlift':'deadlift','Trap-bar deadlift':'deadlift',
@@ -862,7 +863,8 @@ function formatAdherenceReason(reason){
  if(!reason)return '';
  if(reason.message)return reason.message;
  if(reason.code==='load_above_target'||reason.code==='load_below_target'){
-  return `${ADHERENCE_REASON_LABELS[reason.code]}: ${formatLoad(reason.actual)} lb completed vs ${formatLoad(reason.expected)} lb prescribed`;
+  const unit=reason.plateOnly?'lb plates total':'lb';
+  return `${ADHERENCE_REASON_LABELS[reason.code]}: ${formatLoad(reason.actual)} ${unit} completed vs ${formatLoad(reason.expected)} ${unit} prescribed${reason.plateOnly?' (carriage excluded)':''}`;
  }
  if(reason.code==='reps_below_minimum')return `${reason.componentName?`${reason.componentName}: `:''}${reason.actual} reps vs ${reason.expected} minimum`;
  if(reason.code==='sets_below_target')return `${reason.actual} sets recorded vs ${reason.expected} prescribed`;
@@ -1090,8 +1092,9 @@ function prescriptionAdherenceDetail(definition,result){
     else{
      const expected=Number(definition.targetLoad);
      const tolerance=Number(definition.loadTolerance??.5);
-     if(total>expected+tolerance)reasons.push(adherenceReason('load_above_target',{actual:total,expected}));
-     if(total<expected-tolerance)reasons.push(adherenceReason('load_below_target',{actual:total,expected}));
+     const plateOnly=isPlateOnlyLegPressResult(definition,result);
+     if(total>expected+tolerance)reasons.push(adherenceReason('load_above_target',{actual:total,expected,plateOnly}));
+     if(total<expected-tolerance)reasons.push(adherenceReason('load_below_target',{actual:total,expected,plateOnly}));
     }
    }
   }
@@ -1727,6 +1730,7 @@ function weightedFields(definition,state,setPlan){
  const matchesPreset=presetOptions.some(value=>Number(value)===Number(barWeight));
  const preset=matchesPreset?String(barWeight):'custom';
  const loadLabel=mode==='platesPerSide'?'Plate weight per side (lb)':mode==='plates'?'Plate load, both sides combined (lb)':usesBar?'Total load (lb)':`Load (${activeUnit})`;
+ const plateControlId=`plate-${String(definition.id||'exercise').replace(/[^a-zA-Z0-9_-]/g,'-')}`;
  return `<div class="weighted-load" data-unit="${attr(activeUnit)}"
    data-bar-weights="${attr(JSON.stringify(barWeights))}"
    data-per-side-variations="${attr(JSON.stringify(perSideVariations))}"
@@ -1734,6 +1738,7 @@ function weightedFields(definition,state,setPlan){
    data-variation-units="${attr(JSON.stringify(variationUnits))}"
    data-target-load="${attr(definition.targetLoad??'')}"
    data-target-load-variation="${attr(definition.targetLoadVariation||'')}"
+   data-active-variation="${attr(variation)}"
    data-active-bar-variation="${attr(usesBar?variation:'')}">
   <div class="form-grid">
    <label><span data-load-label>${esc(loadLabel)}</span><input data-field="load" type="number" value="${attr(state.load)}" min="0" step=".5" inputmode="decimal"></label>
@@ -1765,18 +1770,18 @@ function weightedFields(definition,state,setPlan){
    <summary><span>Plate calculator</span><small data-plate-summary>Plan plates</small></summary>
    <div class="plate-calculator-body">
     <label><span data-plate-target-label>Planned total weight (lb)</span>
-     <input data-plate-target type="text" inputmode="decimal" autocomplete="off">
+     <input id="${plateControlId}-target" data-plate-target type="text" inputmode="decimal" autocomplete="off" aria-describedby="${plateControlId}-result ${plateControlId}-note">
     </label>
-    <div class="plate-adjustments" aria-label="Adjust planned total weight">
+    <div class="plate-adjustments" role="group" aria-label="Adjust planned total weight">
      <button class="secondary subtle" type="button" data-plate-adjust="-10">−10 lb</button>
      <button class="secondary subtle" type="button" data-plate-adjust="-5">−5 lb</button>
      <button class="secondary subtle" type="button" data-plate-adjust="5">+5 lb</button>
      <button class="secondary subtle" type="button" data-plate-adjust="10">+10 lb</button>
     </div>
-    <div class="plate-result" data-plate-result aria-live="polite"></div>
-    <div class="plate-alternatives" data-plate-alternatives></div>
-    <button class="secondary" type="button" data-plate-apply disabled>Use this load</button>
-    <small class="plate-calculator-note" data-plate-note>Loading helper only. It does not change the coach prescription.</small>
+    <div id="${plateControlId}-result" class="plate-result" data-plate-result role="status" aria-live="polite" aria-atomic="true"></div>
+    <div class="plate-alternatives" data-plate-alternatives role="group" aria-label="Loadable alternatives"></div>
+    <button class="primary" type="button" data-plate-apply disabled>Apply load</button>
+    <small id="${plateControlId}-note" class="plate-calculator-note" data-plate-note>Loading helper only. It does not change the coach prescription.</small>
    </div>
   </details>
  </div>${setRepLogger(state,setPlan,'weighted')}`;
@@ -1847,7 +1852,10 @@ function fillPrescribedResult(card){
    const enteredLoad=prescribedEnteredLoad(definition.targetLoad,mode?.value,card.querySelector('[data-field="barWeight"]')?.value);
    if(load)load.value=formatLoad(enteredLoad);
    const panel=card.querySelector('.weighted-load');
-   if(panel)updateWeightedLoad(panel,variation?.value||definition.defaultVariation||'',false);
+   if(panel){
+    resetPlateCalculatorPlan(panel);
+    updateWeightedLoad(panel,variation?.value||definition.defaultVariation||'',false);
+   }
   }
  }else if(target.kind==='timed'){
   const targets=target.minSecondsBySet||Array.from({length:sets},()=>target.minSeconds);
@@ -2091,7 +2099,10 @@ function applyPreviousLoad(card,definition,exercise,variation){
   if(preset&&fields.barWeight){
    preset.value=[...preset.options].some(option=>option.value===fields.barWeight)?fields.barWeight:'custom';
   }
-  if(panel)updateWeightedLoad(panel,variation,false);
+  if(panel){
+   resetPlateCalculatorPlan(panel);
+   updateWeightedLoad(panel,variation,false);
+  }
  }
  updateCardAdherence(card);
  updateExerciseCardSummary(card);
@@ -2103,6 +2114,49 @@ function plateCalculatorKind(barWeights,variation){
  if(Object.prototype.hasOwnProperty.call(barWeights||{},variation))return 'bar';
  if(PLATE_ONLY_VARIATIONS.has(variation))return 'platesOnly';
  return '';
+}
+
+function resetPlateCalculatorPlan(panel){
+ const calculator=panel?.querySelector?.('[data-plate-calculator]');
+ if(calculator)delete calculator.dataset.targetDirty;
+}
+
+function shouldSyncPlateCalculatorTarget(syncTarget,targetDirty){
+ return Boolean(syncTarget)&&targetDirty!=='true';
+}
+
+function plateCalculatorPlanSurvivesVariation(previousVariation,nextVariation,barWeights={}){
+ return plateCalculatorKind(barWeights,previousVariation)==='bar'
+  &&plateCalculatorKind(barWeights,nextVariation)==='bar';
+}
+
+function weightedVariationTransition(previousVariation,nextVariation,state,barWeights={},perSideVariations=[]){
+ if(!previousVariation||previousVariation===nextVariation)return null;
+ const previousKind=plateCalculatorKind(barWeights,previousVariation);
+ const nextKind=plateCalculatorKind(barWeights,nextVariation);
+ const hasLoad=numberOrNull(state?.load)!=null;
+ if(previousKind==='bar'&&nextKind==='bar'){
+  const total=totalLoadValue(state);
+  const nextBar=numberOrNull(barWeights[nextVariation]);
+  const nextMode=perSideVariations.includes(nextVariation)?'platesPerSide':'plates';
+  if(total==null){
+   return {load:'',loadMode:nextMode,barWeight:nextBar==null?'':formatLoad(nextBar),cleared:false,preservedTotal:null};
+  }
+  if(nextBar==null||total<nextBar){
+   return {load:formatLoad(total),loadMode:'total',barWeight:'',cleared:false,preservedTotal:total};
+  }
+  return {
+   load:formatLoad(prescribedEnteredLoad(total,nextMode,nextBar)),
+   loadMode:nextMode,
+   barWeight:formatLoad(nextBar),
+   cleared:false,
+   preservedTotal:total
+  };
+ }
+ if(previousKind||nextKind){
+  return {load:'',loadMode:'',barWeight:'',cleared:hasLoad,preservedTotal:null};
+ }
+ return null;
 }
 
 function plateStackOptions(perSideTarget,denominations=PLATE_CALCULATOR_DENOMINATIONS){
@@ -2237,10 +2291,16 @@ function updatePlateCalculator(panel,variation,{syncTarget=false}={}){
  const result=calculator.querySelector('[data-plate-result]');
  const alternatives=calculator.querySelector('[data-plate-alternatives]');
  const apply=calculator.querySelector('[data-plate-apply]');
+ const adjustButtons=[...calculator.querySelectorAll('[data-plate-adjust]')];
+ const exerciseName=panel.closest('.exercise-card')?.querySelector('h2')?.textContent.trim()||'Exercise';
+ const setApplyLabel=label=>{
+  apply.textContent=label;
+  apply.setAttribute('aria-label',`${exerciseName}: ${label}`);
+ };
  const currentTotal=plateCalculatorCurrentTotal(panel,kind,baseWeight);
  const prescribed=numberOrNull(panel.dataset.targetLoad);
  const matchesPrescription=prescribed!=null&&panel.dataset.targetLoadVariation===variation;
- if(syncTarget){
+ if(shouldSyncPlateCalculatorTarget(syncTarget,calculator.dataset.targetDirty)){
   target.value=currentTotal!=null?formatLoad(currentTotal):matchesPrescription?formatLoad(prescribed):'';
  }
  calculator.querySelector('[data-plate-target-label]').textContent=kind==='platesOnly'
@@ -2256,19 +2316,26 @@ function updatePlateCalculator(panel,variation,{syncTarget=false}={}){
  delete calculator.dataset.combinedPlateWeight;
  alternatives.innerHTML='';
  apply.disabled=true;
- if(kind==='bar'&&baseWeight==null){
+ setApplyLabel('Apply load');
+ target.removeAttribute('aria-invalid');
+ const unavailable=kind==='bar'&&baseWeight==null;
+ target.disabled=unavailable;
+ adjustButtons.forEach(button=>button.disabled=unavailable);
+ if(unavailable){
   summary.textContent='Unavailable for legacy total';
   result.textContent='This direct-total record has no saved bar weight, so the calculator will not infer one. Leave its saved weight mode unchanged.';
   return;
  }
  const desired=numberOrNull(target.value);
  if(desired==null){
+  if(String(target.value).trim())target.setAttribute('aria-invalid','true');
   summary.textContent='Plan plates';
   result.textContent='Enter a planned weight to see the plates for each side.';
   return;
  }
  const options=plateCalculatorOptions(desired,baseWeight);
  if(!options){
+  target.setAttribute('aria-invalid','true');
   summary.textContent='Check planned weight';
   result.textContent=kind==='bar'&&desired<baseWeight
    ?`Planned total must be at least the ${formatLoad(baseWeight)} lb bar weight.`
@@ -2280,9 +2347,12 @@ function updatePlateCalculator(panel,variation,{syncTarget=false}={}){
   calculator.dataset.achievedTotal=String(exact.total);
   calculator.dataset.perSide=String(exact.perSide);
   calculator.dataset.combinedPlateWeight=String(exact.combinedPlateWeight);
-  summary.textContent=`${formatLoad(exact.total)} lb · ${formatPlateStack(exact.plates)} / side`;
+  summary.textContent=kind==='platesOnly'
+   ?`${formatLoad(exact.total)} lb plates · ${formatPlateStack(exact.plates)} / side`
+   :`${formatLoad(exact.total)} lb · ${formatPlateStack(exact.plates)} / side`;
   result.textContent=describePlateOption(kind,exact,baseWeight);
   apply.disabled=false;
+  setApplyLabel(`Apply ${formatLoad(exact.total)} lb${kind==='platesOnly'?' plates':''} to today’s result`);
   return;
  }
  summary.textContent='Choose a loadable total';
@@ -2293,7 +2363,7 @@ function updatePlateCalculator(panel,variation,{syncTarget=false}={}){
   button.type='button';
   button.className='secondary subtle';
   button.dataset.plateChoice=String(option.total);
-  button.textContent=`Use ${formatLoad(option.total)} lb (${difference>0?'+':''}${formatLoad(difference)} lb)`;
+  button.textContent=`Choose ${formatLoad(option.total)} lb · ${formatPlateStack(option.plates)} / side (${difference>0?'+':''}${formatLoad(difference)} lb)`;
   alternatives.append(button);
  });
 }
@@ -2303,7 +2373,10 @@ function bindWeightedLoadControls(){
   const card=panel.closest('.exercise-card');
   const variation=card.querySelector('[data-field="variation"]');
   const refresh=variationChanged=>updateWeightedLoad(panel,variation?.value||'',variationChanged);
-  panel.querySelector('[data-field="load"]').addEventListener('input',()=>refresh(false));
+  panel.querySelector('[data-field="load"]').addEventListener('input',()=>{
+   resetPlateCalculatorPlan(panel);
+   refresh(false);
+  });
   panel.querySelector('[data-field="barWeight"]').addEventListener('input',()=>refresh(false));
   panel.querySelector('[data-field="loadMode"]').addEventListener('change',()=>refresh(false));
   panel.querySelector('[data-bar-preset]').addEventListener('change',event=>{
@@ -2313,7 +2386,11 @@ function bindWeightedLoadControls(){
   });
   const calculator=panel.querySelector('[data-plate-calculator]');
   const plateTarget=calculator.querySelector('[data-plate-target]');
-  plateTarget.addEventListener('input',()=>updatePlateCalculator(panel,variation?.value||''));
+  const applyButton=calculator.querySelector('[data-plate-apply]');
+  plateTarget.addEventListener('input',()=>{
+   calculator.dataset.targetDirty='true';
+   updatePlateCalculator(panel,variation?.value||'');
+  });
   calculator.querySelectorAll('[data-plate-adjust]').forEach(button=>button.addEventListener('click',()=>{
    const barWeights=panelBarWeights(panel);
    const baseWeight=plateCalculatorBase(panel,variation?.value||'',barWeights);
@@ -2321,15 +2398,18 @@ function bindWeightedLoadControls(){
     ??plateCalculatorCurrentTotal(panel,plateCalculatorKind(barWeights,variation?.value||''),baseWeight)
     ??baseWeight;
    plateTarget.value=formatLoad(Math.max(baseWeight,current+Number(button.dataset.plateAdjust)));
+   calculator.dataset.targetDirty='true';
    updatePlateCalculator(panel,variation?.value||'');
   }));
   calculator.querySelector('[data-plate-alternatives]').addEventListener('click',event=>{
    const button=event.target.closest('[data-plate-choice]');
    if(!button)return;
    plateTarget.value=button.dataset.plateChoice;
+   calculator.dataset.targetDirty='true';
    updatePlateCalculator(panel,variation?.value||'');
+   applyButton.focus({preventScroll:true});
   });
-  calculator.querySelector('[data-plate-apply]').addEventListener('click',()=>{
+  applyButton.addEventListener('click',()=>{
    const kind=calculator.dataset.kind;
    const option={
     total:numberOrNull(calculator.dataset.achievedTotal),
@@ -2346,13 +2426,23 @@ function bindWeightedLoadControls(){
    barWeight.value=fields.barWeight;
    const preset=panel.querySelector('[data-bar-preset]');
    if(fields.barWeight&&preset)preset.value=[...preset.options].some(optionElement=>optionElement.value===fields.barWeight)?fields.barWeight:'custom';
+   resetPlateCalculatorPlan(panel);
    updateWeightedLoad(panel,variation?.value||'',false);
    updateCardAdherence(card);
    updateExerciseCardSummary(card);
    scheduleDraft();
-   toast(`${formatLoad(option.total)} lb load applied. Completion and prescription are unchanged.`);
+   calculator.open=false;
+   calculator.querySelector('summary').focus({preventScroll:true});
+   toast(`${formatLoad(option.total)} lb${kind==='platesOnly'?' plates total':' load'} applied. Completion and prescription are unchanged.`);
   });
-  variation?.addEventListener('change',()=>refresh(true));
+  variation?.addEventListener('change',()=>{
+   const previousVariation=panel.dataset.activeVariation||'';
+   const nextVariation=variation.value||'';
+   if(!plateCalculatorPlanSurvivesVariation(previousVariation,nextVariation,panelBarWeights(panel))){
+    resetPlateCalculatorPlan(panel);
+   }
+   refresh(true);
+  });
   refresh(false);
  });
 }
@@ -2377,6 +2467,16 @@ function updateWeightedLoad(panel,variation,variationChanged){
  const calculated=panel.querySelector('[data-calculated-load]');
  const calculatedLabel=panel.querySelector('[data-calculated-load-label]');
  const label=panel.querySelector('[data-load-label]');
+ const previousVariation=panel.dataset.activeVariation||variation;
+ const newlySelected=Boolean(variationChanged&&previousVariation!==variation);
+ const transition=newlySelected?weightedVariationTransition(previousVariation,variation,{
+  load:load.value,loadMode:mode.value,barWeight:barWeight.value
+ },barWeights,perSideVariations):null;
+ if(transition)load.value=transition.load;
+ const announceTransition=()=>{
+  if(transition?.cleared)toast(`Equipment changed to ${variation}. Previous load cleared; enter the load for this setup.`);
+  else if(transition?.preservedTotal!=null)toast(`Equipment changed to ${variation}. ${formatLoad(transition.preservedTotal)} lb total preserved; confirm the bar setup.`);
+ };
  if(!usesBar){
   mode.value='';
   barWeight.value='';
@@ -2393,14 +2493,20 @@ function updateWeightedLoad(panel,variation,variationChanged){
     ?'Enter the combined plate weight across both sides.'
     :`${formatLoad(entered/2)} lb plates per side · carriage not included`;
   }
+  panel.dataset.activeVariation=variation;
   panel.dataset.activeBarVariation='';
   updatePlateCalculator(panel,variation,{syncTarget:true});
+  announceTransition();
   return;
  }
- const newlySelected=variationChanged&&panel.dataset.activeBarVariation!==variation;
- if(!['platesPerSide','plates','total'].includes(mode.value)||newlySelected)mode.value=perSide?'platesPerSide':'plates';
+ if(transition?.loadMode){
+  mode.value=transition.loadMode;
+  barWeight.value=transition.barWeight;
+ }else if(!['platesPerSide','plates','total'].includes(mode.value)||newlySelected){
+  mode.value=perSide?'platesPerSide':'plates';
+ }
  const enteredAsTotal=mode.value==='total';
- if(!enteredAsTotal&&(newlySelected||barWeight.value===''))barWeight.value=String(barWeights[variation]??'');
+ if(!enteredAsTotal&&(!transition?.loadMode&&(newlySelected||barWeight.value==='')||barWeight.value===''))barWeight.value=String(barWeights[variation]??'');
  if(newlySelected&&barOptions.length){
   preset.value=barOptions.some(value=>Number(value)===Number(barWeight.value))?barWeight.value:'custom';
  }
@@ -2424,8 +2530,10 @@ function updateWeightedLoad(panel,variation,variationChanged){
    :mode.value==='plates'
     ?`${formatLoad(entered)} lb combined plates + ${formatLoad(bar)} lb bar`
     :'Entered as total weight';
+ panel.dataset.activeVariation=variation;
  panel.dataset.activeBarVariation=variation;
  updatePlateCalculator(panel,variation,{syncTarget:true});
+ announceTransition();
 }
 
 function numberOrNull(value){
@@ -3733,9 +3841,24 @@ function carryResultParts(definition,exercise,{includeVariation=false}={}){
  return parts;
 }
 
+function isPlateOnlyLegPressResult(definition,exercise={}){
+ const savedVariationId=exerciseVariationId(exercise);
+ if(savedVariationId)return PLATE_ONLY_VARIATION_IDS.has(savedVariationId);
+ const fallbackVariation=definition?.defaultVariation||definition?.name||exercise?.name||'';
+ return PLATE_ONLY_VARIATION_IDS.has(variationIdFor(fallbackVariation));
+}
+
+function plateOnlyLegPressLoadSummary(definition,exercise={}){
+ const load=numberOrNull(exercise.load);
+ if(load==null||!isPlateOnlyLegPressResult(definition,exercise))return '';
+ return `${formatLoad(load)} lb plates total (${formatLoad(load/2)} lb/side; carriage excluded)`;
+}
+
 function compactLoadResult(definition,exercise){
  const load=numberOrNull(exercise.load);
  if(load==null)return '';
+ const plateOnlySummary=plateOnlyLegPressLoadSummary(definition,exercise);
+ if(plateOnlySummary)return plateOnlySummary;
  const usesBar=['platesPerSide','plates','total'].includes(exercise.loadMode)||exercise.barWeight!==''&&exercise.barWeight!=null;
  if(usesBar)return `${formatLoad(totalLoadValue(exercise))} lb total`;
  const unit=exercise.unit||definition.unit||'lb';
@@ -4118,7 +4241,10 @@ function summary(exercise,definition=null){
  if(exercise.runStage&&exercise.runStage!=='manual')parts.push(`run stage ${exercise.runStage}`);
  if(exercise.load){
   const total=totalLoadValue(exercise);
-  if(exercise.type==='weighted'&&exercise.loadMode==='platesPerSide'){
+  const plateOnlySummary=plateOnlyLegPressLoadSummary(definition||exercise,exercise);
+  if(plateOnlySummary){
+   parts.push(plateOnlySummary);
+  }else if(exercise.type==='weighted'&&exercise.loadMode==='platesPerSide'){
    parts.push(`${formatLoad(total)} lb total (${formatLoad(exercise.barWeight||0)} lb bar + ${formatLoad(exercise.load)} lb/side × 2)`);
   }else if(exercise.type==='weighted'&&exercise.loadMode==='plates'){
    parts.push(`${formatLoad(total)} lb total (${formatLoad(exercise.load)} lb combined plates + ${formatLoad(exercise.barWeight||0)} lb bar)`);

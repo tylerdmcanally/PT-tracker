@@ -22,6 +22,8 @@ const CLOUD_STATE_KEY='aftCloudSyncState.v1';
 const DATA_VERSION=11;
 const MAX_SNAPSHOTS=5;
 const WEEKLY_SKILL_DOSE_GROUP_ID='aft_pushup_plank_microdose';
+const PLATE_CALCULATOR_DENOMINATIONS=[45,35,25,10,5,2.5];
+const PLATE_ONLY_VARIATIONS=new Set(['Leg press','Plate-loaded leg press']);
 
 const EXERCISE_NAME_IDS={
  'Deadlift':'deadlift','Trap-bar deadlift':'deadlift',
@@ -1384,6 +1386,11 @@ function circuitCheckbox(field,label,checked){
  return `<label class="circuit-checkbox"><input data-circuit-field="${attr(field)}" type="checkbox" ${checked?'checked':''}><span>${esc(label)}</span></label>`;
 }
 
+function isTankM4Component(component,performance={}){
+ const equipment=performance.equipmentLabel||component?.directivePlanned?.equipmentLabel||component?.planned?.equipmentLabel||'';
+ return /\bTANK M4\b/i.test(equipment);
+}
+
 function circuitPerformanceFields(component,performance={}){
  const type=component.type;
  const commonNotes=type==='sled'?circuitInput('notes','Component notes',performance.notes,{type:'text',min:null,placeholder:'Technique, setup, or anything unusual'}):'';
@@ -1410,6 +1417,23 @@ function circuitPerformanceFields(component,performance={}){
   const loadMode=performance.loadMode||'';
   const distanceMode=performance.distanceMode||'';
   const direction=performance.direction||component.directivePlanned?.direction||component.planned?.direction||'';
+  const tankNoPlateLoading=isTankM4Component(component,performance);
+  const loadFields=tankNoPlateLoading
+   ?['loadMode','addedPlateWeight','emptySledWeight','totalSystemWeight'].map(field=>{
+    const value=performance[field];
+    return value===''||value==null?'':`<input data-circuit-field="${field}" type="hidden" value="${attr(value)}">`;
+   }).join('')
+   :[
+    circuitSelect('loadMode','Weight recorded as',loadMode,[
+     {value:'added_only',label:'Added plates only · sled weight unknown'},
+     {value:'added_plus_sled',label:'Added plates + known sled weight'},
+     {value:'total',label:'Known total system weight'},
+     {value:'unknown',label:'Weight unknown'}
+    ]),
+    circuitInput('addedPlateWeight','Added plate weight (lb)',performance.addedPlateWeight,{className:['added_only','added_plus_sled'].includes(loadMode)?'':'hidden'}),
+    circuitInput('emptySledWeight','Empty sled weight (lb)',performance.emptySledWeight,{className:loadMode==='added_plus_sled'?'':'hidden'}),
+    circuitInput('totalSystemWeight','Total system weight (lb)',performance.totalSystemWeight,{className:loadMode==='total'?'':'hidden'})
+   ].join('');
   return `<input data-circuit-field="direction" type="hidden" value="${attr(direction)}">${grid(
    circuitInput('trips','Trips',performance.trips,{step:'1'}),
    circuitSelect('distanceMode','Distance recorded as',distanceMode,[
@@ -1418,20 +1442,12 @@ function circuitPerformanceFields(component,performance={}){
    circuitInput('distancePerTrip','Distance per trip',performance.distancePerTrip,{className:distanceMode==='known'?'':'hidden'}),
    circuitSelect('distanceUnit','Distance unit',performance.distanceUnit,['yd','m'],{className:distanceMode==='known'?'':'hidden'}),
    circuitInput('distanceLabel','Lane / distance label',performance.distanceLabel,{type:'text',min:null,placeholder:'One gym lane',className:distanceMode==='lane_unknown'?'':'hidden'}),
-   circuitSelect('loadMode','Weight recorded as',loadMode,[
-    {value:'added_only',label:'Added plates only · sled weight unknown'},
-    {value:'added_plus_sled',label:'Added plates + known sled weight'},
-    {value:'total',label:'Known total system weight'},
-    {value:'unknown',label:'Weight unknown'}
-   ]),
-   circuitInput('addedPlateWeight','Added plate weight (lb)',performance.addedPlateWeight,{className:['added_only','added_plus_sled'].includes(loadMode)?'':'hidden'}),
-   circuitInput('emptySledWeight','Empty sled weight (lb)',performance.emptySledWeight,{className:loadMode==='added_plus_sled'?'':'hidden'}),
-   circuitInput('totalSystemWeight','Total system weight (lb)',performance.totalSystemWeight,{className:loadMode==='total'?'':'hidden'}),
+   loadFields,
    circuitInput('durationSeconds','Duration (sec)',performance.durationSeconds,{step:'1'}),
    circuitInput('equipmentLabel','Sled / equipment label',performance.equipmentLabel,{type:'text',min:null,placeholder:'Same sled as Aug 5'}),
    circuitInput('surface','Surface',performance.surface,{type:'text',min:null,placeholder:'Turf, rubber floor, etc.'}),
    circuitInput('rpe','Component RPE',performance.rpe,{min:1,max:10,step:'.5'})
-  )}<p class="calculated-sled" data-sled-calculation><span data-sled-total-distance>Total distance: —</span><span data-sled-total-load>Total system weight: —</span></p>${commonNotes}`;
+  )}${tankNoPlateLoading?'<p class="tank-load-note" data-tank-no-plates>TANK M4 Level 3 is the resistance setting; no plate load is recorded.</p>':''}<p class="calculated-sled" data-sled-calculation><span data-sled-total-distance>Total distance: —</span><span data-sled-total-load>${tankNoPlateLoading?'Resistance: Level 3 · no plate load':'Total system weight: —'}</span></p>${commonNotes}`;
  }
  return commonNotes;
 }
@@ -1452,6 +1468,7 @@ function circuitPerformanceSummary(component,performance={}){
   if(performance.modality)parts.push(performance.modality);
   if(performance.durationSeconds)parts.push(`${performance.durationApproximate?'~':''}${performance.durationSeconds} sec`);
  }else if(component.type==='sled'){
+  const tankNoPlateLoading=isTankM4Component(component,performance);
   if(performance.trips)parts.push(`${performance.trips} trip${Number(performance.trips)===1?'':'s'}`);
   if(performance.distanceMode==='known'&&performance.distancePerTrip){
    parts.push(`${performance.distancePerTrip} ${performance.distanceUnit||''}/trip`.trim());
@@ -1460,7 +1477,8 @@ function circuitPerformanceSummary(component,performance={}){
   }
   else if(performance.distanceMode==='lane_unknown')parts.push(performance.distanceLabel||'gym lane');
   else parts.push('distance unknown');
-  if(performance.loadMode==='added_only'&&performance.addedPlateWeight)parts.push(`${performance.addedPlateWeight} lb added · total unknown`);
+  if(tankNoPlateLoading&&!['added_only','added_plus_sled','total'].includes(performance.loadMode))parts.push('TANK M4 Level 3 · no plate load');
+  else if(performance.loadMode==='added_only'&&performance.addedPlateWeight)parts.push(`${performance.addedPlateWeight} lb added · total unknown`);
   else if(performance.loadMode==='added_plus_sled')parts.push(`${sledTotalSystemWeight(performance)??'unknown'} lb total`);
   else if(performance.loadMode==='total'&&performance.totalSystemWeight)parts.push(`${performance.totalSystemWeight} lb total`);
   else parts.push('weight unknown');
@@ -1535,7 +1553,7 @@ function circuitFields(definition,state,directive){
     num('rpe','Overall circuit RPE',state.rpe,1,10,1)
    )}
    <button class="secondary subtle" type="button" data-fill-circuit-plan>${applied?'Performed as directed':'Performed as planned'}</button>
-   <p class="muted">This applies the known targets to both rounds. Sled weight, timing, surface, and RPE remain blank until you record them.</p>
+   <p class="muted">This applies the known targets to both rounds. Sled setup, timing, surface, and RPE remain blank until you record them.</p>
   </div>
   <div class="circuit-component-list">
    ${components.map(component=>circuitComponentMarkup(component,rounds)).join('')}
@@ -1714,6 +1732,8 @@ function weightedFields(definition,state,setPlan){
    data-per-side-variations="${attr(JSON.stringify(perSideVariations))}"
    data-bar-options="${attr(JSON.stringify(presetOptions))}"
    data-variation-units="${attr(JSON.stringify(variationUnits))}"
+   data-target-load="${attr(definition.targetLoad??'')}"
+   data-target-load-variation="${attr(definition.targetLoadVariation||'')}"
    data-active-bar-variation="${attr(usesBar?variation:'')}">
   <div class="form-grid">
    <label><span data-load-label>${esc(loadLabel)}</span><input data-field="load" type="number" value="${attr(state.load)}" min="0" step=".5" inputmode="decimal"></label>
@@ -1737,10 +1757,28 @@ function weightedFields(definition,state,setPlan){
    ${num('rpe','Exercise RPE',state.rpe,1,10)}
   </div>
   <div class="calculated-load ${usesBar?'':'hidden'}" data-calculated-load>
-   <span>Total training load</span>
+   <span data-calculated-load-label>Total training load</span>
    <strong data-total-load>—</strong>
    <small data-load-breakdown></small>
   </div>
+  <details class="plate-calculator hidden" data-plate-calculator>
+   <summary><span>Plate calculator</span><small data-plate-summary>Plan plates</small></summary>
+   <div class="plate-calculator-body">
+    <label><span data-plate-target-label>Planned total weight (lb)</span>
+     <input data-plate-target type="text" inputmode="decimal" autocomplete="off">
+    </label>
+    <div class="plate-adjustments" aria-label="Adjust planned total weight">
+     <button class="secondary subtle" type="button" data-plate-adjust="-10">−10 lb</button>
+     <button class="secondary subtle" type="button" data-plate-adjust="-5">−5 lb</button>
+     <button class="secondary subtle" type="button" data-plate-adjust="5">+5 lb</button>
+     <button class="secondary subtle" type="button" data-plate-adjust="10">+10 lb</button>
+    </div>
+    <div class="plate-result" data-plate-result aria-live="polite"></div>
+    <div class="plate-alternatives" data-plate-alternatives></div>
+    <button class="secondary" type="button" data-plate-apply disabled>Use this load</button>
+    <small class="plate-calculator-note" data-plate-note>Loading helper only. It does not change the coach prescription.</small>
+   </div>
+  </details>
  </div>${setRepLogger(state,setPlan,'weighted')}`;
 }
 
@@ -1910,6 +1948,7 @@ function readCircuitDirective(card){
 function updateCircuitSledVisibility(container){
  const loadMode=container.querySelector('[data-circuit-field="loadMode"]')?.value||'';
  const distanceMode=container.querySelector('[data-circuit-field="distanceMode"]')?.value||'';
+ const tankNoPlateLoading=Boolean(container.querySelector('[data-tank-no-plates]'));
  const toggle=(field,show)=>container.querySelector(`[data-circuit-field="${field}"]`)?.closest('label')?.classList.toggle('hidden',!show);
  toggle('distancePerTrip',distanceMode==='known');
  toggle('distanceUnit',distanceMode==='known');
@@ -1924,7 +1963,9 @@ function updateCircuitSledVisibility(container){
  const loadDisplay=container.querySelector('[data-sled-total-load]');
  if(distanceDisplay)distanceDisplay.textContent=totalDistance==null?'Total distance: —':`Total distance: ${formatLoad(totalDistance)} ${performance.distanceUnit||''}`.trim();
  if(loadDisplay){
-  loadDisplay.textContent=performance.loadMode==='added_only'
+  loadDisplay.textContent=tankNoPlateLoading
+   ?'Resistance: Level 3 · no plate load'
+   :performance.loadMode==='added_only'
    ?'Total system weight: unknown'
    :totalLoad==null?'Total system weight: —':`Total system weight: ${formatLoad(totalLoad)} lb`;
  }
@@ -2058,6 +2099,205 @@ function applyPreviousLoad(card,definition,exercise,variation){
  toast('Last load applied. Other results unchanged.');
 }
 
+function plateCalculatorKind(barWeights,variation){
+ if(Object.prototype.hasOwnProperty.call(barWeights||{},variation))return 'bar';
+ if(PLATE_ONLY_VARIATIONS.has(variation))return 'platesOnly';
+ return '';
+}
+
+function plateStackOptions(perSideTarget,denominations=PLATE_CALCULATOR_DENOMINATIONS){
+ const requested=Number(perSideTarget);
+ if(!Number.isFinite(requested)||requested<0||requested>5000)return null;
+ const scale=100;
+ const target=Math.round(requested*scale);
+ const coins=[...new Set(denominations
+  .map(value=>Math.round(Number(value)*scale))
+  .filter(value=>Number.isFinite(value)&&value>0))]
+  .sort((left,right)=>right-left);
+ if(!coins.length)return null;
+ const limit=target+Math.min(...coins);
+ const unreachable=1_000_000;
+ const counts=new Int32Array(limit+1);
+ const picks=new Int16Array(limit+1);
+ counts.fill(unreachable);
+ picks.fill(-1);
+ counts[0]=0;
+ for(let weight=1;weight<=limit;weight+=1){
+  coins.forEach((coin,index)=>{
+   if(coin>weight||counts[weight-coin]===unreachable)return;
+   const candidate=counts[weight-coin]+1;
+   if(candidate<counts[weight]){
+    counts[weight]=candidate;
+    picks[weight]=index;
+   }
+  });
+ }
+ const build=weight=>{
+  if(weight<0||weight>limit||counts[weight]===unreachable)return null;
+  const plateCounts=Array(coins.length).fill(0);
+  for(let remaining=weight;remaining>0;remaining-=coins[picks[remaining]]){
+   if(picks[remaining]<0)return null;
+   plateCounts[picks[remaining]]+=1;
+  }
+  return {
+   perSide:weight/scale,
+   plates:coins.map((coin,index)=>({weight:coin/scale,count:plateCounts[index]})).filter(plate=>plate.count)
+  };
+ };
+ let lower=target;
+ let higher=target;
+ while(lower>=0&&counts[lower]===unreachable)lower-=1;
+ while(higher<=limit&&counts[higher]===unreachable)higher+=1;
+ return {
+  exact:counts[target]!==unreachable,
+  requested:target/scale,
+  lower:build(lower),
+  higher:build(higher)
+ };
+}
+
+function plateCalculatorOptions(desiredTotal,baseWeight=0,denominations=PLATE_CALCULATOR_DENOMINATIONS){
+ const desired=Number(desiredTotal);
+ const base=Number(baseWeight);
+ if(!Number.isFinite(desired)||!Number.isFinite(base)||base<0||desired<base)return null;
+ const stackOptions=plateStackOptions((desired-base)/2,denominations);
+ if(!stackOptions)return null;
+ const expand=stack=>stack?{
+  ...stack,
+  combinedPlateWeight:stack.perSide*2,
+  total:base+(stack.perSide*2)
+ }:null;
+ return {
+  exact:stackOptions.exact,
+  requestedTotal:desired,
+  baseWeight:base,
+  lower:expand(stackOptions.lower),
+  higher:expand(stackOptions.higher)
+ };
+}
+
+function plateCalculatorLoadFields(kind,option,loadMode='',baseWeight=0){
+ if(!option)return null;
+ if(kind==='platesOnly')return {load:formatLoad(option.total),loadMode:'',barWeight:''};
+ if(kind!=='bar')return null;
+ const mode=['platesPerSide','plates','total'].includes(loadMode)?loadMode:'total';
+ return {
+  load:formatLoad(mode==='platesPerSide'?option.perSide:mode==='plates'?option.combinedPlateWeight:option.total),
+  loadMode:mode,
+  barWeight:formatLoad(baseWeight)
+ };
+}
+
+function formatPlateStack(plates){
+ if(!plates?.length)return 'no plates';
+ return plates.map(plate=>`${plate.count>1?`${plate.count} × `:''}${formatLoad(plate.weight)}`).join(' + ');
+}
+
+function panelBarWeights(panel){
+ try{return JSON.parse(panel.dataset.barWeights||'{}')}catch{return {}}
+}
+
+function plateCalculatorBase(panel,variation,barWeights=panelBarWeights(panel)){
+ if(plateCalculatorKind(barWeights,variation)==='platesOnly')return 0;
+ const explicit=numberOrNull(panel.querySelector('[data-field="barWeight"]')?.value);
+ if(explicit!=null)return explicit;
+ if(panel.querySelector('[data-field="loadMode"]')?.value==='total')return null;
+ return numberOrNull(barWeights[variation]);
+}
+
+function plateCalculatorCurrentTotal(panel,kind,baseWeight){
+ const entered=numberOrNull(panel.querySelector('[data-field="load"]')?.value);
+ if(entered==null)return null;
+ if(kind==='platesOnly')return entered;
+ const mode=panel.querySelector('[data-field="loadMode"]')?.value;
+ if(mode==='platesPerSide')return baseWeight+(entered*2);
+ if(mode==='plates')return baseWeight+entered;
+ return entered;
+}
+
+function describePlateOption(kind,option,baseWeight){
+ const stack=formatPlateStack(option.plates);
+ if(kind==='platesOnly')return `Each side: ${stack} = ${formatLoad(option.perSide)} lb. ${formatLoad(option.total)} lb combined plates; carriage not included.`;
+ return `Each side: ${stack} = ${formatLoad(option.perSide)} lb. ${formatLoad(baseWeight)} lb bar + two sides = ${formatLoad(option.total)} lb total.`;
+}
+
+function updatePlateCalculator(panel,variation,{syncTarget=false}={}){
+ const calculator=panel.querySelector('[data-plate-calculator]');
+ if(!calculator)return;
+ const barWeights=panelBarWeights(panel);
+ const kind=plateCalculatorKind(barWeights,variation);
+ calculator.classList.toggle('hidden',!kind);
+ if(!kind){
+  calculator.dataset.kind='';
+  return;
+ }
+ const baseWeight=plateCalculatorBase(panel,variation,barWeights);
+ const target=calculator.querySelector('[data-plate-target]');
+ const summary=calculator.querySelector('[data-plate-summary]');
+ const result=calculator.querySelector('[data-plate-result]');
+ const alternatives=calculator.querySelector('[data-plate-alternatives]');
+ const apply=calculator.querySelector('[data-plate-apply]');
+ const currentTotal=plateCalculatorCurrentTotal(panel,kind,baseWeight);
+ const prescribed=numberOrNull(panel.dataset.targetLoad);
+ const matchesPrescription=prescribed!=null&&panel.dataset.targetLoadVariation===variation;
+ if(syncTarget){
+  target.value=currentTotal!=null?formatLoad(currentTotal):matchesPrescription?formatLoad(prescribed):'';
+ }
+ calculator.querySelector('[data-plate-target-label]').textContent=kind==='platesOnly'
+  ?'Planned combined plate weight (lb)'
+  :'Planned total weight (lb)';
+ calculator.querySelector('[data-plate-note]').textContent=kind==='platesOnly'
+  ?'Combined plate weight only; carriage weight is not included. Loading helper only—it does not change the coach prescription.'
+  :'Loading helper only. It does not change the coach prescription.';
+ calculator.dataset.kind=kind;
+ calculator.dataset.baseWeight=baseWeight==null?'':String(baseWeight);
+ delete calculator.dataset.achievedTotal;
+ delete calculator.dataset.perSide;
+ delete calculator.dataset.combinedPlateWeight;
+ alternatives.innerHTML='';
+ apply.disabled=true;
+ if(kind==='bar'&&baseWeight==null){
+  summary.textContent='Unavailable for legacy total';
+  result.textContent='This direct-total record has no saved bar weight, so the calculator will not infer one. Leave its saved weight mode unchanged.';
+  return;
+ }
+ const desired=numberOrNull(target.value);
+ if(desired==null){
+  summary.textContent='Plan plates';
+  result.textContent='Enter a planned weight to see the plates for each side.';
+  return;
+ }
+ const options=plateCalculatorOptions(desired,baseWeight);
+ if(!options){
+  summary.textContent='Check planned weight';
+  result.textContent=kind==='bar'&&desired<baseWeight
+   ?`Planned total must be at least the ${formatLoad(baseWeight)} lb bar weight.`
+   :'Enter a valid planned weight.';
+  return;
+ }
+ const exact=options.exact?options.lower:null;
+ if(exact){
+  calculator.dataset.achievedTotal=String(exact.total);
+  calculator.dataset.perSide=String(exact.perSide);
+  calculator.dataset.combinedPlateWeight=String(exact.combinedPlateWeight);
+  summary.textContent=`${formatLoad(exact.total)} lb · ${formatPlateStack(exact.plates)} / side`;
+  result.textContent=describePlateOption(kind,exact,baseWeight);
+  apply.disabled=false;
+  return;
+ }
+ summary.textContent='Choose a loadable total';
+ result.textContent=`${formatLoad(desired)} lb cannot be loaded exactly with the available plate sizes.`;
+ [options.lower,options.higher].filter(Boolean).forEach(option=>{
+  const button=document.createElement('button');
+  const difference=option.total-desired;
+  button.type='button';
+  button.className='secondary subtle';
+  button.dataset.plateChoice=String(option.total);
+  button.textContent=`Use ${formatLoad(option.total)} lb (${difference>0?'+':''}${formatLoad(difference)} lb)`;
+  alternatives.append(button);
+ });
+}
+
 function bindWeightedLoadControls(){
  document.querySelectorAll('.weighted-load').forEach(panel=>{
   const card=panel.closest('.exercise-card');
@@ -2070,6 +2310,47 @@ function bindWeightedLoadControls(){
    const barInput=panel.querySelector('[data-field="barWeight"]');
    if(event.target.value!=='custom')barInput.value=event.target.value;
    refresh(false);
+  });
+  const calculator=panel.querySelector('[data-plate-calculator]');
+  const plateTarget=calculator.querySelector('[data-plate-target]');
+  plateTarget.addEventListener('input',()=>updatePlateCalculator(panel,variation?.value||''));
+  calculator.querySelectorAll('[data-plate-adjust]').forEach(button=>button.addEventListener('click',()=>{
+   const barWeights=panelBarWeights(panel);
+   const baseWeight=plateCalculatorBase(panel,variation?.value||'',barWeights);
+   const current=numberOrNull(plateTarget.value)
+    ??plateCalculatorCurrentTotal(panel,plateCalculatorKind(barWeights,variation?.value||''),baseWeight)
+    ??baseWeight;
+   plateTarget.value=formatLoad(Math.max(baseWeight,current+Number(button.dataset.plateAdjust)));
+   updatePlateCalculator(panel,variation?.value||'');
+  }));
+  calculator.querySelector('[data-plate-alternatives]').addEventListener('click',event=>{
+   const button=event.target.closest('[data-plate-choice]');
+   if(!button)return;
+   plateTarget.value=button.dataset.plateChoice;
+   updatePlateCalculator(panel,variation?.value||'');
+  });
+  calculator.querySelector('[data-plate-apply]').addEventListener('click',()=>{
+   const kind=calculator.dataset.kind;
+   const option={
+    total:numberOrNull(calculator.dataset.achievedTotal),
+    perSide:numberOrNull(calculator.dataset.perSide),
+    combinedPlateWeight:numberOrNull(calculator.dataset.combinedPlateWeight)
+   };
+   if(option.total==null||option.perSide==null||option.combinedPlateWeight==null)return;
+   const mode=panel.querySelector('[data-field="loadMode"]');
+   const barWeight=panel.querySelector('[data-field="barWeight"]');
+   const fields=plateCalculatorLoadFields(kind,option,mode.value,numberOrNull(calculator.dataset.baseWeight)||0);
+   if(!fields)return;
+   panel.querySelector('[data-field="load"]').value=fields.load;
+   mode.value=fields.loadMode;
+   barWeight.value=fields.barWeight;
+   const preset=panel.querySelector('[data-bar-preset]');
+   if(fields.barWeight&&preset)preset.value=[...preset.options].some(optionElement=>optionElement.value===fields.barWeight)?fields.barWeight:'custom';
+   updateWeightedLoad(panel,variation?.value||'',false);
+   updateCardAdherence(card);
+   updateExerciseCardSummary(card);
+   scheduleDraft();
+   toast(`${formatLoad(option.total)} lb load applied. Completion and prescription are unchanged.`);
   });
   variation?.addEventListener('change',()=>refresh(true));
   refresh(false);
@@ -2084,6 +2365,7 @@ function updateWeightedLoad(panel,variation,variationChanged){
  try{variationUnits=JSON.parse(panel.dataset.variationUnits||'{}')}catch{}
  panel.dataset.unit=variationUnits[variation]||panel.dataset.unit;
  const usesBar=Object.prototype.hasOwnProperty.call(barWeights,variation);
+ const plateOnly=PLATE_ONLY_VARIATIONS.has(variation);
  const perSide=perSideVariations.includes(variation);
  const load=panel.querySelector('[data-field="load"]');
  const mode=panel.querySelector('[data-field="loadMode"]');
@@ -2093,6 +2375,7 @@ function updateWeightedLoad(panel,variation,variationChanged){
  const presetWrap=panel.querySelector('[data-bar-preset-wrap]');
  const barWrap=panel.querySelector('[data-bar-weight-wrap]');
  const calculated=panel.querySelector('[data-calculated-load]');
+ const calculatedLabel=panel.querySelector('[data-calculated-load-label]');
  const label=panel.querySelector('[data-load-label]');
  if(!usesBar){
   mode.value='';
@@ -2100,9 +2383,18 @@ function updateWeightedLoad(panel,variation,variationChanged){
   modeWrap.classList.add('hidden');
   presetWrap.classList.add('hidden');
   barWrap.classList.add('hidden');
-  calculated.classList.add('hidden');
-  label.textContent=`Load (${panel.dataset.unit})`;
+  calculated.classList.toggle('hidden',!plateOnly);
+  calculatedLabel.textContent=plateOnly?'Combined plate weight':'Total training load';
+  label.textContent=plateOnly?'Combined plate weight (lb)':`Load (${panel.dataset.unit})`;
+  if(plateOnly){
+   const entered=numberOrNull(load.value);
+   panel.querySelector('[data-total-load]').textContent=entered==null?'—':`${formatLoad(entered)} lb`;
+   panel.querySelector('[data-load-breakdown]').textContent=entered==null
+    ?'Enter the combined plate weight across both sides.'
+    :`${formatLoad(entered/2)} lb plates per side · carriage not included`;
+  }
   panel.dataset.activeBarVariation='';
+  updatePlateCalculator(panel,variation,{syncTarget:true});
   return;
  }
  const newlySelected=variationChanged&&panel.dataset.activeBarVariation!==variation;
@@ -2117,6 +2409,7 @@ function updateWeightedLoad(panel,variation,variationChanged){
  presetWrap.classList.toggle('hidden',enteredAsTotal||!hasPresets);
  barWrap.classList.toggle('hidden',enteredAsTotal||(hasPresets&&preset.value!=='custom'));
  calculated.classList.remove('hidden');
+ calculatedLabel.textContent='Total training load';
  label.textContent=mode.value==='platesPerSide'
   ?'Plate weight per side (lb)'
   :mode.value==='plates'?'Plate load, both sides combined (lb)':'Total load (lb)';
@@ -2132,6 +2425,7 @@ function updateWeightedLoad(panel,variation,variationChanged){
     ?`${formatLoad(entered)} lb combined plates + ${formatLoad(bar)} lb bar`
     :'Entered as total weight';
  panel.dataset.activeBarVariation=variation;
+ updatePlateCalculator(panel,variation,{syncTarget:true});
 }
 
 function numberOrNull(value){
@@ -4046,6 +4340,7 @@ function markdownSledPerformance(performance,indent=''){
   ?`${performance.distancePerTrip} ${performance.distanceUnit||'unit'} per trip`
   :performance.distanceMode==='lane_unknown'?`${performance.distanceLabel||'Gym lane'} (length unknown)`:'Unknown / not recorded';
  let load='Unknown / not recorded';
+ if(/\bTANK M4\b/i.test(performance.equipmentLabel||'')&&!['added_only','added_plus_sled','total'].includes(performance.loadMode))load='Not applicable · TANK M4 Level 3 resistance; no plate load';
  if(performance.loadMode==='added_only')load=performance.addedPlateWeight?`${performance.addedPlateWeight} lb added; empty sled and total system weight unknown`:'Added-plate mode selected; weight not recorded';
  if(performance.loadMode==='added_plus_sled')load=sledTotalSystemWeight(performance)!=null
   ?`${performance.addedPlateWeight} lb added + ${performance.emptySledWeight} lb sled = ${sledTotalSystemWeight(performance)} lb total`

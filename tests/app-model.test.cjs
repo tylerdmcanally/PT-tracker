@@ -112,6 +112,8 @@ assert.equal(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='squatOrL
 assert.equal(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='squatOrLegPress').targetLoadVariation`),'Leg press');
 assert.equal(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='squatOrLegPress').targetRpe`),'7');
 assert.match(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='squatOrLegPress').coachingNotes`),/all three sets cleanly at approximately RPE 7.*do not increase the load again yet.*not .*comparable on another leg-press variation or setup/);
+assert.equal(evaluate(`prescriptionAdherence(${activeStrength2}.find(exercise=>exercise.id==='squatOrLegPress'),{type:'weighted',completed:true,variation:'Leg press',load:'160',loadMode:'',barWeight:'',sets:'3',reps:'10, 10, 10',rpe:'7'})`),'met','the confirmed leg-press load remains a direct combined-plate value');
+assert.equal(evaluate(`prescriptionAdherence(${activeStrength2}.find(exercise=>exercise.id==='squatOrLegPress'),{type:'weighted',completed:true,variation:'Plate-loaded leg press',load:'160',loadMode:'',barWeight:'',sets:'3',reps:'10, 10, 10',rpe:'7'})`),'modified','plate calculator support does not make a different leg-press variation comparable');
 assert.equal(evaluate(`SESSIONS.strengthHeavyCarry.exercises.find(exercise=>exercise.id==='horizontalPress').targetLoad`),40);
 assert.equal(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='seatedRow').prescription`),'154 lb displayed on the same cable setup for 3 × 10');
 assert.equal(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='seatedRow').targetLoad`),154);
@@ -613,6 +615,39 @@ assert.equal(evaluate(`prescriptionAdherence(${microPlank},{type:'timed',complet
 assert.equal(evaluate(`totalLoadValue({load:'35',loadMode:'platesPerSide',barWeight:'45'})`),115);
 assert.equal(evaluate(`totalLoadValue({load:'70',loadMode:'plates',barWeight:'45'})`),115);
 assert.equal(evaluate(`totalLoadValue({load:'115'})`),115,'a legacy load without a mode remains a total');
+assert.equal(evaluate(`totalLoadValue({load:'160',loadMode:'',barWeight:''})`),160,'leg press remains combined plate weight with no carriage or starting resistance added');
+
+const deadliftPlateOptions=JSON.parse(evaluate(`JSON.stringify(plateCalculatorOptions(185,45))`));
+assert.equal(deadliftPlateOptions.exact,true);
+assert.equal(deadliftPlateOptions.lower.perSide,70);
+assert.deepEqual(deadliftPlateOptions.lower.plates,[{weight:45,count:1},{weight:25,count:1}]);
+assert.equal(deadliftPlateOptions.lower.total,185);
+const customBarPlateOptions=JSON.parse(evaluate(`JSON.stringify(plateCalculatorOptions(185,55))`));
+assert.equal(customBarPlateOptions.lower.perSide,65);
+assert.deepEqual(customBarPlateOptions.lower.plates,[{weight:45,count:1},{weight:10,count:2}]);
+const legPressPlateOptions=JSON.parse(evaluate(`JSON.stringify(plateCalculatorOptions(160,0))`));
+assert.equal(legPressPlateOptions.exact,true);
+assert.equal(legPressPlateOptions.lower.perSide,80);
+assert.deepEqual(legPressPlateOptions.lower.plates,[{weight:45,count:1},{weight:35,count:1}]);
+const baseOnlyPlateOptions=JSON.parse(evaluate(`JSON.stringify(plateCalculatorOptions(45,45))`));
+assert.equal(baseOnlyPlateOptions.exact,true);
+assert.deepEqual(baseOnlyPlateOptions.lower.plates,[]);
+const nearestPlateOptions=JSON.parse(evaluate(`JSON.stringify(plateCalculatorOptions(187.5,45))`));
+assert.equal(nearestPlateOptions.exact,false);
+assert.equal(nearestPlateOptions.lower.total,185);
+assert.equal(nearestPlateOptions.higher.total,190);
+assert.equal(evaluate(`plateCalculatorOptions(40,45)`),null,'a planned barbell total below the bar is invalid');
+assert.equal(evaluate(`plateCalculatorOptions('not-a-load',45)`),null,'a nonnumeric planned load is invalid');
+assert.equal(evaluate(`plateCalculatorKind({'Trap / hex bar':45},'Trap / hex bar')`),'bar');
+assert.equal(evaluate(`plateCalculatorKind({},'Leg press')`),'platesOnly','the confirmed generic leg press uses combined plate weight');
+assert.equal(evaluate(`plateCalculatorKind({},'Plate-loaded leg press')`),'platesOnly');
+assert.equal(evaluate(`plateCalculatorKind({},'Selectorized leg press')`),'');
+assert.equal(evaluate(`plateCalculatorKind({},'Torque Fitness TANK M4 · Level 3')`),'','TANK equipment never receives a plate calculator');
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(plateCalculatorLoadFields('bar',plateCalculatorOptions(185,45).lower,'platesPerSide',45))`)),{load:'70',loadMode:'platesPerSide',barWeight:'45'});
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(plateCalculatorLoadFields('bar',plateCalculatorOptions(185,55).lower,'total',55))`)),{load:'185',loadMode:'total',barWeight:'55'},'total-mode Apply retains an explicitly confirmed custom bar for calculator round trips');
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(plateCalculatorLoadFields('platesOnly',plateCalculatorOptions(160,0).lower,'',0))`)),{load:'160',loadMode:'',barWeight:''},'leg-press Apply stores only the existing direct combined-plate value');
+assert.equal(evaluate(`plateCalculatorBase({querySelector:selector=>({value:selector.includes('barWeight')?'':'total'})},'Trap / hex bar',{'Trap / hex bar':45})`),null,'a legacy direct total with no saved bar never infers the definition default');
+assert.equal(evaluate(`plateCalculatorBase({querySelector:selector=>({value:selector.includes('barWeight')?'':'platesPerSide'})},'Trap / hex bar',{'Trap / hex bar':45})`),45,'a plate-entry mode may use its configured bar default');
 
 const august11PulldownRaw={
  id:'august-11-day-2',date:'2026-08-11',updatedAt:'2026-08-11T19:00:00.000Z',dayKey:'day2',
@@ -719,7 +754,7 @@ assert.equal(evaluate(`sledTotalSystemWeight({loadMode:'added_plus_sled',addedPl
 const tankM4Markdown=evaluate(`markdownSledPerformance({direction:'backward_drag',trips:'1',distanceMode:'lane_unknown',distanceLabel:'Approximately 20 yd gym lane',loadMode:'unknown',equipmentLabel:'Torque Fitness TANK M4 · Level 3'})`);
 assert.match(tankM4Markdown,/Distance: Approximately 20 yd gym lane \(length unknown\)/);
 assert.match(tankM4Markdown,/Equipment: Torque Fitness TANK M4 · Level 3/);
-assert.match(tankM4Markdown,/Load: Unknown \/ not recorded/,'Level 3 is exported as equipment resistance rather than pounds');
+assert.match(tankM4Markdown,/Load: Not applicable · TANK M4 Level 3 resistance; no plate load/,'Level 3 is exported as equipment resistance rather than pounds');
 assert.doesNotMatch(tankM4Markdown,/Level 3 lb/);
 const perRoundCircuit=JSON.parse(evaluate(`JSON.stringify(normalizeCircuitComponent({id:'backwardSledDrag',name:'Backward sled drag',type:'sled',resultMode:'per_round',roundResults:[
  {round:1,performed:true,direction:'backward_drag',distanceMode:'known',trips:'1',distancePerTrip:'20',distanceUnit:'yd',surface:'turf'},
@@ -733,12 +768,22 @@ assert.equal(evaluate(`activeCoachOverlay('1.3','day3','gymConditioningCircuit',
 const circuitCard=evaluate(`exerciseCard(LEGACY_SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit'),8,defaultExerciseState(LEGACY_SESSIONS.day3.exercises.find(exercise=>exercise.id==='gymConditioningCircuit')))`);
 assert.ok(circuitCard.indexOf('Farmer carry')<circuitCard.indexOf('Backward sled drag'));
 assert.ok(circuitCard.indexOf('Backward sled drag')<circuitCard.indexOf('Forward sled push'));
+assert.doesNotMatch(circuitCard,/data-plate-calculator/,'the TANK circuit has no plate-calculator affordance');
 assert.match(circuitCard,/Performed as planned/,'the sled sequence is the v1.4 baseline rather than a one-time directive');
 assert.match(circuitCard,/Torque Fitness TANK M4/);
 assert.match(circuitCard,/Level 3/);
-assert.match(circuitCard,/data-circuit-field="addedPlateWeight"/);
-assert.match(circuitCard,/data-circuit-field="emptySledWeight"/);
+assert.match(circuitCard,/data-tank-no-plates/);
+assert.doesNotMatch(circuitCard,/Weight recorded as/,'the known TANK has no sled-weight selector');
+assert.doesNotMatch(circuitCard,/data-circuit-field="addedPlateWeight"/,'the known TANK has no added-plate input');
+assert.doesNotMatch(circuitCard,/data-circuit-field="emptySledWeight"/,'the known TANK has no empty-sled-weight input');
 assert.match(circuitCard,/data-circuit-field="distancePerTrip"/);
+const genericSledFields=evaluate(`circuitPerformanceFields({type:'sled',planned:{direction:'forward_push'}},{})`);
+assert.match(genericSledFields,/data-circuit-field="addedPlateWeight"/,'generic and legacy sleds retain added-plate compatibility');
+assert.match(genericSledFields,/data-circuit-field="emptySledWeight"/,'generic and legacy sleds retain empty-sled compatibility');
+const historicalTankFields=evaluate(`circuitPerformanceFields({type:'sled',planned:{equipmentLabel:'Torque Fitness TANK M4 · Level 3',direction:'forward_push'}},{loadMode:'added_only',addedPlateWeight:'20'})`);
+assert.match(historicalTankFields,/data-circuit-field="loadMode" type="hidden" value="added_only"/,'already-saved TANK weight metadata remains round-trippable');
+assert.match(historicalTankFields,/data-circuit-field="addedPlateWeight" type="hidden" value="20"/,'already-saved TANK plate data is preserved without presenting an active input');
+assert.doesNotMatch(historicalTankFields,/Weight recorded as/);
 evaluate(`{
  legacyDay3Definition=definitionForSavedEntry(august5Fixture);
  legacyCircuitDefinition=legacyDay3Definition.exercises.find(exercise=>exercise.id==='gymConditioningCircuit');
@@ -2221,13 +2266,19 @@ const appSource=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 const styles=fs.readFileSync(path.join(root,'styles.css'),'utf8');
 assert.match(appSource,/Exercise notes<textarea[^>]+data-field="notes"/,'exercise notes must support detailed multiline comments');
+assert.match(appSource,/<details class="plate-calculator hidden" data-plate-calculator>/,'eligible weighted lifts include a collapsed inline plate calculator');
+assert.match(appSource,/data-plate-result aria-live="polite"/,'plate calculations are announced without interrupting other workout status');
+assert.match(appSource,/data-plate-target type="text"[^>]+inputmode="decimal"/,'planned plate totals remain directly editable without participating in workout-form validation');
+assert.doesNotMatch(appSource,/data-field="plate(?:Target|Combination|Calculator)/,'transient plate-calculator state must not enter saved workout records');
+assert.match(appSource,/calculatedLabel\.textContent=plateOnly\?'Combined plate weight':'Total training load'/,'leg press labels its direct value as combined plates rather than carriage-inclusive training load');
+assert.match(styles,/\.plate-adjustments button\{[^}]*min-height:44px/,'plate adjustment controls retain mobile touch targets');
 assert.doesNotMatch(styles,/\.sticky-actions\{position:sticky;bottom:calc\(7px/,'mobile workout actions must remain in page flow');
-assert.ok(indexHtml.indexOf('program-config.js?v=56')<indexHtml.indexOf('cloud-config.js?v=56'));
-assert.ok(indexHtml.indexOf('cloud-config.js?v=56')<indexHtml.indexOf('cloud-sync.js?v=56'));
-assert.ok(indexHtml.indexOf('cloud-sync.js?v=56')<indexHtml.indexOf('app.js?v=56'));
-assert.match(serviceWorker,/aft-workout-tracker-v56/);
-assert.match(serviceWorker,/program-config\.js\?v=56/);
-assert.match(serviceWorker,/cloud-sync\.js\?v=56/);
+assert.ok(indexHtml.indexOf('program-config.js?v=57')<indexHtml.indexOf('cloud-config.js?v=57'));
+assert.ok(indexHtml.indexOf('cloud-config.js?v=57')<indexHtml.indexOf('cloud-sync.js?v=57'));
+assert.ok(indexHtml.indexOf('cloud-sync.js?v=57')<indexHtml.indexOf('app.js?v=57'));
+assert.match(serviceWorker,/aft-workout-tracker-v57/);
+assert.match(serviceWorker,/program-config\.js\?v=57/);
+assert.match(serviceWorker,/cloud-sync\.js\?v=57/);
 assert.match(indexHtml,/id="sessionRpe"[^>]+step="0\.5"[^>]+inputmode="decimal"/,'session RPE accepts half-point values');
 assert.match(appSource,/addEventListener\('invalid',revealInvalidWorkoutControl,true\)/,'invalid workout values must produce visible feedback');
 assert.equal((appSource.match(/Component RPE',performance\.rpe,\{min:1,max:10,step:'\.5'\}/g)||[]).length,4,'all circuit component RPE inputs accept half-point values');

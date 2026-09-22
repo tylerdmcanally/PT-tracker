@@ -198,3 +198,23 @@ progress::-moz-progress-bar{background:var(--army);border-radius:99px}
 .coach-guidance .coaching-note{margin:0}
 .previous-comparison{grid-column:1;font-size:.72rem;color:#ebd18b;line-height:1.4;margin-top:4px}
 @media(max-width:360px){.run-timer-cue-controls{grid-template-columns:1fr}}
+
+/* Transient plate-loading helper; saved workout fields remain canonical. */
+.plate-calculator{margin:0 0 14px;border:1px solid var(--line);border-radius:12px;background:#14191b;overflow:hidden}
+.plate-calculator>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:10px 13px;cursor:pointer;list-style:none;color:var(--ink);font-size:.82rem;font-weight:700}
+.plate-calculator>summary::-webkit-details-marker{display:none}
+.plate-calculator>summary:after{content:'+';color:var(--muted);font-size:1.05rem;font-weight:400}
+.plate-calculator[open]>summary:after{content:'−'}
+.plate-calculator>summary small{margin-left:auto;color:var(--muted);font-size:.7rem;font-weight:600;text-align:right}
+.plate-calculator-body{display:grid;gap:11px;padding:13px;border-top:1px solid var(--line)}
+.plate-calculator-body label{margin:0}
+.plate-adjustments{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.plate-adjustments button{min-width:0;min-height:44px;padding:8px 4px}
+.plate-result{min-height:44px;padding:10px 11px;border-radius:10px;background:var(--surface2);color:var(--ink);font-size:.8rem;line-height:1.45}
+.plate-alternatives{display:flex;flex-wrap:wrap;gap:8px}
+.plate-alternatives:empty{display:none}
+.plate-alternatives button{flex:1 1 145px}
+.plate-calculator-body>[data-plate-apply]{width:100%}
+.plate-calculator-note{color:var(--muted);font-size:.7rem;line-height:1.4}
+.tank-load-note{margin:-2px 0 10px;padding:9px 11px;border-radius:9px;background:var(--surface2);color:var(--muted);font-size:.76rem;line-height:1.4}
+@media(max-width:360px){.plate-adjustments{grid-template-columns:repeat(2,minmax(0,1fr))}.plate-calculator>summary{align-items:flex-start}.plate-calculator>summary small{max-width:145px}}

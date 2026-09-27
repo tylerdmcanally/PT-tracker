@@ -235,6 +235,62 @@ const workout=(id,updatedAt,extra={})=>({
 }
 
 {
+ const sep27V1512Strength1=workout('synthetic-sep27-v1512-strength1','2026-09-27T18:00:00.000Z',{
+  date:'2026-09-27',dayKey:'strengthUpperAft',dayLabel:'Strength 1 — Upper Body and AFT Calisthenics',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.12',programEffectiveDate:'2026-09-23',
+  activeRunStage:'',targetSessionRpe:'6–7',duration:'63',sessionRpe:'7',painDuring:'0',notes:'Invented September 27 cloud fixture.',
+  prescriptionSnapshot:{sessionKey:'strengthUpperAft',sessionType:'primary',label:'Strength 1 — Upper Body and AFT Calisthenics',targetSessionRpe:'6–7',advancesPrimaryRotation:true,optional:false,exercises:[
+   {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'5 × 11',type:'body',sets:5,targetRpe:'6–8'},
+   {id:'overheadPress',name:'Seated dumbbell overhead press',prescription:'25 lb per hand for 3 × 8–10',type:'weighted',unit:'lb per hand',sets:3,targetLoad:25,targetLoadVariation:'Seated dumbbell press',targetRpe:'7–8',variations:['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],defaultVariation:'Seated dumbbell press'},
+   {id:'chestSupportedRow',name:'Machine row',prescription:'110 lb displayed on the same confirmed machine/setup for 3 × 9',type:'weighted',unit:'lb',sets:3,targetRpe:'7–8',variations:['Dumbbell row','Machine row','T-bar row'],defaultVariation:'Machine row'}
+  ]},
+  exercises:[
+   {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'5',reps:'11, 11, 11, 11, 11',rpe:'7',completed:true,notes:'Invented historical push-up result.'},
+   {exerciseId:'overheadPress',name:'Seated dumbbell overhead press',type:'weighted',unit:'lb per hand',variation:'Seated dumbbell press',variationId:'seatedDumbbellPress',load:'25',sets:'3',reps:'9, 9, 9',rpe:'7',completed:true,notes:'Invented historical press result.'},
+   {exerciseId:'chestSupportedRow',name:'Machine row',type:'weighted',unit:'lb',variation:'Machine row',variationId:'machineRow',load:'110',sets:'3',reps:'9, 9, 9',rpe:'7',completed:true,notes:'Invented historical row result.'}
+  ]
+ });
+ const upload=model.mergeWorkoutRecords([sep27V1512Strength1],[],null).uploads[0];
+ assert.deepEqual(upload.payload,sep27V1512Strength1,'Firebase upload preserves the complete invented September 27 v1.5.12 Strength 1 document');
+ const pulled=model.mergeWorkoutRecords([], [{...upload,changedAt:'2026-09-27T19:00:00.000Z'}], null);
+ assert.deepEqual(pulled.entries[0],sep27V1512Strength1,'Firebase round trips preserve the immutable September 27 v1.5.12 snapshot and invented results');
+ const historicalById=Object.fromEntries(pulled.entries[0].prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ assert.equal(historicalById.handReleasePushups.prescription,'5 × 11');
+ assert.equal(historicalById.overheadPress.prescription,'25 lb per hand for 3 × 8–10');
+ assert.equal(historicalById.chestSupportedRow.prescription,'110 lb displayed on the same confirmed machine/setup for 3 × 9');
+ assert.equal(historicalById.chestSupportedRow.targetLoad,undefined,'cloud persistence does not retrofit a universal machine-row target into history');
+ assert.equal(pulled.entries[0].activeRunStage,'');
+}
+
+{
+ const activeStrength1=workout('synthetic-v1513-strength1','2026-09-28T12:00:00.000Z',{
+  date:'2026-09-28',dayKey:'strengthUpperAft',dayLabel:'Strength 1 — Upper Body and AFT Calisthenics',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.13',programEffectiveDate:'2026-09-28',
+  activeRunStage:'',targetSessionRpe:'6–7',duration:'65',sessionRpe:'7',painDuring:'0',notes:'Invented current Strength 1 cloud fixture.',
+  prescriptionSnapshot:{sessionKey:'strengthUpperAft',sessionType:'primary',label:'Strength 1 — Upper Body and AFT Calisthenics',targetSessionRpe:'6–7',advancesPrimaryRotation:true,optional:false,exercises:[
+   {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'5 × 12',type:'body',sets:5,targetRpe:'6–8'},
+   {id:'overheadPress',name:'Seated dumbbell overhead press',prescription:'25 lb per hand for 3 × 10',type:'weighted',unit:'lb per hand',sets:3,targetLoad:25,targetLoadVariation:'Seated dumbbell press',targetRpe:'7–8',variations:['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],defaultVariation:'Seated dumbbell press'},
+   {id:'chestSupportedRow',name:'Machine row',prescription:'110 lb displayed on the same confirmed machine/setup for 3 × 10',type:'weighted',unit:'lb',sets:3,targetRpe:'7–8',variations:['Dumbbell row','Machine row','T-bar row'],defaultVariation:'Machine row'}
+  ]},
+  exercises:[
+   {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'5',reps:'12, 12, 12, 12, 12',rpe:'7',completed:true,notes:'Invented current push-up result.'},
+   {exerciseId:'overheadPress',name:'Seated dumbbell overhead press',type:'weighted',unit:'lb per hand',variation:'Seated dumbbell press',variationId:'seatedDumbbellPress',load:'25',sets:'3',reps:'10, 10, 10',rpe:'8',completed:true,notes:'Invented current press result.'},
+   {exerciseId:'chestSupportedRow',name:'Machine row',type:'weighted',unit:'lb',variation:'Machine row',variationId:'machineRow',load:'110',sets:'3',reps:'10, 10, 10',rpe:'7',completed:true,notes:'Invented current row result.'}
+  ]
+ });
+ const upload=model.mergeWorkoutRecords([activeStrength1],[],null).uploads[0];
+ assert.deepEqual(upload.payload,activeStrength1,'Firebase upload preserves the complete invented current v1.5.13 Strength 1 document');
+ const pulled=model.mergeWorkoutRecords([], [{...upload,changedAt:'2026-09-28T13:00:00.000Z'}], null);
+ assert.deepEqual(pulled.entries[0],activeStrength1,'Firebase round trips preserve the v1.5.13 Strength 1 snapshot and invented results');
+ const activeById=Object.fromEntries(pulled.entries[0].prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ assert.equal(activeById.handReleasePushups.prescription,'5 × 12');
+ assert.equal(activeById.overheadPress.prescription,'25 lb per hand for 3 × 10');
+ assert.equal(activeById.chestSupportedRow.prescription,'110 lb displayed on the same confirmed machine/setup for 3 × 10');
+ assert.equal(activeById.chestSupportedRow.targetLoad,undefined,'the current setup-specific row cue does not become a universal load target in cloud storage');
+ assert.equal(pulled.entries[0].activeRunStage,'');
+}
+
+{
  const legacyDays=['day1','day2','day3','day4'].map((dayKey,index)=>workout(`synthetic-legacy-${dayKey}`,`2000-02-0${index+1}T12:00:00.000Z`,{
   date:`2000-02-0${index+1}`,dayKey,dayLabel:`Synthetic ${dayKey}`,sessionType:'primary',advancesPrimaryRotation:true,programVersion:'1.5.7',
   prescriptionSnapshot:{sessionKey:dayKey,sessionType:'primary',label:`Synthetic ${dayKey}`,advancesPrimaryRotation:true,exercises:[{id:`exercise-${index+1}`,prescription:'Invented prescription'}]},

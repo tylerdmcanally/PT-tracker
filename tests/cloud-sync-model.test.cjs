@@ -291,6 +291,92 @@ const workout=(id,updatedAt,extra={})=>({
 }
 
 {
+ const sep29V1513Strength2=workout('synthetic-sep29-v1513-strength2','2026-09-29T18:00:00.000Z',{
+  date:'2026-09-29',dayKey:'strengthHeavyCarry',dayLabel:'Strength 2 — Heavy Strength and Carries',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.13',programEffectiveDate:'2026-09-28',
+  activeRunStage:'',targetSessionRpe:'6–8',duration:'66',sessionRpe:'7',painDuring:'0',notes:'Invented September 29 Strength 2 cloud fixture.',
+  prescriptionSnapshot:{
+   sessionKey:'strengthHeavyCarry',sessionType:'primary',label:'Strength 2 — Heavy Strength and Carries',
+   focus:'Heavy strength and loaded carries without a post-lift run or arm accessories.',
+   warmup:'5–8 minutes of easy cardio, dynamic hip and ankle preparation, then 2–4 progressive deadlift warm-up sets.',
+   targetSessionRpe:'6–8',targetDuration:'Approximately 60–70 minutes',advancesPrimaryRotation:true,optional:false,
+   exercises:[
+    {id:'deadlift',name:'Trap-bar deadlift',prescription:'185 lb total for 3 × 5',type:'weighted',unit:'lb',sets:3,targetLoad:185,targetLoadVariation:'Trap / hex bar',targetRpe:'6–8',variations:['Trap / hex bar','Conventional barbell','Sumo barbell','Dumbbells'],defaultVariation:'Trap / hex bar',barWeights:{'Trap / hex bar':45,'Conventional barbell':45,'Sumo barbell':45},perSideVariations:['Trap / hex bar'],barWeightOptions:[45,55,60],coachingNotes:'Use the trap/hex bar when available. Hold 185 lb for a full-volume confirmation, maintain technically clean repetitions, do not pursue grinders, and do not make another load jump next cycle. Record the actual bar weight and plate weight per side; use another listed variation when equipment requires it. Future progression remains coach-directed and performance-based.'},
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 10',type:'body',sets:4,targetRpe:'5–7',coachingNotes:'Use four equal, technically clean, submaximal sets of 10 and stop before failure. This remains the lower-volume second weekly hand-release push-up exposure.'},
+    {id:'squatOrLegPress',name:'Leg press',prescription:'160 lb on the same confirmed leg-press machine/setup for 3 × 10',type:'weighted',unit:'lb',sets:3,targetLoad:160,targetLoadVariation:'Leg press',variations:['Leg press','Lying leg press','Upright leg press','Plate-loaded leg press','Selectorized leg press','Other leg press'],defaultVariation:'Leg press',targetRpe:'7',coachingNotes:'Complete all three sets cleanly at approximately RPE 7 on the same confirmed leg-press machine and setup, and do not increase the load again yet. Do not treat the displayed value as comparable on another leg-press variation or setup.'},
+    {id:'horizontalPress',name:'Dumbbell bench press',prescription:'40 lb per hand for 3 × 8',type:'weighted',unit:'lb per hand',sets:3,targetLoad:40,targetLoadVariation:'Dumbbell bench press',targetRpe:'7–8',variations:['Dumbbell bench press','Chest-press machine','Barbell bench press'],defaultVariation:'Dumbbell bench press',barWeights:{'Barbell bench press':45},coachingNotes:'Use controlled repetitions and finish with approximately 2–3 technically good repetitions remaining.'},
+    {id:'seatedRow',name:'Seated cable row',prescription:'154 lb displayed on the same cable setup for 3 × 10',type:'weighted',unit:'lb',sets:3,targetLoad:154,targetLoadVariation:'Seated cable row',targetRpe:'6–8',variations:['Seated cable row','Chest-supported machine row'],defaultVariation:'Seated cable row',coachingNotes:'Hold 154 lb displayed for confirmation only on the same seated cable-row setup. Do not treat the displayed stack value as directly comparable on another cable, pulley, or machine setup.'},
+    {id:'loadedCarry',name:'Farmer carry',prescription:'45 lb per hand for 4 trips of approximately 40 yd',type:'carry',unit:'lb per hand',sets:4,targetRpe:'6–8',variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry',coachingNotes:'Aim for approximately 40 yd per trip. Keep the current load and do not progress it while Strength 3 includes the SDC circuit.'},
+    {id:'plank',name:'Front plank',prescription:'3 × 45 sec',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:45','0:45','0:45'],coachingNotes:'Maintain clean front-plank technique throughout each set.'}
+   ]
+  },
+  exercises:[
+   {exerciseId:'deadlift',name:'Trap-bar deadlift',type:'weighted',unit:'lb',variation:'Trap / hex bar',variationId:'trapBar',load:'70',loadMode:'platesPerSide',barWeight:'45',sets:'3',reps:'5, 5, 5',rpe:'7',completed:true,notes:'Invented historical deadlift result.'},
+   {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'4',reps:'10, 10, 10, 10',rpe:'6',completed:true,notes:'Invented historical push-up result.'},
+   {exerciseId:'squatOrLegPress',name:'Leg press',type:'weighted',unit:'lb',variation:'Leg press',variationId:'unspecifiedLegPress',load:'160',sets:'3',reps:'10, 10, 10',rpe:'7',completed:true,notes:'Invented historical leg-press result.'},
+   {exerciseId:'horizontalPress',name:'Dumbbell bench press',type:'weighted',unit:'lb per hand',variation:'Dumbbell bench press',variationId:'dumbbellBenchPress',load:'40',sets:'3',reps:'8, 8, 8',rpe:'7',completed:true,notes:'Invented historical bench result.'},
+   {exerciseId:'seatedRow',name:'Seated cable row',type:'weighted',unit:'lb',variation:'Seated cable row',variationId:'seatedCableRow',load:'154',sets:'3',reps:'10, 10, 10',rpe:'7',completed:true,notes:'Invented historical row result.'},
+   {exerciseId:'loadedCarry',name:'Farmer carry',type:'carry',unit:'lb per hand',variation:'Farmer carry',variationId:'farmerCarry',load:'45',sets:'4',distance:'40',rpe:'7',completed:true,notes:'Invented historical carry result.'},
+   {exerciseId:'plank',name:'Front plank',type:'timed',sets:'3',times:'45, 45, 45',rpe:'7',completed:true,notes:'Invented historical plank result.'}
+  ]
+ });
+ const upload=model.mergeWorkoutRecords([sep29V1513Strength2],[],null).uploads[0];
+ assert.deepEqual(upload.payload,sep29V1513Strength2,'Firebase upload preserves the complete invented September 29 v1.5.13 Strength 2 document');
+ const pulled=model.mergeWorkoutRecords([], [{...upload,changedAt:'2026-09-29T19:00:00.000Z'}], null);
+ assert.deepEqual(pulled.entries[0],sep29V1513Strength2,'Firebase round trips preserve the immutable September 29 v1.5.13 snapshot and every invented result');
+ const historicalById=Object.fromEntries(pulled.entries[0].prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ assert.equal(historicalById.deadlift.targetLoad,185,'cloud persistence does not retrofit the new deadlift load into September 29 history');
+ assert.equal(historicalById.seatedRow.targetLoad,154,'cloud persistence does not retrofit the new seated-row load into September 29 history');
+ assert.deepEqual(historicalById.plank.prescribedTimes,['0:45','0:45','0:45'],'cloud persistence does not retrofit the new plank duration into September 29 history');
+ assert.equal(pulled.entries[0].exercises.find(exercise=>exercise.exerciseId==='deadlift').load,'70','the invented historical plate-per-side result remains intact');
+ assert.equal(pulled.entries[0].activeRunStage,'');
+}
+
+{
+ const activeV1514Strength2=workout('synthetic-v1514-strength2','2026-09-30T18:00:00.000Z',{
+  date:'2026-09-30',dayKey:'strengthHeavyCarry',dayLabel:'Strength 2 — Heavy Strength and Carries',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.14',programEffectiveDate:'2026-09-30',
+  activeRunStage:'',targetSessionRpe:'6–8',duration:'68',sessionRpe:'7',painDuring:'0',notes:'Invented current v1.5.14 Strength 2 cloud fixture.',
+  prescriptionSnapshot:{
+   sessionKey:'strengthHeavyCarry',sessionType:'primary',label:'Strength 2 — Heavy Strength and Carries',
+   focus:'Heavy strength and loaded carries without a post-lift run or arm accessories.',
+   warmup:'5–8 minutes of easy cardio, dynamic hip and ankle preparation, then 2–4 progressive deadlift warm-up sets.',
+   targetSessionRpe:'6–8',targetDuration:'Approximately 60–70 minutes',advancesPrimaryRotation:true,optional:false,
+   exercises:[
+    {id:'deadlift',name:'Trap-bar deadlift',prescription:'195 lb total for 3 × 5',type:'weighted',unit:'lb',sets:3,targetLoad:195,targetLoadVariation:'Trap / hex bar',targetRpe:'6–8',variations:['Trap / hex bar','Conventional barbell','Sumo barbell','Dumbbells'],defaultVariation:'Trap / hex bar',barWeights:{'Trap / hex bar':45,'Conventional barbell':45,'Sumo barbell':45},perSideVariations:['Trap / hex bar'],barWeightOptions:[45,55,60],coachingNotes:'Use the trap/hex bar when available. Hold 195 lb for confirmation before any later coach-directed increase. Keep every repetition technically clean and do not grind. Record the actual bar weight and plate weight per side; use another listed variation when equipment requires it. Future progression remains coach-directed and performance-based.'},
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 10',type:'body',sets:4,targetRpe:'5–7',coachingNotes:'Use four equal, technically clean, submaximal sets of 10 and stop before failure. This remains the lower-volume second weekly hand-release push-up exposure.'},
+    {id:'squatOrLegPress',name:'Leg press',prescription:'160 lb on the same confirmed leg-press machine/setup for 3 × 10',type:'weighted',unit:'lb',sets:3,targetLoad:160,targetLoadVariation:'Leg press',variations:['Leg press','Lying leg press','Upright leg press','Plate-loaded leg press','Selectorized leg press','Other leg press'],defaultVariation:'Leg press',targetRpe:'7',coachingNotes:'Complete all three sets cleanly at approximately RPE 7 on the same confirmed leg-press machine and setup, and do not increase the load again yet. Do not treat the displayed value as comparable on another leg-press variation or setup.'},
+    {id:'horizontalPress',name:'Dumbbell bench press',prescription:'40 lb per hand for 3 × 8',type:'weighted',unit:'lb per hand',sets:3,targetLoad:40,targetLoadVariation:'Dumbbell bench press',targetRpe:'7–8',variations:['Dumbbell bench press','Chest-press machine','Barbell bench press'],defaultVariation:'Dumbbell bench press',barWeights:{'Barbell bench press':45},coachingNotes:'Use controlled repetitions and finish with approximately 2–3 technically good repetitions remaining.'},
+    {id:'seatedRow',name:'Seated cable row',prescription:'Next smallest comparable increment above 154 lb displayed on the same cable setup (approximately 165 lb displayed if it uses 11-lb increments) for 3 × 8–10',type:'weighted',unit:'lb',sets:3,targetLoad:165,targetLoadVariation:'Seated cable row',targetRpe:'6–8',variations:['Seated cable row','Chest-supported machine row'],defaultVariation:'Seated cable row',coachingNotes:'Use the next smallest increment above 154 lb only on the same confirmed seated cable-row setup. Approximately 165 lb is setup-specific guidance, not a universal target for another cable, pulley, or machine. Hold the new increment for confirmation before any later progression.'},
+    {id:'loadedCarry',name:'Farmer carry',prescription:'45 lb per hand for 4 trips of approximately 40 yd',type:'carry',unit:'lb per hand',sets:4,targetRpe:'6–8',variations:['Farmer carry','Heavy static hold','Suitcase carry'],defaultVariation:'Farmer carry',coachingNotes:'Aim for approximately 40 yd per trip. Keep the current load and do not progress it while Strength 3 includes the SDC circuit.'},
+    {id:'plank',name:'Front plank',prescription:'3 × 50 sec',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:50','0:50','0:50'],coachingNotes:'Maintain a clean position throughout and stop a set rather than extending through lumbar compensation.'}
+   ]
+  },
+  exercises:[
+   {exerciseId:'deadlift',name:'Trap-bar deadlift',type:'weighted',unit:'lb',variation:'Trap / hex bar',variationId:'trapBar',load:'75',loadMode:'platesPerSide',barWeight:'45',sets:'3',reps:'5, 5, 5',rpe:'7',completed:true,notes:'Invented current deadlift result.'},
+   {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'4',reps:'10, 10, 10, 10',rpe:'6',completed:true,notes:'Invented current push-up result.'},
+   {exerciseId:'squatOrLegPress',name:'Leg press',type:'weighted',unit:'lb',variation:'Leg press',variationId:'unspecifiedLegPress',load:'160',sets:'3',reps:'10, 10, 10',rpe:'7',completed:true,notes:'Invented current leg-press result.'},
+   {exerciseId:'horizontalPress',name:'Dumbbell bench press',type:'weighted',unit:'lb per hand',variation:'Dumbbell bench press',variationId:'dumbbellBenchPress',load:'40',sets:'3',reps:'8, 8, 8',rpe:'7',completed:true,notes:'Invented current bench result.'},
+   {exerciseId:'seatedRow',name:'Seated cable row',type:'weighted',unit:'lb',variation:'Seated cable row',variationId:'seatedCableRow',load:'165',sets:'3',reps:'8, 8, 8',rpe:'7',completed:true,notes:'Invented current row result.'},
+   {exerciseId:'loadedCarry',name:'Farmer carry',type:'carry',unit:'lb per hand',variation:'Farmer carry',variationId:'farmerCarry',load:'45',sets:'4',distance:'40',rpe:'7',completed:true,notes:'Invented current carry result.'},
+   {exerciseId:'plank',name:'Front plank',type:'timed',sets:'3',times:'50, 50, 50',rpe:'7',completed:true,notes:'Invented current plank result.'}
+  ]
+ });
+ const upload=model.mergeWorkoutRecords([activeV1514Strength2],[],null).uploads[0];
+ assert.deepEqual(upload.payload,activeV1514Strength2,'Firebase upload preserves the complete invented current v1.5.14 Strength 2 document');
+ const pulled=model.mergeWorkoutRecords([], [{...upload,changedAt:'2026-09-30T19:00:00.000Z'}], null);
+ assert.deepEqual(pulled.entries[0],activeV1514Strength2,'Firebase round trips preserve the complete v1.5.14 Strength 2 snapshot and every invented result');
+ const activeById=Object.fromEntries(pulled.entries[0].prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ assert.equal(activeById.deadlift.targetLoad,195);
+ assert.equal(activeById.deadlift.targetLoadVariation,'Trap / hex bar');
+ assert.equal(activeById.seatedRow.targetLoad,165);
+ assert.equal(activeById.seatedRow.targetLoadVariation,'Seated cable row');
+ assert.deepEqual(activeById.plank.prescribedTimes,['0:50','0:50','0:50']);
+ assert.equal(pulled.entries[0].exercises.find(exercise=>exercise.exerciseId==='deadlift').load,'75','the invented current plate-per-side result remains intact');
+ assert.equal(pulled.entries[0].activeRunStage,'');
+}
+
+{
  const legacyDays=['day1','day2','day3','day4'].map((dayKey,index)=>workout(`synthetic-legacy-${dayKey}`,`2000-02-0${index+1}T12:00:00.000Z`,{
   date:`2000-02-0${index+1}`,dayKey,dayLabel:`Synthetic ${dayKey}`,sessionType:'primary',advancesPrimaryRotation:true,programVersion:'1.5.7',
   prescriptionSnapshot:{sessionKey:dayKey,sessionType:'primary',label:`Synthetic ${dayKey}`,advancesPrimaryRotation:true,exercises:[{id:`exercise-${index+1}`,prescription:'Invented prescription'}]},

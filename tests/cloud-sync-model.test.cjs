@@ -34,6 +34,62 @@ const workout=(id,updatedAt,extra={})=>({
  ...extra
 });
 
+const syntheticStrength3V1514Snapshot={
+ sessionKey:'strengthLowerSdc',sessionType:'primary',label:'Strength 3 — Lower / Full Body and SDC',
+ focus:'Lower and full-body strength followed by the capped two-round SDC circuit and trunk work.',
+ warmup:'Approximately 10 progressive minutes: easy cardio, dynamic hip and ankle preparation, then 2–4 Romanian-deadlift warm-up sets.',
+ targetSessionRpe:'7–8',targetDuration:'Approximately 60–75 minutes',advancesPrimaryRotation:true,optional:false,
+ exercises:[
+  {id:'romanianDeadlift',name:'Romanian deadlift',prescription:'155 lb total for 2 × 8',type:'weighted',unit:'lb',sets:2,targetLoad:155,targetLoadVariation:'Barbell',targetRpe:'6–8',variations:['Barbell','Dumbbells','Smith machine'],defaultVariation:'Barbell',barWeights:{Barbell:45,'Smith machine':20},coachingNotes:'Hold 155 lb for confirmation. Use chalk if available, maintain clean hinge technique, and do not progress again until 155 lb has been completed cleanly within the target effort range. No grinders.'},
+  {id:'squatPattern',name:'Goblet squat',prescription:'55 lb for 3 × 10',type:'weighted',unit:'lb',sets:3,targetLoad:55,targetLoadVariation:'Goblet squat',targetRpe:'7–8',variations:['Goblet squat','Front squat','Hack squat','Leg press'],defaultVariation:'Goblet squat',barWeights:{'Front squat':45},coachingNotes:'Hold the goblet-squat load and repetitions while the Romanian deadlift progresses, and preserve leg quality for the conditioning circuit.'},
+  {id:'inclinePress',name:'Incline dumbbell press',prescription:'35 lb per hand for 3 × 9',type:'weighted',unit:'lb per hand',sets:3,targetLoad:35,targetLoadVariation:'Incline dumbbell press',targetRpe:'7–8',variations:['Incline dumbbell press','Incline chest-press machine'],defaultVariation:'Incline dumbbell press',coachingNotes:'Repeat 35 lb per hand until all three sets of 9 are completed cleanly. Do not increase load or add make-up repetitions. Use adequate rest and stop before grinding or technical failure.'},
+  {id:'oneArmRow',name:'One-arm dumbbell row',prescription:'50 lb for 3 × 9 each side',type:'weighted',unit:'lb',sets:3,targetLoad:50,targetLoadVariation:'One-arm dumbbell row',targetRpe:'6–8',variations:['One-arm dumbbell row','One-arm cable row'],defaultVariation:'One-arm dumbbell row',coachingNotes:'Progress repetitions at the confirmed 50 lb load. Keep both sides technically clean and do not increase load yet.'},
+  {id:'singleLegStrength',name:'Split squat',prescription:'Body weight for 2 × 12 each leg with a 3-second descent and 1-second pause',type:'weighted',unit:'lb total',sets:2,targetRpe:'5–7',variations:['Body-weight split squat','Light dumbbell split squat','Forward step-up','Lateral step-up'],defaultVariation:'Body-weight split squat',coachingNotes:'Use body weight for two sets of 12 each leg with a deliberate 3-second descent and 1-second pause at the bottom of every repetition. This is a tempo and quality progression only; do not add external load or extra repetitions.'},
+  {id:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 rest',type:'circuit',circuitVersion:'foundation-1.4.5',targetRpe:'7–8',defaults:{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'30',restSeconds:'150'},modalities:['Bike','Rower','Elliptical','Short safe sprint'],coachingNotes:'Keep exactly two rounds. Use the Torque Fitness TANK M4 at Level 3 on the same approximately 20-yard gym lane when available, and record that equipment label in the existing sled fields. Level 3 is a resistance setting, not a weight. Do not use total circuit time to auto-progress, add a third round, extend hard-cardio duration, or increase TANK resistance.'},
+  {id:'plank',name:'Front plank',prescription:'3 × 50 sec',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:50','0:50','0:50'],coachingNotes:'Maintain a clean position and stop a set rather than extending through lumbar compensation.'},
+  {id:'sidePlank',name:'Side plank',prescription:'3 × 50 sec each side',type:'timed',sets:3,targetRpe:'6–8',prescribedTimes:['0:50','0:50','0:50'],coachingNotes:'Maintain a clean position and stop a set rather than extending through lumbar or hip-position compensation.'},
+  {id:'hammerCurl',name:'Hammer curl',prescription:'25 lb per hand for 2 × 15',type:'weighted',unit:'lb per hand',sets:2,targetLoad:25,targetLoadVariation:'Dumbbell hammer curl',targetRpe:'7–9',variations:['Dumbbell hammer curl','Rope cable hammer curl'],defaultVariation:'Dumbbell hammer curl',variationUnits:{'Dumbbell hammer curl':'lb per hand','Rope cable hammer curl':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use 25 lb per hand for two controlled sets of 15. Progress repetitions at the confirmed working load and do not increase load yet.'},
+  {id:'overheadTricepsExtension',name:'Overhead cable triceps extension',prescription:'110 lb displayed on the same confirmed rope/cable setup for 2 × 12',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',variations:['Rope overhead cable extension','Single-arm overhead cable extension','Other equivalent cable variation'],defaultVariation:'Rope overhead cable extension',variationUnits:{'Rope overhead cable extension':'lb total','Single-arm overhead cable extension':'lb per side','Other equivalent cable variation':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use 110 lb displayed only on the same confirmed rope and cable setup for two sets of 12. Progress repetitions at this confirmed displayed load before another stack increase. Do not transfer the displayed value to another cable, pulley, attachment, or machine setup. Keep a pain-free shoulder position and controlled stretch.'}
+ ]
+};
+
+const syntheticStrength3V1515Snapshot=JSON.parse(JSON.stringify(syntheticStrength3V1514Snapshot));
+Object.assign(syntheticStrength3V1515Snapshot.exercises.find(exercise=>exercise.id==='inclinePress'),{
+ prescription:'35 lb per hand for 3 × 10',
+ coachingNotes:'Confirm all three technically clean sets of 10 at the current load before any later load increase. Use normal rest and stop before grinding or technical failure. Do not add make-up repetitions.'
+});
+Object.assign(syntheticStrength3V1515Snapshot.exercises.find(exercise=>exercise.id==='oneArmRow'),{
+ prescription:'50 lb for 3 × 10 each side',
+ coachingNotes:'Progress repetitions at the confirmed 50 lb load. Keep both sides technically clean and do not increase load yet.'
+});
+Object.assign(syntheticStrength3V1515Snapshot.exercises.find(exercise=>exercise.id==='plank'),{
+ prescription:'3 × 55 sec',prescribedTimes:['0:55','0:55','0:55']
+});
+Object.assign(syntheticStrength3V1515Snapshot.exercises.find(exercise=>exercise.id==='overheadTricepsExtension'),{
+ prescription:'Next smallest comparable increment above 110 lb displayed on the same confirmed rope/cable setup (approximately 121 lb displayed if it uses 11-lb increments) for 2 × 10–12',
+ coachingNotes:'Use the next smallest increment above 110 lb only on the same confirmed rope, cable, pulley, and machine setup. Approximately 121 lb is setup-specific guidance, not a transferable load. Maintain a pain-free shoulder position and controlled stretch, and hold the new increment for confirmation before any later progression.'
+});
+
+const syntheticStrength3Results=({inclineReps,rowReps,plankTimes,tricepsLoad,tricepsReps})=>[
+ {exerciseId:'romanianDeadlift',name:'Romanian deadlift',type:'weighted',unit:'lb',variation:'Barbell',load:'155',sets:'2',reps:'8, 8',rpe:'7',completed:true,notes:'Invented hinge result.'},
+ {exerciseId:'squatPattern',name:'Goblet squat',type:'weighted',unit:'lb',variation:'Goblet squat',load:'55',sets:'3',reps:'10, 10, 10',rpe:'7',completed:true,notes:'Invented squat result.'},
+ {exerciseId:'inclinePress',name:'Incline dumbbell press',type:'weighted',unit:'lb per hand',variation:'Incline dumbbell press',load:'35',sets:'3',reps:inclineReps,rpe:'7',completed:true,notes:'Invented incline-press result.'},
+ {exerciseId:'oneArmRow',name:'One-arm dumbbell row',type:'weighted',unit:'lb',variation:'One-arm dumbbell row',load:'50',sets:'3',reps:rowReps,rpe:'7',completed:true,notes:'Invented one-arm-row result.'},
+ {exerciseId:'singleLegStrength',name:'Split squat',type:'weighted',unit:'lb total',variation:'Body-weight split squat',sets:'2',reps:'12, 12',rpe:'6',completed:true,notes:'Invented tempo split-squat result.'},
+ {exerciseId:'gymConditioningCircuit',name:'Gym conditioning circuit',type:'circuit',circuitVersion:'foundation-1.4.5',rounds:'2',rpe:'7',completed:true,notes:'Invented two-round SDC result.',components:[
+  {id:'farmerCarry',exerciseId:'loadedCarry',name:'Farmer carry',type:'carry',resultMode:'shared',sharedResult:{performed:true,load:'45',loadUnit:'lb per hand',durationSeconds:'30'}},
+  {id:'lateralStepUps',exerciseId:'lateralStepUps',name:'Lateral step-ups',type:'reps',resultMode:'shared',sharedResult:{performed:true,repsPerSide:'6'}},
+  {id:'hardCardio',exerciseId:'hardCardio',name:'Hard cardio',type:'cardio',resultMode:'shared',sharedResult:{performed:true,modality:'Bike',durationSeconds:'30'}},
+  {id:'backwardSledDrag',exerciseId:'backwardSledDrag',name:'Backward sled drag',type:'sled',resultMode:'shared',sharedResult:{performed:true,trips:'1',distanceMode:'lane_unknown',distanceLabel:'Approximately 20 yd gym lane',equipmentLabel:'Torque Fitness TANK M4 · Level 3',direction:'backward_drag',loadMode:'unknown'}},
+  {id:'forwardSledPush',exerciseId:'forwardSledPush',name:'Forward sled push',type:'sled',resultMode:'shared',sharedResult:{performed:true,trips:'1',distanceMode:'lane_unknown',distanceLabel:'Approximately 20 yd gym lane',equipmentLabel:'Torque Fitness TANK M4 · Level 3',direction:'forward_push',loadMode:'unknown'}},
+  {id:'rest',exerciseId:'circuitRest',name:'Rest',type:'rest',resultMode:'shared',sharedResult:{performed:true,durationSeconds:'150'}}
+ ]},
+ {exerciseId:'plank',name:'Front plank',type:'timed',sets:'3',times:plankTimes,rpe:'7',completed:true,notes:'Invented front-plank result.'},
+ {exerciseId:'sidePlank',name:'Side plank',type:'timed',sets:'3',times:'50, 50, 50',rpe:'7',completed:true,notes:'Invented side-plank result.'},
+ {exerciseId:'hammerCurl',name:'Hammer curl',type:'weighted',unit:'lb per hand',variation:'Dumbbell hammer curl',load:'25',sets:'2',reps:'15, 15',rpe:'8',completed:true,notes:'Invented hammer-curl result.'},
+ {exerciseId:'overheadTricepsExtension',name:'Overhead cable triceps extension',type:'weighted',unit:'lb total',variation:'Rope overhead cable extension',load:tricepsLoad,sets:'2',reps:tricepsReps,rpe:'8',completed:true,notes:'Invented same-setup triceps result.'}
+];
+
 {
  const state=model.normalizeState({userId:'account-a',records:{}});
  assert.equal(state.userId,'account-a','sync state remains bound to the original account');
@@ -374,6 +430,75 @@ const workout=(id,updatedAt,extra={})=>({
  assert.deepEqual(activeById.plank.prescribedTimes,['0:50','0:50','0:50']);
  assert.equal(pulled.entries[0].exercises.find(exercise=>exercise.exerciseId==='deadlift').load,'75','the invented current plate-per-side result remains intact');
  assert.equal(pulled.entries[0].activeRunStage,'');
+}
+
+{
+ const oct1V1514Strength3=workout('synthetic-oct1-v1514-strength3','2026-10-01T18:00:00.000Z',{
+  date:'2026-10-01',dayKey:'strengthLowerSdc',dayLabel:'Strength 3 — Lower / Full Body and SDC',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.14',programEffectiveDate:'2026-09-30',
+  activeRunStage:'',targetSessionRpe:'7–8',duration:'71',sessionRpe:'7',painDuring:'0',notes:'Invented October 1 v1.5.14 Strength 3 cloud fixture.',
+  prescriptionSnapshot:JSON.parse(JSON.stringify(syntheticStrength3V1514Snapshot)),
+  exercises:syntheticStrength3Results({inclineReps:'9, 9, 9',rowReps:'9, 9, 9',plankTimes:'50, 50, 50',tricepsLoad:'110',tricepsReps:'12, 12'})
+ });
+ const oct2V1515Strength3=workout('synthetic-oct2-v1515-strength3','2026-10-02T18:00:00.000Z',{
+  date:'2026-10-02',dayKey:'strengthLowerSdc',dayLabel:'Strength 3 — Lower / Full Body and SDC',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.15',programEffectiveDate:'2026-10-02',
+  activeRunStage:'',targetSessionRpe:'7–8',duration:'72',sessionRpe:'7',painDuring:'0',notes:'Invented October 2 v1.5.15 Strength 3 cloud fixture.',
+  prescriptionSnapshot:JSON.parse(JSON.stringify(syntheticStrength3V1515Snapshot)),
+  exercises:syntheticStrength3Results({inclineReps:'10, 10, 10',rowReps:'10, 10, 10',plankTimes:'55, 55, 55',tricepsLoad:'121',tricepsReps:'10, 10'})
+ });
+ const uploads=model.mergeWorkoutRecords([oct1V1514Strength3,oct2V1515Strength3],[],null).uploads;
+ assert.deepEqual(uploads.find(upload=>upload.entryId===oct1V1514Strength3.id).payload,oct1V1514Strength3,'Firebase upload preserves the complete invented October 1 v1.5.14 Strength 3 document');
+ assert.deepEqual(uploads.find(upload=>upload.entryId===oct2V1515Strength3.id).payload,oct2V1515Strength3,'Firebase upload preserves the complete invented October 2 v1.5.15 Strength 3 document');
+ const remote=uploads.map(upload=>({...upload,changedAt:upload.entryId===oct1V1514Strength3.id?'2026-10-01T19:00:00.000Z':'2026-10-02T19:00:00.000Z'}));
+ const pulled=model.mergeWorkoutRecords([],remote,null).entries;
+ const historical=pulled.find(entry=>entry.id===oct1V1514Strength3.id);
+ const current=pulled.find(entry=>entry.id===oct2V1515Strength3.id);
+ assert.deepEqual(historical,oct1V1514Strength3,'Firebase round trips preserve the immutable October 1 v1.5.14 Strength 3 snapshot and every invented result');
+ assert.deepEqual(current,oct2V1515Strength3,'Firebase round trips preserve the complete October 2 v1.5.15 Strength 3 snapshot and every invented result');
+
+ const historicalById=Object.fromEntries(historical.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ const currentById=Object.fromEntries(current.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ assert.deepEqual(historical.prescriptionSnapshot.exercises.map(exercise=>exercise.id),[
+  'romanianDeadlift','squatPattern','inclinePress','oneArmRow','singleLegStrength','gymConditioningCircuit','plank','sidePlank','hammerCurl','overheadTricepsExtension'
+ ],'the historical fixture contains every Strength 3 and SDC exercise in stable order');
+ assert.deepEqual(current.prescriptionSnapshot.exercises.map(exercise=>exercise.id),historical.prescriptionSnapshot.exercises.map(exercise=>exercise.id),'the current fixture preserves every Strength 3 and SDC stable exercise ID');
+
+ assert.equal(historicalById.inclinePress.prescription,'35 lb per hand for 3 × 9');
+ assert.equal(historicalById.oneArmRow.prescription,'50 lb for 3 × 9 each side');
+ assert.deepEqual(historicalById.plank.prescribedTimes,['0:50','0:50','0:50']);
+ assert.equal(historicalById.overheadTricepsExtension.prescription,'110 lb displayed on the same confirmed rope/cable setup for 2 × 12');
+ assert.equal(historical.exercises.find(exercise=>exercise.exerciseId==='inclinePress').reps,'9, 9, 9','invented October 1 incline-press results remain unchanged');
+ assert.equal(historical.exercises.find(exercise=>exercise.exerciseId==='oneArmRow').reps,'9, 9, 9','invented October 1 row results remain unchanged');
+ assert.equal(historical.exercises.find(exercise=>exercise.exerciseId==='plank').times,'50, 50, 50','invented October 1 plank results remain unchanged');
+ assert.equal(historical.exercises.find(exercise=>exercise.exerciseId==='overheadTricepsExtension').load,'110','invented October 1 same-setup triceps results remain unchanged');
+
+ assert.equal(currentById.inclinePress.prescription,'35 lb per hand for 3 × 10');
+ assert.equal(currentById.inclinePress.targetLoad,35);
+ assert.equal(currentById.inclinePress.targetLoadVariation,'Incline dumbbell press');
+ assert.equal(currentById.oneArmRow.prescription,'50 lb for 3 × 10 each side');
+ assert.equal(currentById.oneArmRow.targetLoad,50);
+ assert.equal(currentById.oneArmRow.targetLoadVariation,'One-arm dumbbell row');
+ assert.deepEqual(currentById.plank.prescribedTimes,['0:55','0:55','0:55']);
+ assert.match(currentById.overheadTricepsExtension.prescription,/next smallest comparable increment above 110 lb.*approximately 121 lb.*2 × 10–12/i);
+ assert.equal(currentById.overheadTricepsExtension.targetLoad,undefined,'setup-specific cable guidance is not stored as a universal target load');
+ assert.match(currentById.overheadTricepsExtension.coachingNotes,/same confirmed rope, cable, pulley, and machine setup.*not a transferable load.*hold the new increment for confirmation/i);
+ assert.equal(current.exercises.find(exercise=>exercise.exerciseId==='inclinePress').reps,'10, 10, 10');
+ assert.equal(current.exercises.find(exercise=>exercise.exerciseId==='oneArmRow').reps,'10, 10, 10');
+ assert.equal(current.exercises.find(exercise=>exercise.exerciseId==='plank').times,'55, 55, 55');
+ assert.equal(current.exercises.find(exercise=>exercise.exerciseId==='overheadTricepsExtension').load,'121');
+
+ for(const exerciseId of ['romanianDeadlift','squatPattern','singleLegStrength','gymConditioningCircuit','sidePlank','hammerCurl']){
+  assert.deepEqual(currentById[exerciseId],historicalById[exerciseId],`${exerciseId} remains unchanged between the invented v1.5.14 and v1.5.15 snapshots`);
+ }
+ const historicalCircuit=historical.exercises.find(exercise=>exercise.exerciseId==='gymConditioningCircuit');
+ const currentCircuit=current.exercises.find(exercise=>exercise.exerciseId==='gymConditioningCircuit');
+ assert.deepEqual(currentCircuit,historicalCircuit,'the complete invented two-round SDC result remains unchanged');
+ assert.equal(currentCircuit.rounds,'2');
+ assert.equal(currentCircuit.components.length,6);
+ assert.match(currentCircuit.components.find(component=>component.id==='backwardSledDrag').sharedResult.equipmentLabel,/TANK M4 · Level 3/);
+ assert.equal(historical.activeRunStage,'');
+ assert.equal(current.activeRunStage,'');
 }
 
 {

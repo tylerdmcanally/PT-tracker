@@ -90,6 +90,46 @@ const syntheticStrength3Results=({inclineReps,rowReps,plankTimes,tricepsLoad,tri
  {exerciseId:'overheadTricepsExtension',name:'Overhead cable triceps extension',type:'weighted',unit:'lb total',variation:'Rope overhead cable extension',load:tricepsLoad,sets:'2',reps:tricepsReps,rpe:'8',completed:true,notes:'Invented same-setup triceps result.'}
 ];
 
+const syntheticStrength1V1515Snapshot={
+ sessionKey:'strengthUpperAft',sessionType:'primary',label:'Strength 1 — Upper Body and AFT Calisthenics',
+ focus:'Upper-body strength and AFT calisthenics with optional arm accessories. No cardio or running follows this session.',
+ warmup:'5–8 minutes of easy cardio, shoulder and upper-back movement preparation, then 1–2 easy push-up and pull ramp-up sets.',
+ targetSessionRpe:'6–7',targetDuration:'Approximately 60–75 minutes',advancesPrimaryRotation:true,optional:false,
+ exercises:[
+  {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'5 × 12',type:'body',sets:5,targetRpe:'6–8',coachingNotes:'Keep all five sets equal, technically clean, and submaximal. Maintain strong whole-body bracing, stop before failure, and do not add a maximal set.'},
+  {id:'verticalPull',name:'Lat pulldown',prescription:'Next smallest increment above 176 lb on the same seated machine (approximately 187 lb displayed if it uses 11-lb increments) for 3 × 8–10',type:'weighted',unit:'lb',sets:3,targetRpe:'6–8',variations:['Seated lat pulldown','Modified standing lat pulldown','Assisted pull-up','Band-assisted pull-up'],defaultVariation:'Seated lat pulldown',coachingNotes:'Use the next smallest machine increment above 176 lb only on the same seated machine and setup. Approximately 187 lb is guidance for an 11-lb stack increment, not a universal target for a different cable or pulley setup. Cap every set at 10 repetitions.'},
+  {id:'overheadPress',name:'Seated dumbbell overhead press',prescription:'25 lb per hand for 3 × 10',type:'weighted',unit:'lb per hand',sets:3,targetLoad:25,targetLoadVariation:'Seated dumbbell press',targetRpe:'7–8',variations:['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],defaultVariation:'Seated dumbbell press',coachingNotes:'Hand-release push-ups remain the AFT-priority first movement. Confirm all three clean sets of 10 behind the new 5 × 12 hand-release push-up dose. Do not add make-up repetitions, grind, or train to failure. The prior eligibility gate for a later 30 lb-per-hand return has been met, but do not return to 30 lb per hand until the larger hand-release push-up dose is tolerated and a later coach-directed program version explicitly authorizes it.'},
+  {id:'chestSupportedRow',name:'Machine row',prescription:'110 lb displayed on the same confirmed machine/setup for 3 × 10',type:'weighted',unit:'lb',sets:3,targetRpe:'7–8',variations:['Dumbbell row','Machine row','T-bar row'],defaultVariation:'Machine row',coachingNotes:'Use 110 lb displayed only on the same confirmed machine and setup for three clean sets of 10. Do not treat 110 lb as comparable on another row machine, and do not increase the displayed load yet.'},
+  {id:'lateralRaise',name:'Cable lateral raise',prescription:'Next smallest comparable increment above 33 lb displayed per side on the same pain-free cable setup (approximately 44 lb if applicable) for 2 × 12–15',type:'weighted',unit:'lb per side',sets:2,targetRpe:'7–8',variations:['Cable lateral raise','Cuffed-cable lateral raise','Machine lateral raise','Dumbbell lateral raise'],defaultVariation:'Cable lateral raise',variationUnits:{'Cable lateral raise':'lb per side','Cuffed-cable lateral raise':'lb per side','Machine lateral raise':'lb total','Dumbbell lateral raise':'lb per hand'},coachingNotes:'Use the next smallest comparable increment above 33 lb displayed per side only on the same pain-free cable setup. Approximately 44 lb is setup-specific guidance, not a universal target. Maintain pain-free technique.'},
+  {id:'chestFly',name:'Cable fly / pec deck',prescription:'Next smallest comparable increment above 77 lb displayed on the same pec-deck machine/setup (approximately 88 lb if applicable) for 2 × 10–12',type:'weighted',unit:'lb per side',sets:2,targetRpe:'7–9',variations:['Pec deck / machine fly','Cable chest fly'],defaultVariation:'Pec deck / machine fly',variationUnits:{'Cable chest fly':'lb per side','Pec deck / machine fly':'lb total'},coachingNotes:'Use the next smallest comparable increment above 77 lb displayed only on the same pec-deck machine and setup. Approximately 88 lb is setup-specific guidance. Keep the stretch and contraction controlled and stop with approximately 1–3 good repetitions in reserve.'},
+  {id:'trunkStability',name:'Dead bug or Pallof press',prescription:'3 × 10 each side',type:'body',sets:3,variations:['Dead bug','Pallof press'],defaultVariation:'Dead bug',coachingNotes:'Keep the movement slow and controlled. Use a full exhale and deliberate brace rather than increasing repetitions because the current variation feels easy.'},
+  {id:'preacherCurl',name:'Preacher curl',prescription:'30 lb total on the same EZ-bar setup, or the next smallest comparable load below 40 lb if 30 lb is unavailable, for 2 × 10–15',type:'weighted',unit:'lb total',sets:2,targetLoad:30,targetLoadVariation:'EZ-bar preacher curl',targetRpe:'7–9',variations:['Machine preacher curl','EZ-bar preacher curl','Dumbbell preacher curl','Cable preacher curl'],defaultVariation:'EZ-bar preacher curl',variationUnits:{'Machine preacher curl':'lb total','EZ-bar preacher curl':'lb total','Dumbbell preacher curl':'lb per hand','Cable preacher curl':'lb total'},group:'armSuperset',optional:true,coachingNotes:'Use 30 lb total on the same EZ-bar setup when available; otherwise use the next smallest comparable load below 40 lb. Other variations are not directly load-comparable. Use controlled full repetitions and return to 40 lb only after a future coach-directed progression.'},
+  {id:'tricepsPressdown',name:'Cable triceps pressdown',prescription:'Next smallest comparable increment above 77 lb displayed on the same cable setup (approximately 88 lb displayed if it uses 11-lb increments) for 2 × 10–12',type:'weighted',unit:'lb total',sets:2,targetRpe:'7–9',group:'armSuperset',optional:true,coachingNotes:'Use the next smallest increment above 77 lb only on the same comparable machine and cable setup. Approximately 88 lb is guidance for the same 11-lb increment stack, not a universal cable load. Progression remains coach-directed.'}
+ ]
+};
+
+const syntheticStrength1V1516Snapshot=JSON.parse(JSON.stringify(syntheticStrength1V1515Snapshot));
+Object.assign(syntheticStrength1V1516Snapshot.exercises.find(exercise=>exercise.id==='overheadPress'),{
+ prescription:'30 lb per hand for 3 × 8',targetLoad:30,
+ coachingNotes:'Hand-release push-ups remain the AFT-priority first movement. Use controlled, technically clean, submaximal repetitions. Do not add make-up repetitions, grind, or train to failure. Hold 30 lb per hand for confirmation before any later repetition or load progression.'
+});
+Object.assign(syntheticStrength1V1516Snapshot.exercises.find(exercise=>exercise.id==='chestSupportedRow'),{
+ prescription:'Next smallest comparable increment above 110 lb displayed on the same confirmed machine/setup (approximately 121 lb displayed if it uses 11-lb increments) for 3 × 8–10',
+ coachingNotes:'Use the next increment above 110 lb only on the same confirmed machine and setup. Approximately 121 lb is setup-specific guidance, not a transferable load. Hold the new increment for confirmation before any later progression.'
+});
+
+const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps})=>[
+ {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'5',reps:'12, 12, 12, 12, 12',rpe:'7',completed:true,notes:'Invented clean push-up result.'},
+ {exerciseId:'verticalPull',name:'Lat pulldown',type:'weighted',unit:'lb',variation:'Seated lat pulldown',variationId:'seatedLatPulldown',load:'187',sets:'3',reps:'8, 8, 8',rpe:'7',completed:true,notes:'Invented same-machine pulldown result.'},
+ {exerciseId:'overheadPress',name:'Seated dumbbell overhead press',type:'weighted',unit:'lb per hand',variation:'Seated dumbbell press',variationId:'seatedDumbbellPress',load:overheadLoad,sets:'3',reps:overheadReps,rpe:'7',completed:true,notes:'Invented overhead-press result.'},
+ {exerciseId:'chestSupportedRow',name:'Machine row',type:'weighted',unit:'lb',variation:'Machine row',variationId:'machineRow',load:rowLoad,sets:'3',reps:rowReps,rpe:'7',completed:true,notes:'Invented same-machine row result.'},
+ {exerciseId:'lateralRaise',name:'Cable lateral raise',type:'weighted',unit:'lb per side',variation:'Cable lateral raise',variationId:'cableLateralRaise',load:'44',sets:'2',reps:'12, 12',rpe:'7',completed:true,notes:'Invented same-setup lateral-raise result.'},
+ {exerciseId:'chestFly',name:'Cable fly / pec deck',type:'weighted',unit:'lb total',variation:'Pec deck / machine fly',variationId:'pecDeckMachineFly',load:'88',sets:'2',reps:'10, 10',rpe:'8',completed:true,notes:'Invented same-machine fly result.'},
+ {exerciseId:'trunkStability',name:'Dead bug or Pallof press',type:'body',variation:'Dead bug',variationId:'deadBug',sets:'3',reps:'10, 10, 10',rpe:'6',completed:true,notes:'Invented trunk-stability result.'},
+ {exerciseId:'preacherCurl',name:'Preacher curl',type:'weighted',unit:'lb total',variation:'EZ-bar preacher curl',variationId:'ezBarPreacherCurl',load:'30',sets:'2',reps:'12, 12',rpe:'8',completed:true,notes:'Invented same-setup curl result.'},
+ {exerciseId:'tricepsPressdown',name:'Cable triceps pressdown',type:'weighted',unit:'lb total',load:'88',sets:'2',reps:'10, 10',rpe:'8',completed:true,notes:'Invented same-cable pressdown result.'}
+];
+
 {
  const state=model.normalizeState({userId:'account-a',records:{}});
  assert.equal(state.userId,'account-a','sync state remains bound to the original account');
@@ -497,6 +537,69 @@ const syntheticStrength3Results=({inclineReps,rowReps,plankTimes,tricepsLoad,tri
  assert.equal(currentCircuit.rounds,'2');
  assert.equal(currentCircuit.components.length,6);
  assert.match(currentCircuit.components.find(component=>component.id==='backwardSledDrag').sharedResult.equipmentLabel,/TANK M4 · Level 3/);
+ assert.equal(historical.activeRunStage,'');
+ assert.equal(current.activeRunStage,'');
+}
+
+{
+ const oct4V1515Strength1=workout('synthetic-oct4-v1515-strength1','2026-10-04T18:00:00.000Z',{
+  date:'2026-10-04',dayKey:'strengthUpperAft',dayLabel:'Strength 1 — Upper Body and AFT Calisthenics',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.15',programEffectiveDate:'2026-10-02',
+  activeRunStage:'',targetSessionRpe:'6–7',duration:'66',sessionRpe:'7',painDuring:'0',sleepQuality:'Good',notes:'Invented October 4 v1.5.15 Strength 1 cloud fixture.',
+  prescriptionSnapshot:JSON.parse(JSON.stringify(syntheticStrength1V1515Snapshot)),
+  exercises:syntheticStrength1Results({overheadLoad:'25',overheadReps:'10, 10, 10',rowLoad:'110',rowReps:'10, 10, 10'})
+ });
+ const oct5V1516Strength1=workout('synthetic-oct5-v1516-strength1','2026-10-05T18:00:00.000Z',{
+  date:'2026-10-05',dayKey:'strengthUpperAft',dayLabel:'Strength 1 — Upper Body and AFT Calisthenics',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.16',programEffectiveDate:'2026-10-05',
+  activeRunStage:'',targetSessionRpe:'6–7',duration:'67',sessionRpe:'7',painDuring:'0',sleepQuality:'Good',notes:'Invented October 5 v1.5.16 Strength 1 cloud fixture.',
+  prescriptionSnapshot:JSON.parse(JSON.stringify(syntheticStrength1V1516Snapshot)),
+  exercises:syntheticStrength1Results({overheadLoad:'30',overheadReps:'8, 8, 8',rowLoad:'121',rowReps:'8, 8, 8'})
+ });
+ const uploads=model.mergeWorkoutRecords([oct4V1515Strength1,oct5V1516Strength1],[],null).uploads;
+ assert.deepEqual(uploads.find(upload=>upload.entryId===oct4V1515Strength1.id).payload,oct4V1515Strength1,'Firebase upload preserves the complete invented October 4 v1.5.15 Strength 1 document');
+ assert.deepEqual(uploads.find(upload=>upload.entryId===oct5V1516Strength1.id).payload,oct5V1516Strength1,'Firebase upload preserves the complete invented October 5 v1.5.16 Strength 1 document');
+ const remote=uploads.map(upload=>({...upload,changedAt:upload.entryId===oct4V1515Strength1.id?'2026-10-04T19:00:00.000Z':'2026-10-05T19:00:00.000Z'}));
+ const pulled=model.mergeWorkoutRecords([],remote,null).entries;
+ const historical=pulled.find(entry=>entry.id===oct4V1515Strength1.id);
+ const current=pulled.find(entry=>entry.id===oct5V1516Strength1.id);
+ assert.deepEqual(historical,oct4V1515Strength1,'Firebase round trips preserve the immutable October 4 v1.5.15 Strength 1 snapshot and every invented result');
+ assert.deepEqual(current,oct5V1516Strength1,'Firebase round trips preserve the complete current v1.5.16 Strength 1 snapshot and every invented result');
+
+ const historicalById=Object.fromEntries(historical.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ const currentById=Object.fromEntries(current.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ const exerciseOrder=['handReleasePushups','verticalPull','overheadPress','chestSupportedRow','lateralRaise','chestFly','trunkStability','preacherCurl','tricepsPressdown'];
+ assert.deepEqual(historical.prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,'the October 4 fixture contains the complete Strength 1 prescription in stable order');
+ assert.deepEqual(current.prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,'the current v1.5.16 fixture preserves every Strength 1 stable exercise ID and order');
+
+ assert.equal(historicalById.overheadPress.prescription,'25 lb per hand for 3 × 10');
+ assert.equal(historicalById.overheadPress.targetLoad,25);
+ assert.equal(historicalById.overheadPress.targetLoadVariation,'Seated dumbbell press');
+ assert.equal(historicalById.chestSupportedRow.prescription,'110 lb displayed on the same confirmed machine/setup for 3 × 10');
+ assert.equal(historicalById.chestSupportedRow.targetLoad,undefined,'October 4 history retains setup-specific row guidance without a universal target load');
+ assert.equal(historical.exercises.find(exercise=>exercise.exerciseId==='overheadPress').load,'25','the invented October 4 overhead-press load remains unchanged');
+ assert.equal(historical.exercises.find(exercise=>exercise.exerciseId==='overheadPress').reps,'10, 10, 10','the invented October 4 overhead-press repetitions remain unchanged');
+ assert.equal(historical.exercises.find(exercise=>exercise.exerciseId==='chestSupportedRow').load,'110','the invented October 4 machine-row load remains unchanged');
+ assert.equal(historical.exercises.find(exercise=>exercise.exerciseId==='chestSupportedRow').reps,'10, 10, 10','the invented October 4 machine-row repetitions remain unchanged');
+
+ assert.equal(currentById.overheadPress.prescription,'30 lb per hand for 3 × 8');
+ assert.equal(currentById.overheadPress.targetLoad,30);
+ assert.equal(currentById.overheadPress.targetLoadVariation,'Seated dumbbell press');
+ assert.match(currentById.overheadPress.coachingNotes,/AFT-priority first movement.*controlled, technically clean, submaximal.*no.*make-up repetitions.*grind.*failure.*hold 30 lb per hand for confirmation/i);
+ assert.match(currentById.chestSupportedRow.prescription,/next smallest comparable increment above 110 lb.*approximately 121 lb.*3 × 8–10/i);
+ assert.equal(currentById.chestSupportedRow.targetLoad,undefined,'the current setup-specific machine-row cue does not become a universal target load in cloud storage');
+ assert.match(currentById.chestSupportedRow.coachingNotes,/same confirmed machine and setup.*not a transferable load.*hold the new increment for confirmation/i);
+ assert.equal(current.exercises.find(exercise=>exercise.exerciseId==='overheadPress').load,'30');
+ assert.equal(current.exercises.find(exercise=>exercise.exerciseId==='overheadPress').reps,'8, 8, 8');
+ assert.equal(current.exercises.find(exercise=>exercise.exerciseId==='chestSupportedRow').load,'121');
+ assert.equal(current.exercises.find(exercise=>exercise.exerciseId==='chestSupportedRow').reps,'8, 8, 8');
+
+ for(const exerciseId of exerciseOrder.filter(exerciseId=>!['overheadPress','chestSupportedRow'].includes(exerciseId))){
+  assert.deepEqual(currentById[exerciseId],historicalById[exerciseId],`${exerciseId} remains unchanged between the invented v1.5.15 and v1.5.16 Strength 1 snapshots`);
+  assert.deepEqual(current.exercises.find(exercise=>exercise.exerciseId===exerciseId),historical.exercises.find(exercise=>exercise.exerciseId===exerciseId),`${exerciseId} keeps its complete invented result across the paired Strength 1 fixtures`);
+ }
+ assert.equal(historical.programVersion,'1.5.15');
+ assert.equal(current.programVersion,'1.5.16');
  assert.equal(historical.activeRunStage,'');
  assert.equal(current.activeRunStage,'');
 }

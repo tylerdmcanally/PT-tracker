@@ -840,7 +840,8 @@ const ADHERENCE_LABELS={
 
 const ADHERENCE_REASON_LABELS={
  load_above_target:'Load above target',load_below_target:'Load below target',reps_below_minimum:'Repetitions below minimum',
- sets_below_target:'Sets below target',duration_below_minimum:'Duration below target',duration_above_target:'Duration above target',
+ reps_above_target:'Repetitions above target',
+ sets_below_target:'Sets below target',sets_above_target:'Sets above target',duration_below_minimum:'Duration below target',duration_above_target:'Duration above target',
  trips_below_target:'Trips below target',distance_below_target:'Distance below target',distance_above_target:'Distance above target',
  unplanned_component_added:'Unplanned component added',exercise_substituted:'Exercise substituted',coach_directed_change:'Coach-directed change',
  component_not_recorded:'Component not recorded',other:'Other modification'
@@ -866,8 +867,10 @@ function formatAdherenceReason(reason){
   const unit=reason.plateOnly?'lb plates total':'lb';
   return `${ADHERENCE_REASON_LABELS[reason.code]}: ${formatLoad(reason.actual)} ${unit} completed vs ${formatLoad(reason.expected)} ${unit} prescribed${reason.plateOnly?' (carriage excluded)':''}`;
  }
- if(reason.code==='reps_below_minimum')return `${reason.componentName?`${reason.componentName}: `:''}${reason.actual} reps vs ${reason.expected} minimum`;
+ if(reason.code==='reps_below_minimum')return `${reason.componentName?`${reason.componentName}: `:''}${reason.actual} reps${reason.exact?' completed':''} vs ${reason.expected} ${reason.exact?'prescribed':'minimum'}`;
+ if(reason.code==='reps_above_target')return `${reason.componentName?`${reason.componentName}: `:''}${reason.actual} reps completed vs ${reason.expected} prescribed`;
  if(reason.code==='sets_below_target')return `${reason.actual} sets recorded vs ${reason.expected} prescribed`;
+ if(reason.code==='sets_above_target')return `${reason.actual} sets recorded vs ${reason.expected} prescribed`;
  if(reason.code==='trips_below_target')return `${reason.actual} trips recorded vs ${reason.expected} prescribed`;
  if(reason.code==='distance_below_target'||reason.code==='distance_above_target'){
   const expected=reason.expectedMax!=null&&reason.expectedMax!==reason.expectedMin
@@ -886,6 +889,12 @@ function formatAdherenceReason(reason){
 }
 
 function adherenceTarget(definition){
+ if(['weighted','body'].includes(definition?.type)&&Array.isArray(definition.prescribedReps)&&definition.prescribedReps.length){
+  const exactRepsBySet=definition.prescribedReps.map(Number);
+  if(exactRepsBySet.every(value=>Number.isFinite(value)&&value>=0)){
+   return {kind:'reps',sets:exactRepsBySet.length,exactRepsBySet};
+  }
+ }
  if(definition?.adherenceTarget)return clone(definition.adherenceTarget);
  const prescription=String(definition?.prescription||'');
  if(definition?.type==='carry'){
@@ -1079,8 +1088,17 @@ function prescriptionAdherenceDetail(definition,result){
   const reps=parseSetValues(result.reps).filter(value=>value!=='').map(Number);
   if(reps.some(value=>!Number.isFinite(value)))return {value:'not_assessable',reasons:[]};
   if(reps.length<target.sets)reasons.push(adherenceReason('sets_below_target',{actual:reps.length,expected:target.sets}));
-  const lowest=reps.length?Math.min(...reps):0;
-  if(reps.some(value=>value<target.minReps))reasons.push(adherenceReason('reps_below_minimum',{actual:lowest,expected:target.minReps}));
+  if(Array.isArray(target.exactRepsBySet)){
+   if(reps.length>target.sets)reasons.push(adherenceReason('sets_above_target',{actual:reps.length,expected:target.sets}));
+   reps.slice(0,target.exactRepsBySet.length).forEach((value,index)=>{
+    const expected=target.exactRepsBySet[index];
+    if(value<expected)reasons.push(adherenceReason('reps_below_minimum',{componentName:`Set ${index+1}`,actual:value,expected,exact:true}));
+    if(value>expected)reasons.push(adherenceReason('reps_above_target',{componentName:`Set ${index+1}`,actual:value,expected}));
+   });
+  }else{
+   const lowest=reps.length?Math.min(...reps):0;
+   if(reps.some(value=>value<target.minReps))reasons.push(adherenceReason('reps_below_minimum',{actual:lowest,expected:target.minReps}));
+  }
   if(definition.targetLoad!=null){
    const targetVariation=variationIdFor(definition.targetLoadVariation||'');
    const resultVariation=exerciseVariationId(result);
@@ -1098,7 +1116,7 @@ function prescriptionAdherenceDetail(definition,result){
     }
    }
   }
-  if(reasons.some(reason=>['load_above_target','load_below_target','exercise_substituted'].includes(reason.code)))return {value:'modified',reasons};
+  if(reasons.some(reason=>['load_above_target','load_below_target','exercise_substituted','reps_above_target','sets_above_target'].includes(reason.code)))return {value:'modified',reasons};
   if(reasons.some(reason=>reason.code==='reps_below_minimum'))return {value:'below_target',reasons};
   if(reasons.length)return {value:'partial',reasons};
   return {value:'met',reasons:[]};
@@ -1253,7 +1271,7 @@ function canFillPrescribedResult(definition){
 function fields(definition,state,setPlan,directive=null){
  const {type,unit}=definition;
  if(type==='weighted')return weightedFields(definition,state,setPlan);
- if(type==='body')return grid(setCountSelect(state.sets,setPlan),num('rpe','Exercise RPE',state.rpe,1,10))+setRepLogger(state,setPlan,type);
+ if(type==='body')return grid(setCountSelect(state.sets,setPlan),num('rpe','Exercise RPE',state.rpe,1,10))+setRepLogger(state,setPlan,type,definition);
  if(type==='timed')return setPlan
   ?grid(setCountSelect(state.sets,setPlan),num('rpe','Exercise RPE',state.rpe,1,10))+timedSetLogger(state,setPlan,definition)
   :grid(text('times','Duration',state.times,'8:00'),num('rpe','Exercise RPE',state.rpe,1,10));
@@ -1784,7 +1802,7 @@ function weightedFields(definition,state,setPlan){
     <small id="${plateControlId}-note" class="plate-calculator-note" data-plate-note>Loading helper only. It does not change the coach prescription.</small>
    </div>
   </details>
- </div>${setRepLogger(state,setPlan,'weighted')}`;
+ </div>${setRepLogger(state,setPlan,'weighted',definition)}`;
 }
 
 function bindExerciseControls(){
@@ -1831,8 +1849,9 @@ function fillPrescribedResult(card){
   setCount.dispatchEvent(new Event('change',{bubbles:true}));
  }
  if(target.kind==='reps'){
-  card.querySelectorAll('.set-rep-select').forEach(selectInput=>{
-   const value=String(target.minReps);
+  const targets=repetitionTargetsForFill(target,sets);
+  card.querySelectorAll('.set-rep-select').forEach((selectInput,inputIndex)=>{
+   const value=String(targets[inputIndex]??target.minReps);
    if([...selectInput.options].some(option=>option.value===value))selectInput.value=value;
    else{
     selectInput.value='custom';
@@ -1867,7 +1886,12 @@ function fillPrescribedResult(card){
  updateCardAdherence(card);
  updateExerciseCardSummary(card,index);
  scheduleDraft();
- toast(`${definition.name}: prescribed sets and minimum reps/time filled in`);
+ toast(`${definition.name}: prescribed reps/time filled in`);
+}
+
+function repetitionTargetsForFill(target,sets){
+ if(Array.isArray(target?.exactRepsBySet))return target.exactRepsBySet.slice(0,sets);
+ return Array.from({length:sets},()=>target?.minReps);
 }
 
 function prescribedEnteredLoad(targetLoad,loadMode,barWeight){
@@ -2581,13 +2605,14 @@ function setCountSelect(value,plan,label='Number of sets'){
  }).join('')}</select></label>`;
 }
 
-function setRepLogger(state,plan,type){
+function setRepLogger(state,plan,type,definition={}){
  if(!plan)return grid(text('reps','Reps by set',state.reps,'5, 5, 5'));
  const values=parseSetValues(state.reps);
  const count=Math.max(1,Number(state.sets)||values.length||plan.default);
+ const targets=Array.isArray(definition.prescribedReps)?definition.prescribedReps:[];
  return `<div class="set-log" data-rep-type="${type}">
   <p class="set-log-title">Reps completed</p>
-  <div class="set-rep-grid">${setRepRows(count,values,type)}</div>
+  <div class="set-rep-grid" data-rep-targets="${attr(JSON.stringify(targets))}">${setRepRows(count,values,type,targets)}</div>
  </div>`;
 }
 
@@ -2610,17 +2635,17 @@ function setTimeRows(count,values,targets){
  }).join('');
 }
 
-function setRepRows(count,values,type){
- return Array.from({length:count},(_,index)=>repSelect(index,values[index]||'',type)).join('');
+function setRepRows(count,values,type,targets=[]){
+ return Array.from({length:count},(_,index)=>repSelect(index,values[index]||'',type,targets[index])).join('');
 }
 
-function repSelect(index,value,type){
+function repSelect(index,value,type,target){
  const choices=type==='body'
   ?[...Array.from({length:30},(_,i)=>i+1),35,40,45,50,60,75,100]
   :Array.from({length:20},(_,i)=>i+1);
  const normalized=String(value||'').trim();
  const custom=normalized&&!choices.some(choice=>String(choice)===normalized);
- return `<label>Set ${index+1} reps
+ return `<label>Set ${index+1} reps${target!==''&&target!=null?` <span class="set-target">Target ${esc(target)}</span>`:''}
   <select class="set-rep-select" data-rep-index="${index}">
    <option value="">—</option>
    ${choices.map(choice=>`<option value="${choice}" ${String(choice)===normalized?'selected':''}>${choice}</option>`).join('')}
@@ -2651,7 +2676,10 @@ function bindSetControls(){
   const repLogger=card.querySelector('.set-log');
   if(repLogger){
    const values=readRepValues(card);
-   repLogger.querySelector('.set-rep-grid').innerHTML=setRepRows(Number(selectInput.value),values,repLogger.dataset.repType);
+   const grid=repLogger.querySelector('.set-rep-grid');
+   let targets=[];
+   try{targets=JSON.parse(grid.dataset.repTargets||'[]')}catch{}
+   grid.innerHTML=setRepRows(Number(selectInput.value),values,repLogger.dataset.repType,targets);
    bindCustomRepControls(repLogger);
   }
   const timeLogger=card.querySelector('.time-log');

@@ -1,8 +1,8 @@
 window.AFT_PROGRAM_CONFIG={
  id:'aft-foundation-block-1',
  name:'AFT Foundation Block 1',
- version:'1.5.16',
- effectiveDate:'2026-10-05',
+ version:'1.5.17',
+ effectiveDate:'2026-10-07',
  currentRunStage:null,
  rotation:['strengthUpperAft','strengthHeavyCarry','strengthLowerSdc'],
  runStages:[
@@ -225,7 +225,7 @@ window.AFT_PROGRAM_CONFIG={
    targetSessionRpe:'6–7',
    warmup:'5–8 minutes of easy cardio, shoulder and upper-back movement preparation, then 1–2 easy push-up and pull ramp-up sets.',
    exercises:[
-    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'5 × 12',type:'body',sets:5,targetRpe:'6–8',coachingNotes:'Keep all five sets equal, technically clean, and submaximal. Maintain strong whole-body bracing, stop before failure, and do not add a maximal set.'},
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'Set 1: 15 continuous reps; Sets 2–5: 10 reps',type:'body',sets:5,prescribedReps:[15,10,10,10,10],targetRpe:'Set 1 ≤8; sets 2–5 6–7',coachingNotes:'Use controlled, test-standard repetitions. Complete set 1 without an in-set rest and stop at 15; stop the set rather than pausing to finish, grinding, or reaching technical failure. Rest 3 minutes after set 1, then rest 90–120 seconds between sets 2–5. Do not add a maximal set, extra repetitions, or a skill microdose. Future progression applies only to set 1 and remains coach-directed after a clean response at no more than RPE 8.'},
     {id:'verticalPull',name:'Lat pulldown',prescription:'Next smallest increment above 176 lb on the same seated machine (approximately 187 lb displayed if it uses 11-lb increments) for 3 × 8–10',type:'weighted',unit:'lb',sets:3,targetRpe:'6–8',variations:['Seated lat pulldown','Modified standing lat pulldown','Assisted pull-up','Band-assisted pull-up'],defaultVariation:'Seated lat pulldown',coachingNotes:'Use the next smallest machine increment above 176 lb only on the same seated machine and setup. Approximately 187 lb is guidance for an 11-lb stack increment, not a universal target for a different cable or pulley setup. Cap every set at 10 repetitions.'},
     {id:'overheadPress',name:'Seated dumbbell overhead press',prescription:'30 lb per hand for 3 × 8',type:'weighted',unit:'lb per hand',sets:3,targetLoad:30,targetLoadVariation:'Seated dumbbell press',targetRpe:'7–8',variations:['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],defaultVariation:'Seated dumbbell press',coachingNotes:'Hand-release push-ups remain the AFT-priority first movement. Use controlled, technically clean, submaximal repetitions. Do not add make-up repetitions, grind, or train to failure. Hold 30 lb per hand for confirmation before any later repetition or load progression.'},
     {id:'chestSupportedRow',name:'Machine row',prescription:'Next smallest comparable increment above 110 lb displayed on the same confirmed machine/setup (approximately 121 lb displayed if it uses 11-lb increments) for 3 × 8–10',type:'weighted',unit:'lb',sets:3,targetRpe:'7–8',variations:['Dumbbell row','Machine row','T-bar row'],defaultVariation:'Machine row',coachingNotes:'Use the next increment above 110 lb only on the same confirmed machine and setup. Approximately 121 lb is setup-specific guidance, not a transferable load. Hold the new increment for confirmation before any later progression.'},

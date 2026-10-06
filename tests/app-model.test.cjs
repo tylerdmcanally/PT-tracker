@@ -1842,6 +1842,36 @@ const newV1517RoundTripFixture={
   {exerciseId:'chestSupportedRow',name:'Machine row',type:'weighted',unit:'lb',variation:'Machine row',variationId:'machineRow',load:'121',sets:'3',reps:'8, 8, 8',rpe:'7',completed:true,notes:'Invented current row result.'}
  ]
 };
+const snapshotBackedV1517Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry(${JSON.stringify(newV1517RoundTripFixture)}))`));
+const snapshotBackedV1517Pushups=snapshotBackedV1517Definition.exercises.find(exercise=>exercise.id==='handReleasePushups');
+assert.deepEqual(snapshotBackedV1517Pushups.prescribedReps,[15,10,10,10,10],'snapshot-backed v1.5.17 history keeps its exact per-set targets');
+assert.equal(snapshotBackedV1517Pushups.targetRpe,'Set 1 ≤8; sets 2–5 6–7');
+assert.match(snapshotBackedV1517Pushups.coachingNotes,/stop at 15/,'snapshot-backed v1.5.17 history keeps its exact coaching guidance');
+
+const snapshotlessV1516Strength1Fixture={
+ id:'synthetic-snapshotless-v1516-strength1',date:'2000-01-16',updatedAt:'2000-01-16T18:00:00.000Z',
+ dayKey:'strengthUpperAft',dayLabel:'Strength 1 — Upper Body and AFT Calisthenics',sessionType:'primary',advancesPrimaryRotation:true,
+ programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.16',programEffectiveDate:'2000-01-16',
+ exercises:[
+  {exerciseId:'handReleasePushups',name:'Hand-release push-ups',prescription:'5 × 12',type:'body',sets:'5',targetRpe:'6–8',reps:'12, 12, 12, 12, 12',rpe:'7',completed:true,notes:'Invented snapshotless compatibility result.'},
+  {exerciseId:'overheadPress',name:'Seated dumbbell overhead press',prescription:'30 lb per hand for 3 × 8',type:'weighted',unit:'lb per hand',sets:'3',targetRpe:'7–8',variation:'Seated dumbbell press',load:'30',reps:'8, 8, 8',rpe:'7',completed:true}
+ ]
+};
+const snapshotlessV1516Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry(${JSON.stringify(snapshotlessV1516Strength1Fixture)}))`));
+const snapshotlessV1516Pushups=snapshotlessV1516Definition.exercises.find(exercise=>exercise.id==='handReleasePushups');
+const snapshotlessV1516Press=snapshotlessV1516Definition.exercises.find(exercise=>exercise.id==='overheadPress');
+assert.equal(snapshotlessV1516Pushups.prescription,'5 × 12','snapshotless history reconstructs its saved prescription');
+assert.equal(snapshotlessV1516Pushups.targetRpe,'6–8','snapshotless history reconstructs its saved effort target');
+assert.equal(snapshotlessV1516Pushups.prescribedReps,undefined,'snapshotless history does not inherit active exact per-set targets');
+assert.equal(snapshotlessV1516Pushups.coachingNotes,undefined,'snapshotless history does not inherit active coaching notes');
+assert.equal(snapshotlessV1516Pushups.adherenceTarget,undefined,'snapshotless history does not inherit other active adherence metadata');
+['completed','sets','reps','rpe','notes'].forEach(field=>assert.equal(snapshotlessV1516Pushups[field],undefined,`snapshotless definition reconstruction excludes result-only ${field}`));
+assert.equal(evaluate(`prescriptionAdherence(${JSON.stringify(snapshotlessV1516Pushups)},${JSON.stringify(snapshotlessV1516Strength1Fixture.exercises[0])})`),'met','the invented snapshotless five-by-twelve result is assessed against its saved prescription');
+assert.deepEqual(snapshotlessV1516Press.variations,['Seated dumbbell press','Standing dumbbell press','Machine shoulder press'],'snapshotless history still receives current logging-only variation choices');
+assert.equal(snapshotlessV1516Press.defaultVariation,'Seated dumbbell press');
+assert.equal(snapshotlessV1516Press.targetLoad,undefined,'logging-option fallback does not import the active load target');
+assert.equal(snapshotlessV1516Press.coachingNotes,undefined,'logging-option fallback does not import active coaching notes');
+['completed','sets','reps','rpe','load','variation'].forEach(field=>assert.equal(snapshotlessV1516Press[field],undefined,`snapshotless definition reconstruction excludes result-only ${field}`));
 assert.equal(newV1517RoundTripFixture.exercises[0].prescribedReps,undefined,'completed results keep the existing comma-separated reps shape');
 const normalizedNewV1517=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${JSON.stringify(newV1517RoundTripFixture)}))`));
 assert.deepEqual(normalizedNewV1517.prescriptionSnapshot,newV1517Workout.prescriptionSnapshot,'normalization preserves the new v1.5.17 prescription snapshot');
@@ -2895,18 +2925,18 @@ assert.match(styles,/\.primary,\.secondary,\.danger,\.file-button\{[^}]*min-heig
 assert.match(styles,/button:focus-visible,summary:focus-visible,a:focus-visible\{[^}]*outline:/,'calculator buttons and summaries retain visible keyboard focus');
 assert.match(styles,/\.plate-calculator input,\.plate-adjustments button,\.plate-alternatives button\{border-color:#596768\}/,'plate planner controls retain visible non-text boundaries');
 assert.doesNotMatch(styles,/\.sticky-actions\{position:sticky;bottom:calc\(7px/,'mobile workout actions must remain in page flow');
-assert.match(indexHtml,/styles\.css\?v=63/);
-assert.ok(indexHtml.indexOf('program-config.js?v=63')<indexHtml.indexOf('cloud-config.js?v=63'));
-assert.ok(indexHtml.indexOf('cloud-config.js?v=63')<indexHtml.indexOf('cloud-sync.js?v=63'));
-assert.ok(indexHtml.indexOf('cloud-sync.js?v=63')<indexHtml.indexOf('app.js?v=63'));
-assert.doesNotMatch(indexHtml,/\?v=62/,'the app shell contains no stale v62 asset query');
-assert.match(serviceWorker,/aft-workout-tracker-v63/);
-assert.match(serviceWorker,/styles\.css\?v=63/);
-assert.match(serviceWorker,/program-config\.js\?v=63/);
-assert.match(serviceWorker,/cloud-config\.js\?v=63/);
-assert.match(serviceWorker,/cloud-sync\.js\?v=63/);
-assert.match(serviceWorker,/app\.js\?v=63/);
-assert.doesNotMatch(serviceWorker,/\?v=62/,'the service worker contains no stale v62 asset query');
+assert.match(indexHtml,/styles\.css\?v=64/);
+assert.ok(indexHtml.indexOf('program-config.js?v=64')<indexHtml.indexOf('cloud-config.js?v=64'));
+assert.ok(indexHtml.indexOf('cloud-config.js?v=64')<indexHtml.indexOf('cloud-sync.js?v=64'));
+assert.ok(indexHtml.indexOf('cloud-sync.js?v=64')<indexHtml.indexOf('app.js?v=64'));
+assert.doesNotMatch(indexHtml,/\?v=63/,'the app shell contains no stale v63 asset query');
+assert.match(serviceWorker,/aft-workout-tracker-v64/);
+assert.match(serviceWorker,/styles\.css\?v=64/);
+assert.match(serviceWorker,/program-config\.js\?v=64/);
+assert.match(serviceWorker,/cloud-config\.js\?v=64/);
+assert.match(serviceWorker,/cloud-sync\.js\?v=64/);
+assert.match(serviceWorker,/app\.js\?v=64/);
+assert.doesNotMatch(serviceWorker,/\?v=63/,'the service worker contains no stale v63 asset query');
 assert.match(indexHtml,/id="sessionRpe"[^>]+step="0\.5"[^>]+inputmode="decimal"/,'session RPE accepts half-point values');
 assert.match(appSource,/addEventListener\('invalid',revealInvalidWorkoutControl,true\)/,'invalid workout values must produce visible feedback');
 assert.equal((appSource.match(/Component RPE',performance\.rpe,\{min:1,max:10,step:'\.5'\}/g)||[]).length,4,'all circuit component RPE inputs accept half-point values');

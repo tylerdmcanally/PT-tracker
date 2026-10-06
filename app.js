@@ -358,15 +358,26 @@ function definitionForSavedEntry(entry){
   const matched=current?.exercises?.find(exercise=>exercise.id===savedId)
    ||current?.exercises?.find(exercise=>exercise.name===saved.name);
   const template=matched||(!savedId?current?.exercises?.[index]:null)||{};
-  return {
-   ...clone(template),
+  const historical={
    id:savedId||template.id||`legacy-${index}`,
    name:saved.name||template.name||`Exercise ${index+1}`,
-   prescription:saved.prescription||template.prescription||'Legacy saved prescription',
+   prescription:saved.prescription||'Legacy saved prescription',
    type:saved.type||template.type||'body',
-   unit:saved.unit||template.unit,
-   ...(saved.variation&&!template.variations?{variations:[saved.variation],defaultVariation:saved.variation}:{})
+   unit:saved.unit||template.unit
   };
+  [
+   'prescribedReps','prescribedTimes','adherenceTarget','adherenceNotApplicable','skippedSessionNotApplicable',
+   'targetLoad','targetLoadVariation','loadTolerance','targetRpe','coachingNotes','prescribedLoad',
+   'runStage','circuitVersion','optional','group','defaults','modalities',
+   'variations','defaultVariation','barWeights','perSideVariations','barWeightOptions','variationUnits'
+  ].forEach(field=>{
+   if(saved[field]!==undefined)historical[field]=clone(saved[field]);
+  });
+  if(saved.variation){
+   historical.variations=[...new Set([saved.variation,...(historical.variations||[])])];
+   if(!historical.defaultVariation&&!template.defaultVariation)historical.defaultVariation=saved.variation;
+  }
+  return mergeCurrentLoggingOptions(historical,template);
  });
  return {
   key:entry.dayKey,
@@ -390,10 +401,13 @@ function definitionForSavedEntry(entry){
 
 function mergeCurrentLoggingOptions(saved,current){
  const merged=clone(saved);
- if(!current||!Array.isArray(current.variations))return merged;
- const savedVariations=Array.isArray(saved.variations)?saved.variations:[];
- merged.variations=[...new Set([...savedVariations,...current.variations])];
- if(!merged.defaultVariation&&current.defaultVariation)merged.defaultVariation=current.defaultVariation;
+ if(!current)return merged;
+ if(Array.isArray(current.variations)||Array.isArray(saved.variations)){
+  const savedVariations=Array.isArray(saved.variations)?saved.variations:[];
+  const currentVariations=Array.isArray(current.variations)?current.variations:[];
+  merged.variations=[...new Set([...savedVariations,...currentVariations])];
+  if(!merged.defaultVariation&&current.defaultVariation)merged.defaultVariation=current.defaultVariation;
+ }
  if(current.barWeights||saved.barWeights)merged.barWeights={...(current.barWeights||{}),...(saved.barWeights||{})};
  if(Array.isArray(current.perSideVariations)||Array.isArray(saved.perSideVariations)){
   merged.perSideVariations=[...new Set([
@@ -409,6 +423,12 @@ function mergeCurrentLoggingOptions(saved,current){
  }
  if(current.variationUnits||saved.variationUnits){
   merged.variationUnits={...(current.variationUnits||{}),...(saved.variationUnits||{})};
+ }
+ if(Array.isArray(current.modalities)||Array.isArray(saved.modalities)){
+  merged.modalities=[...new Set([
+   ...(Array.isArray(saved.modalities)?saved.modalities:[]),
+   ...(Array.isArray(current.modalities)?current.modalities:[])
+  ])];
  }
  return merged;
 }

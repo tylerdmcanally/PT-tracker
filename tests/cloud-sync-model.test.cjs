@@ -70,7 +70,19 @@ Object.assign(syntheticStrength3V1515Snapshot.exercises.find(exercise=>exercise.
  coachingNotes:'Use the next smallest increment above 110 lb only on the same confirmed rope, cable, pulley, and machine setup. Approximately 121 lb is setup-specific guidance, not a transferable load. Maintain a pain-free shoulder position and controlled stretch, and hold the new increment for confirmation before any later progression.'
 });
 
-const syntheticStrength3Results=({inclineReps,rowReps,plankTimes,tricepsLoad,tricepsReps})=>[
+const syntheticStrength3V1517Snapshot=JSON.parse(JSON.stringify(syntheticStrength3V1515Snapshot));
+
+const syntheticStrength3V1518Snapshot=JSON.parse(JSON.stringify(syntheticStrength3V1517Snapshot));
+Object.assign(syntheticStrength3V1518Snapshot.exercises.find(exercise=>exercise.id==='sidePlank'),{
+ prescription:'3 × 55 sec each side',prescribedTimes:['0:55','0:55','0:55'],
+ coachingNotes:'Maintain a clean hip and lumbar position and stop a set rather than extending through compensation.'
+});
+Object.assign(syntheticStrength3V1518Snapshot.exercises.find(exercise=>exercise.id==='hammerCurl'),{
+ prescription:'Next smallest comparable dumbbell increment above 25 lb per hand (expected 30 lb per hand if available) for 2 × 10–12',targetLoad:30,
+ coachingNotes:'Use the next smallest increment only for the same dumbbell variation, keep repetitions controlled, and hold the new load for confirmation. Do not transfer 30 lb per hand to the rope-cable variation.'
+});
+
+const syntheticStrength3Results=({inclineReps,rowReps,plankTimes,tricepsLoad,tricepsReps,sidePlankTimes='50, 50, 50',hammerLoad='25',hammerReps='15, 15'})=>[
  {exerciseId:'romanianDeadlift',name:'Romanian deadlift',type:'weighted',unit:'lb',variation:'Barbell',load:'155',sets:'2',reps:'8, 8',rpe:'7',completed:true,notes:'Invented hinge result.'},
  {exerciseId:'squatPattern',name:'Goblet squat',type:'weighted',unit:'lb',variation:'Goblet squat',load:'55',sets:'3',reps:'10, 10, 10',rpe:'7',completed:true,notes:'Invented squat result.'},
  {exerciseId:'inclinePress',name:'Incline dumbbell press',type:'weighted',unit:'lb per hand',variation:'Incline dumbbell press',load:'35',sets:'3',reps:inclineReps,rpe:'7',completed:true,notes:'Invented incline-press result.'},
@@ -85,8 +97,8 @@ const syntheticStrength3Results=({inclineReps,rowReps,plankTimes,tricepsLoad,tri
   {id:'rest',exerciseId:'circuitRest',name:'Rest',type:'rest',resultMode:'shared',sharedResult:{performed:true,durationSeconds:'150'}}
  ]},
  {exerciseId:'plank',name:'Front plank',type:'timed',sets:'3',times:plankTimes,rpe:'7',completed:true,notes:'Invented front-plank result.'},
- {exerciseId:'sidePlank',name:'Side plank',type:'timed',sets:'3',times:'50, 50, 50',rpe:'7',completed:true,notes:'Invented side-plank result.'},
- {exerciseId:'hammerCurl',name:'Hammer curl',type:'weighted',unit:'lb per hand',variation:'Dumbbell hammer curl',load:'25',sets:'2',reps:'15, 15',rpe:'8',completed:true,notes:'Invented hammer-curl result.'},
+ {exerciseId:'sidePlank',name:'Side plank',type:'timed',sets:'3',times:sidePlankTimes,rpe:'7',completed:true,notes:'Invented side-plank result.'},
+ {exerciseId:'hammerCurl',name:'Hammer curl',type:'weighted',unit:'lb per hand',variation:'Dumbbell hammer curl',load:hammerLoad,sets:'2',reps:hammerReps,rpe:'8',completed:true,notes:'Invented hammer-curl result.'},
  {exerciseId:'overheadTricepsExtension',name:'Overhead cable triceps extension',type:'weighted',unit:'lb total',variation:'Rope overhead cable extension',load:tricepsLoad,sets:'2',reps:tricepsReps,rpe:'8',completed:true,notes:'Invented same-setup triceps result.'}
 ];
 
@@ -557,6 +569,85 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
  assert.match(currentCircuit.components.find(component=>component.id==='backwardSledDrag').sharedResult.equipmentLabel,/TANK M4 · Level 3/);
  assert.equal(historical.activeRunStage,'');
  assert.equal(current.activeRunStage,'');
+}
+
+{
+ const oct8V1517Strength3=workout('synthetic-oct8-v1517-strength3','2026-10-08T18:00:00.000Z',{
+  date:'2026-10-08',dayKey:'strengthLowerSdc',dayLabel:'Strength 3 — Lower / Full Body and SDC',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.17',programEffectiveDate:'2026-10-07',
+  activeRunStage:'',targetSessionRpe:'7–8',duration:'64',sessionRpe:'7',painDuring:'0',notes:'Invented October 8 v1.5.17 Strength 3 cloud fixture.',
+  prescriptionSnapshot:JSON.parse(JSON.stringify(syntheticStrength3V1517Snapshot)),
+  exercises:syntheticStrength3Results({inclineReps:'10, 10, 10',rowReps:'10, 10, 10',plankTimes:'55, 55, 55',tricepsLoad:'121',tricepsReps:'10, 10'})
+ });
+ const oct9V1518Strength3=workout('synthetic-oct9-v1518-strength3','2026-10-09T18:00:00.000Z',{
+  date:'2026-10-09',dayKey:'strengthLowerSdc',dayLabel:'Strength 3 — Lower / Full Body and SDC',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.18',programEffectiveDate:'2026-10-09',
+  activeRunStage:'',targetSessionRpe:'7–8',duration:'69',sessionRpe:'8',painDuring:'0',notes:'Invented October 9 v1.5.18 Strength 3 cloud fixture.',
+  prescriptionSnapshot:JSON.parse(JSON.stringify(syntheticStrength3V1518Snapshot)),
+  exercises:syntheticStrength3Results({inclineReps:'10, 10, 10',rowReps:'10, 10, 10',plankTimes:'55, 55, 55',tricepsLoad:'121',tricepsReps:'10, 10',sidePlankTimes:'55, 55, 55',hammerLoad:'30',hammerReps:'10, 10'})
+ });
+ const uploads=model.mergeWorkoutRecords([oct8V1517Strength3,oct9V1518Strength3],[],null).uploads;
+ assert.deepEqual(uploads.find(upload=>upload.entryId===oct8V1517Strength3.id).payload,oct8V1517Strength3,'Firebase upload preserves the complete invented October 8 v1.5.17 Strength 3 document');
+ assert.deepEqual(uploads.find(upload=>upload.entryId===oct9V1518Strength3.id).payload,oct9V1518Strength3,'Firebase upload preserves the complete invented October 9 v1.5.18 Strength 3 document');
+ const remoteChangedAt={
+  [oct8V1517Strength3.id]:'2026-10-08T19:00:00.000Z',
+  [oct9V1518Strength3.id]:'2026-10-09T19:00:00.000Z'
+ };
+ const remote=uploads.map(upload=>({...upload,changedAt:remoteChangedAt[upload.entryId]}));
+ const pulled=model.mergeWorkoutRecords([],remote,null).entries;
+ const historical=pulled.find(entry=>entry.id===oct8V1517Strength3.id);
+ const active=pulled.find(entry=>entry.id===oct9V1518Strength3.id);
+ assert.deepEqual(historical,oct8V1517Strength3,'Firebase round trips preserve the immutable October 8 v1.5.17 Strength 3 snapshot and every invented result');
+ assert.deepEqual(active,oct9V1518Strength3,'Firebase round trips preserve the complete October 9 v1.5.18 Strength 3 snapshot and every invented result');
+
+ const historicalById=Object.fromEntries(historical.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ const activeById=Object.fromEntries(active.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ const exerciseOrder=['romanianDeadlift','squatPattern','inclinePress','oneArmRow','singleLegStrength','gymConditioningCircuit','plank','sidePlank','hammerCurl','overheadTricepsExtension'];
+ assert.deepEqual(historical.prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,'the October 8 fixture contains every Strength 3 and SDC exercise in stable order');
+ assert.deepEqual(active.prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,'the v1.5.18 fixture preserves every Strength 3 and SDC stable exercise ID and order');
+
+ assert.equal(historicalById.sidePlank.prescription,'3 × 50 sec each side');
+ assert.deepEqual(historicalById.sidePlank.prescribedTimes,['0:50','0:50','0:50']);
+ assert.equal(historicalById.sidePlank.targetRpe,'6–8');
+ assert.equal(historicalById.hammerCurl.prescription,'25 lb per hand for 2 × 15');
+ assert.equal(historicalById.hammerCurl.targetLoad,25);
+ assert.equal(historicalById.hammerCurl.targetLoadVariation,'Dumbbell hammer curl');
+ assert.equal(historical.exercises.find(exercise=>exercise.exerciseId==='sidePlank').times,'50, 50, 50','the invented October 8 side-plank result remains unchanged');
+ assert.equal(historical.exercises.find(exercise=>exercise.exerciseId==='hammerCurl').load,'25','the invented October 8 hammer-curl load remains unchanged');
+ assert.equal(historical.exercises.find(exercise=>exercise.exerciseId==='hammerCurl').reps,'15, 15','the invented October 8 hammer-curl repetitions remain unchanged');
+
+ assert.equal(activeById.sidePlank.prescription,'3 × 55 sec each side');
+ assert.deepEqual(activeById.sidePlank.prescribedTimes,['0:55','0:55','0:55']);
+ assert.equal(activeById.sidePlank.targetRpe,'6–8');
+ assert.match(activeById.sidePlank.coachingNotes,/clean hip and lumbar position.*stop a set.*compensation/i);
+ assert.match(activeById.hammerCurl.prescription,/next smallest comparable dumbbell increment above 25 lb per hand.*30 lb per hand.*2 × 10–12/i);
+ assert.equal(activeById.hammerCurl.targetLoad,30);
+ assert.equal(activeById.hammerCurl.targetLoadVariation,'Dumbbell hammer curl');
+ assert.deepEqual(activeById.hammerCurl.variations,['Dumbbell hammer curl','Rope cable hammer curl']);
+ assert.deepEqual(activeById.hammerCurl.variationUnits,{'Dumbbell hammer curl':'lb per hand','Rope cable hammer curl':'lb total'});
+ assert.equal(activeById.hammerCurl.defaultVariation,'Dumbbell hammer curl');
+ assert.equal(activeById.hammerCurl.group,'armSuperset');
+ assert.equal(activeById.hammerCurl.optional,true);
+ assert.equal(activeById.hammerCurl.targetRpe,'7–9');
+ assert.match(activeById.hammerCurl.coachingNotes,/same dumbbell variation.*controlled.*hold the new load for confirmation.*not transfer.*rope-cable variation/i);
+ assert.equal(active.exercises.find(exercise=>exercise.exerciseId==='sidePlank').times,'55, 55, 55');
+ assert.equal(active.exercises.find(exercise=>exercise.exerciseId==='hammerCurl').load,'30');
+ assert.equal(active.exercises.find(exercise=>exercise.exerciseId==='hammerCurl').reps,'10, 10');
+
+ for(const exerciseId of exerciseOrder.filter(exerciseId=>!['sidePlank','hammerCurl'].includes(exerciseId))){
+  assert.deepEqual(activeById[exerciseId],historicalById[exerciseId],`${exerciseId} remains unchanged between the invented v1.5.17 and v1.5.18 Strength 3 snapshots`);
+  assert.deepEqual(active.exercises.find(exercise=>exercise.exerciseId===exerciseId),historical.exercises.find(exercise=>exercise.exerciseId===exerciseId),`${exerciseId} keeps its complete invented result across the v1.5.17 and v1.5.18 Strength 3 fixtures`);
+ }
+ const historicalCircuit=historical.exercises.find(exercise=>exercise.exerciseId==='gymConditioningCircuit');
+ const activeCircuit=active.exercises.find(exercise=>exercise.exerciseId==='gymConditioningCircuit');
+ assert.deepEqual(activeCircuit,historicalCircuit,'the complete invented two-round SDC result remains unchanged in the v1.5.18 Firebase fixture');
+ assert.equal(activeCircuit.rounds,'2');
+ assert.deepEqual(activeCircuit.components.map(component=>component.id),['farmerCarry','lateralStepUps','hardCardio','backwardSledDrag','forwardSledPush','rest']);
+ assert.match(activeCircuit.components.find(component=>component.id==='backwardSledDrag').sharedResult.equipmentLabel,/TANK M4 · Level 3/);
+ assert.equal(historical.programVersion,'1.5.17');
+ assert.equal(active.programVersion,'1.5.18');
+ assert.equal(historical.activeRunStage,'');
+ assert.equal(active.activeRunStage,'');
 }
 
 {

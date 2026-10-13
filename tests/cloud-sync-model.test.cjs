@@ -138,9 +138,22 @@ Object.assign(syntheticStrength1V1517Snapshot.exercises.find(exercise=>exercise.
  coachingNotes:'Use controlled test-standard repetitions. Complete set 1 continuously without an in-set rest and stop at 15; stop the set rather than pausing to finish, grinding, or reaching technical failure. Rest 3 minutes after set 1, then rest 90–120 seconds between sets 2–5. Do not add a maximal set, extra repetitions, or a skill microdose. Future progression applies only to set 1 and remains coach-directed after a clean response at no more than RPE 8.'
 });
 
-const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,pushupReps='12, 12, 12, 12, 12',pushupRpe='7'})=>[
+const syntheticStrength1V1518Snapshot=JSON.parse(JSON.stringify(syntheticStrength1V1517Snapshot));
+
+const syntheticStrength1V1519Snapshot=JSON.parse(JSON.stringify(syntheticStrength1V1518Snapshot));
+Object.assign(syntheticStrength1V1519Snapshot.exercises.find(exercise=>exercise.id==='handReleasePushups'),{
+ prescription:'Set 1: 17 continuous reps; Sets 2–5: 10 reps',
+ prescribedReps:[17,10,10,10,10],
+ coachingNotes:'Use controlled, test-standard repetitions. Complete set 1 without an in-set rest and stop at 17; stop the set rather than pausing to finish, grinding, or reaching technical failure. Rest 3 minutes after set 1, then 90–120 seconds between sets 2–5. Do not add a maximal set, extra repetitions, or a skill microdose. Future progression still applies only to set 1 and remains coach-directed after a clean response at no more than RPE 8.'
+});
+Object.assign(syntheticStrength1V1519Snapshot.exercises.find(exercise=>exercise.id==='verticalPull'),{
+ prescription:'Next smallest increment above 187 lb on the same seated machine (approximately 198 lb displayed if it uses 11-lb increments) for 3 × 8–10',
+ coachingNotes:'Use the next smallest machine increment above 187 lb only on the same seated machine and setup. Approximately 198 lb is guidance only if that stack uses 11-lb increments; it is not a universal load for another cable, pulley, or machine. Cap every set at 10 repetitions and hold the new increment for confirmation before any later progression.'
+});
+
+const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,pushupReps='12, 12, 12, 12, 12',pushupRpe='7',pulldownLoad='187',pulldownReps='8, 8, 8',pulldownRpe='7'})=>[
  {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'5',reps:pushupReps,rpe:pushupRpe,completed:true,notes:'Invented clean push-up result.'},
- {exerciseId:'verticalPull',name:'Lat pulldown',type:'weighted',unit:'lb',variation:'Seated lat pulldown',variationId:'seatedLatPulldown',load:'187',sets:'3',reps:'8, 8, 8',rpe:'7',completed:true,notes:'Invented same-machine pulldown result.'},
+ {exerciseId:'verticalPull',name:'Lat pulldown',type:'weighted',unit:'lb',variation:'Seated lat pulldown',variationId:'seatedLatPulldown',load:pulldownLoad,sets:'3',reps:pulldownReps,rpe:pulldownRpe,completed:true,notes:'Invented same-machine pulldown result.'},
  {exerciseId:'overheadPress',name:'Seated dumbbell overhead press',type:'weighted',unit:'lb per hand',variation:'Seated dumbbell press',variationId:'seatedDumbbellPress',load:overheadLoad,sets:'3',reps:overheadReps,rpe:'7',completed:true,notes:'Invented overhead-press result.'},
  {exerciseId:'chestSupportedRow',name:'Machine row',type:'weighted',unit:'lb',variation:'Machine row',variationId:'machineRow',load:rowLoad,sets:'3',reps:rowReps,rpe:'7',completed:true,notes:'Invented same-machine row result.'},
  {exerciseId:'lateralRaise',name:'Cable lateral raise',type:'weighted',unit:'lb per side',variation:'Cable lateral raise',variationId:'cableLateralRaise',load:'44',sets:'2',reps:'12, 12',rpe:'7',completed:true,notes:'Invented same-setup lateral-raise result.'},
@@ -672,31 +685,57 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
   prescriptionSnapshot:JSON.parse(JSON.stringify(syntheticStrength1V1517Snapshot)),
   exercises:syntheticStrength1Results({overheadLoad:'30',overheadReps:'8, 8, 8',rowLoad:'121',rowReps:'8, 8, 8',pushupReps:'15, 10, 10, 10, 10',pushupRpe:'8'})
  });
- const uploads=model.mergeWorkoutRecords([oct4V1515Strength1,oct5V1516Strength1,oct7V1517Strength1],[],null).uploads;
+ const oct13V1518Strength1=workout('synthetic-oct13-v1518-strength1','2026-10-13T18:00:00.000Z',{
+  date:'2026-10-13',dayKey:'strengthUpperAft',dayLabel:'Strength 1 — Upper Body and AFT Calisthenics',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.18',programEffectiveDate:'2026-10-09',
+  activeRunStage:'',targetSessionRpe:'6–7',duration:'61',sessionRpe:'6',painDuring:'0',sleepQuality:'Fair',notes:'Invented October 13 v1.5.18 Strength 1 cloud fixture; values are synthetic.',
+  prescriptionSnapshot:JSON.parse(JSON.stringify(syntheticStrength1V1518Snapshot)),
+  exercises:syntheticStrength1Results({overheadLoad:'30',overheadReps:'8, 8, 8',rowLoad:'121',rowReps:'8, 8, 8',pushupReps:'15, 10, 10, 10, 10',pushupRpe:'7',pulldownLoad:'187',pulldownReps:'8, 9, 8',pulldownRpe:'7'})
+ });
+ const oct14V1519Strength1=workout('synthetic-oct14-v1519-strength1','2026-10-14T18:00:00.000Z',{
+  date:'2026-10-14',dayKey:'strengthUpperAft',dayLabel:'Strength 1 — Upper Body and AFT Calisthenics',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.19',programEffectiveDate:'2026-10-14',
+  activeRunStage:'',targetSessionRpe:'6–7',duration:'62',sessionRpe:'7',painDuring:'0',sleepQuality:'Good',notes:'Invented October 14 v1.5.19 Strength 1 cloud fixture; values are synthetic.',
+  prescriptionSnapshot:JSON.parse(JSON.stringify(syntheticStrength1V1519Snapshot)),
+  exercises:syntheticStrength1Results({overheadLoad:'30',overheadReps:'8, 8, 8',rowLoad:'121',rowReps:'8, 8, 8',pushupReps:'17, 10, 10, 10, 10',pushupRpe:'8',pulldownLoad:'198',pulldownReps:'8, 8, 9',pulldownRpe:'7'})
+ });
+ const uploads=model.mergeWorkoutRecords([oct4V1515Strength1,oct5V1516Strength1,oct7V1517Strength1,oct13V1518Strength1,oct14V1519Strength1],[],null).uploads;
  assert.deepEqual(uploads.find(upload=>upload.entryId===oct4V1515Strength1.id).payload,oct4V1515Strength1,'Firebase upload preserves the complete invented October 4 v1.5.15 Strength 1 document');
  assert.deepEqual(uploads.find(upload=>upload.entryId===oct5V1516Strength1.id).payload,oct5V1516Strength1,'Firebase upload preserves the complete invented October 5 v1.5.16 Strength 1 document');
  assert.deepEqual(uploads.find(upload=>upload.entryId===oct7V1517Strength1.id).payload,oct7V1517Strength1,'Firebase upload preserves the complete invented October 7 v1.5.17 Strength 1 document');
+ assert.deepEqual(uploads.find(upload=>upload.entryId===oct13V1518Strength1.id).payload,oct13V1518Strength1,'Firebase upload preserves the complete invented October 13 v1.5.18 Strength 1 document');
+ assert.deepEqual(uploads.find(upload=>upload.entryId===oct14V1519Strength1.id).payload,oct14V1519Strength1,'Firebase upload preserves the complete invented October 14 v1.5.19 Strength 1 document');
  const remoteChangedAt={
   [oct4V1515Strength1.id]:'2026-10-04T19:00:00.000Z',
   [oct5V1516Strength1.id]:'2026-10-05T19:00:00.000Z',
-  [oct7V1517Strength1.id]:'2026-10-07T19:00:00.000Z'
+  [oct7V1517Strength1.id]:'2026-10-07T19:00:00.000Z',
+  [oct13V1518Strength1.id]:'2026-10-13T19:00:00.000Z',
+  [oct14V1519Strength1.id]:'2026-10-14T19:00:00.000Z'
  };
  const remote=uploads.map(upload=>({...upload,changedAt:remoteChangedAt[upload.entryId]}));
  const pulled=model.mergeWorkoutRecords([],remote,null).entries;
  const historical=pulled.find(entry=>entry.id===oct4V1515Strength1.id);
  const current=pulled.find(entry=>entry.id===oct5V1516Strength1.id);
  const active=pulled.find(entry=>entry.id===oct7V1517Strength1.id);
+ const oct13History=pulled.find(entry=>entry.id===oct13V1518Strength1.id);
+ const prospective=pulled.find(entry=>entry.id===oct14V1519Strength1.id);
  assert.deepEqual(historical,oct4V1515Strength1,'Firebase round trips preserve the immutable October 4 v1.5.15 Strength 1 snapshot and every invented result');
  assert.deepEqual(current,oct5V1516Strength1,'Firebase round trips preserve the complete current v1.5.16 Strength 1 snapshot and every invented result');
  assert.deepEqual(active,oct7V1517Strength1,'Firebase round trips preserve the complete active v1.5.17 Strength 1 snapshot, per-set repetition metadata, and every invented result');
+ assert.deepEqual(oct13History,oct13V1518Strength1,'Firebase round trips preserve the immutable October 13 v1.5.18 Strength 1 snapshot and every invented result');
+ assert.deepEqual(prospective,oct14V1519Strength1,'Firebase round trips preserve the complete v1.5.19 Strength 1 snapshot, per-set repetition metadata, and every invented result');
 
  const historicalById=Object.fromEntries(historical.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
  const currentById=Object.fromEntries(current.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
  const activeById=Object.fromEntries(active.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ const oct13ById=Object.fromEntries(oct13History.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ const prospectiveById=Object.fromEntries(prospective.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
  const exerciseOrder=['handReleasePushups','verticalPull','overheadPress','chestSupportedRow','lateralRaise','chestFly','trunkStability','preacherCurl','tricepsPressdown'];
  assert.deepEqual(historical.prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,'the October 4 fixture contains the complete Strength 1 prescription in stable order');
  assert.deepEqual(current.prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,'the current v1.5.16 fixture preserves every Strength 1 stable exercise ID and order');
  assert.deepEqual(active.prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,'the active v1.5.17 fixture preserves every Strength 1 stable exercise ID and order');
+ assert.deepEqual(oct13History.prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,'the immutable October 13 v1.5.18 fixture preserves every Strength 1 stable exercise ID and order');
+ assert.deepEqual(prospective.prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,'the v1.5.19 fixture preserves every Strength 1 stable exercise ID and order');
 
  assert.equal(historicalById.overheadPress.prescription,'25 lb per hand for 3 × 10');
  assert.equal(historicalById.overheadPress.targetLoad,25);
@@ -733,6 +772,46 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
  assert.equal(currentById.handReleasePushups.prescribedReps,undefined,'v1.5.16 history is not backfilled with v1.5.17 per-set metadata');
  assert.equal(historicalById.handReleasePushups.prescribedReps,undefined,'October 4 v1.5.15 history is not backfilled with v1.5.17 per-set metadata');
 
+ assert.deepEqual(oct13History.prescriptionSnapshot,active.prescriptionSnapshot,'Strength 1 remains unchanged from v1.5.17 through the immutable invented October 13 v1.5.18 snapshot');
+ assert.equal(oct13ById.handReleasePushups.type,'body');
+ assert.equal(oct13ById.handReleasePushups.sets,5);
+ assert.equal(oct13ById.handReleasePushups.prescription,'Set 1: 15 continuous reps; Sets 2–5: 10 reps');
+ assert.deepEqual(oct13ById.handReleasePushups.prescribedReps,[15,10,10,10,10]);
+ assert.equal(oct13ById.handReleasePushups.targetRpe,'Set 1 ≤8; sets 2–5 6–7');
+ assert.match(oct13ById.handReleasePushups.coachingNotes,/without an in-set rest.*stop at 15.*rest 3 minutes.*90–120 seconds.*progression applies only to set 1.*coach-directed/i);
+ assert.match(oct13ById.verticalPull.prescription,/next smallest increment above 176 lb.*approximately 187 lb.*3 × 8–10/i);
+ assert.equal(oct13ById.verticalPull.sets,3);
+ assert.equal(oct13ById.verticalPull.targetRpe,'6–8');
+ assert.equal(oct13ById.verticalPull.targetLoad,undefined,'the immutable v1.5.18 same-machine pulldown cue does not become a universal target load');
+ assert.deepEqual(oct13ById.verticalPull.variations,['Seated lat pulldown','Modified standing lat pulldown','Assisted pull-up','Band-assisted pull-up']);
+ assert.equal(oct13ById.verticalPull.defaultVariation,'Seated lat pulldown');
+ const oct13Pushups=oct13History.exercises.find(exercise=>exercise.exerciseId==='handReleasePushups');
+ const oct13Pulldown=oct13History.exercises.find(exercise=>exercise.exerciseId==='verticalPull');
+ assert.equal(oct13Pushups.reps,'15, 10, 10, 10, 10','the deliberately invented October 13 push-up result remains unchanged');
+ assert.equal(oct13Pushups.prescribedReps,undefined,'v1.5.18 per-set targets remain snapshot metadata and do not alter the result shape');
+ assert.equal(oct13Pulldown.load,'187','the deliberately invented October 13 same-machine pulldown load remains unchanged');
+ assert.equal(oct13Pulldown.reps,'8, 9, 8','the deliberately invented October 13 pulldown repetitions remain unchanged');
+
+ assert.equal(prospectiveById.handReleasePushups.type,'body');
+ assert.equal(prospectiveById.handReleasePushups.sets,5);
+ assert.equal(prospectiveById.handReleasePushups.prescription,'Set 1: 17 continuous reps; Sets 2–5: 10 reps');
+ assert.deepEqual(prospectiveById.handReleasePushups.prescribedReps,[17,10,10,10,10]);
+ assert.equal(prospectiveById.handReleasePushups.targetRpe,'Set 1 ≤8; sets 2–5 6–7');
+ assert.match(prospectiveById.handReleasePushups.coachingNotes,/controlled, test-standard repetitions.*without an in-set rest.*stop at 17.*rest 3 minutes.*90–120 seconds.*no.*maximal set.*extra repetitions.*skill microdose.*only to set 1.*coach-directed/i);
+ assert.match(prospectiveById.verticalPull.prescription,/next smallest increment above 187 lb.*approximately 198 lb.*3 × 8–10/i);
+ assert.equal(prospectiveById.verticalPull.sets,3);
+ assert.equal(prospectiveById.verticalPull.targetRpe,'6–8');
+ assert.equal(prospectiveById.verticalPull.targetLoad,undefined,'the v1.5.19 same-machine pulldown cue remains setup guidance rather than a universal target load');
+ assert.deepEqual(prospectiveById.verticalPull.variations,oct13ById.verticalPull.variations,'v1.5.19 preserves seated and modified-standing pulldown variation identities');
+ assert.equal(prospectiveById.verticalPull.defaultVariation,'Seated lat pulldown');
+ assert.match(prospectiveById.verticalPull.coachingNotes,/same seated machine and setup.*198 lb.*not a universal load.*cap every set at 10.*hold the new increment for confirmation/i);
+ const prospectivePushups=prospective.exercises.find(exercise=>exercise.exerciseId==='handReleasePushups');
+ const prospectivePulldown=prospective.exercises.find(exercise=>exercise.exerciseId==='verticalPull');
+ assert.equal(prospectivePushups.reps,'17, 10, 10, 10, 10');
+ assert.equal(prospectivePushups.prescribedReps,undefined,'v1.5.19 per-set targets remain snapshot metadata and preserve the existing completed-result shape');
+ assert.equal(prospectivePulldown.load,'198');
+ assert.equal(prospectivePulldown.reps,'8, 8, 9');
+
  for(const exerciseId of exerciseOrder.filter(exerciseId=>!['overheadPress','chestSupportedRow'].includes(exerciseId))){
   assert.deepEqual(currentById[exerciseId],historicalById[exerciseId],`${exerciseId} remains unchanged between the invented v1.5.15 and v1.5.16 Strength 1 snapshots`);
   assert.deepEqual(current.exercises.find(exercise=>exercise.exerciseId===exerciseId),historical.exercises.find(exercise=>exercise.exerciseId===exerciseId),`${exerciseId} keeps its complete invented result across the paired Strength 1 fixtures`);
@@ -741,12 +820,22 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
   assert.deepEqual(activeById[exerciseId],currentById[exerciseId],`${exerciseId} remains unchanged between the invented v1.5.16 and v1.5.17 Strength 1 snapshots`);
   assert.deepEqual(active.exercises.find(exercise=>exercise.exerciseId===exerciseId),current.exercises.find(exercise=>exercise.exerciseId===exerciseId),`${exerciseId} keeps its complete invented result across the v1.5.16 and v1.5.17 Strength 1 fixtures`);
  }
+ for(const exerciseId of exerciseOrder.filter(exerciseId=>!['handReleasePushups','verticalPull'].includes(exerciseId))){
+  assert.deepEqual(prospectiveById[exerciseId],oct13ById[exerciseId],`${exerciseId} remains unchanged between the invented v1.5.18 and v1.5.19 Strength 1 snapshots`);
+  assert.deepEqual(prospective.exercises.find(exercise=>exercise.exerciseId===exerciseId),oct13History.exercises.find(exercise=>exercise.exerciseId===exerciseId),`${exerciseId} keeps its complete invented result across the paired v1.5.18 and v1.5.19 Strength 1 fixtures`);
+ }
  assert.equal(historical.programVersion,'1.5.15');
  assert.equal(current.programVersion,'1.5.16');
  assert.equal(active.programVersion,'1.5.17');
+ assert.equal(oct13History.programVersion,'1.5.18');
+ assert.equal(oct13History.programEffectiveDate,'2026-10-09');
+ assert.equal(prospective.programVersion,'1.5.19');
+ assert.equal(prospective.programEffectiveDate,'2026-10-14');
  assert.equal(historical.activeRunStage,'');
  assert.equal(current.activeRunStage,'');
  assert.equal(active.activeRunStage,'');
+ assert.equal(oct13History.activeRunStage,'');
+ assert.equal(prospective.activeRunStage,'');
 }
 
 {

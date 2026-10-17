@@ -22,8 +22,10 @@ const context={
 context.window.window=context.window;
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(path.join(root,'cloud-sync.js'),'utf8'),context,{filename:'cloud-sync.js'});
+vm.runInContext(fs.readFileSync(path.join(root,'program-config.js'),'utf8'),context,{filename:'program-config.js'});
 
 const model=context.window.AFTCloud.model;
+const currentProgram=JSON.parse(JSON.stringify(context.window.AFT_PROGRAM_CONFIG));
 // Workout records in this file are synthetic persistence fixtures, never private user exports.
 const workout=(id,updatedAt,extra={})=>({
  id,
@@ -33,6 +35,32 @@ const workout=(id,updatedAt,extra={})=>({
  prescriptionSnapshot:{label:'Day 1',exercises:[{id:'deadlift',prescription:'145 lb total for 3 × 5'}]},
  ...extra
 });
+
+const activeSessionSnapshot=sessionKey=>{
+ const session=currentProgram.sessions[sessionKey];
+ return {
+  sessionKey:session.key,
+  sessionType:session.sessionType,
+  label:session.label,
+  focus:session.focus,
+  warmup:session.warmup,
+  targetSessionRpe:session.targetSessionRpe,
+  targetDuration:session.targetDuration,
+  advancesPrimaryRotation:session.advancesPrimaryRotation,
+  optional:session.optional,
+  exercises:JSON.parse(JSON.stringify(session.exercises))
+ };
+};
+
+const syntheticResultsForSnapshot=snapshot=>snapshot.exercises.map(exercise=>({
+ exerciseId:exercise.id,
+ name:exercise.name,
+ type:exercise.type,
+ ...(exercise.sets?{sets:String(exercise.sets)}:{}),
+ ...(exercise.id==='handReleasePushups'?{reps:exercise.prescribedReps.join(', '),rpe:'5'}:{}),
+ completed:true,
+ notes:'Invented v1.5.21 full-document persistence result.'
+}));
 
 const syntheticStrength3V1514Snapshot={
  sessionKey:'strengthLowerSdc',sessionType:'primary',label:'Strength 3 — Lower / Full Body and SDC',
@@ -741,6 +769,8 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
  assert.deepEqual(active.prescriptionSnapshot.exercises.map(exercise=>exercise.id),activeOrder,'the v1.5.20 snapshot removes only active side plank and preserves every remaining stable exercise ID in order');
  assert.equal(activeById.sidePlank,undefined,'the active v1.5.20 Strength 3 snapshot has no side-plank definition');
  assert.equal(active.exercises.some(exercise=>exercise.exerciseId==='sidePlank'),false,'the active v1.5.20 result array has no synthesized side-plank result');
+ assert.equal(activeById.handReleasePushups,undefined,'the immutable v1.5.20 Strength 3 snapshot does not inherit the v1.5.21 push-up exposure');
+ assert.equal(active.exercises.some(exercise=>exercise.exerciseId==='handReleasePushups'),false,'the immutable v1.5.20 result array does not gain a synthesized Strength 3 push-up result');
 
  assert.equal(historical.prescriptionSnapshot.focus,'Lower and full-body strength followed by the capped two-round SDC circuit and trunk work.');
  assert.equal(historical.prescriptionSnapshot.targetDuration,'Approximately 60–75 minutes');
@@ -804,6 +834,77 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
  assert.equal(active.programEffectiveDate,'2026-10-18');
  assert.equal(historical.activeRunStage,'');
  assert.equal(active.activeRunStage,'');
+}
+
+{
+ const sessionKeys=['strengthUpperAft','strengthHeavyCarry','strengthLowerSdc'];
+ const dates=['2099-01-01','2099-01-02','2099-01-03'];
+ const entries=sessionKeys.map((sessionKey,index)=>{
+  const prescriptionSnapshot=activeSessionSnapshot(sessionKey);
+  return workout(`synthetic-v1521-${sessionKey}`,`${dates[index]}T18:00:00.000Z`,{
+   date:dates[index],
+   dayKey:sessionKey,
+   dayLabel:prescriptionSnapshot.label,
+   sessionType:'primary',
+   advancesPrimaryRotation:true,
+   programId:currentProgram.id,
+   programName:currentProgram.name,
+   programVersion:'1.5.21',
+   programEffectiveDate:'2026-10-18',
+   activeRunStage:'',
+   targetSessionRpe:prescriptionSnapshot.targetSessionRpe,
+   duration:'50',
+   sessionRpe:'6',
+   painDuring:'0',
+   notes:'Invented v1.5.21 full-document Firebase fixture; all values are synthetic.',
+   prescriptionSnapshot,
+   exercises:syntheticResultsForSnapshot(prescriptionSnapshot)
+  });
+ });
+
+ const uploads=model.mergeWorkoutRecords(entries,[],null).uploads;
+ assert.equal(uploads.length,3,'Firebase queues one complete v1.5.21 document for every active strength session');
+ entries.forEach(entry=>{
+  assert.deepEqual(uploads.find(upload=>upload.entryId===entry.id).payload,entry,`Firebase upload preserves the complete invented ${entry.dayKey} v1.5.21 document`);
+ });
+ const remote=uploads.map((upload,index)=>({...upload,changedAt:`${dates[index]}T19:00:00.000Z`}));
+ const pulled=model.mergeWorkoutRecords([],remote,null).entries;
+ entries.forEach(entry=>{
+  assert.deepEqual(pulled.find(candidate=>candidate.id===entry.id),entry,`Firebase round trips preserve the complete invented ${entry.dayKey} v1.5.21 document`);
+ });
+
+ const byKey=Object.fromEntries(pulled.map(entry=>[entry.dayKey,entry]));
+ const expectedOrders={
+  strengthUpperAft:['handReleasePushups','verticalPull','overheadPress','chestSupportedRow','lateralRaise','chestFly','trunkStability','preacherCurl','tricepsPressdown'],
+  strengthHeavyCarry:['deadlift','handReleasePushups','squatOrLegPress','horizontalPress','seatedRow','loadedCarry','plank'],
+  strengthLowerSdc:['romanianDeadlift','squatPattern','handReleasePushups','inclinePress','oneArmRow','singleLegStrength','plank','hammerCurl','overheadTricepsExtension']
+ };
+ Object.entries(expectedOrders).forEach(([sessionKey,exerciseOrder])=>{
+  assert.deepEqual(byKey[sessionKey].prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,`${sessionKey} preserves its exact active v1.5.21 exercise order through Firebase`);
+  assert.deepEqual(byKey[sessionKey].exercises.map(exercise=>exercise.exerciseId),exerciseOrder,`${sessionKey} preserves its complete invented result order through Firebase`);
+ });
+
+ const pushupDefinitions=sessionKeys.map(sessionKey=>byKey[sessionKey].prescriptionSnapshot.exercises.find(exercise=>exercise.id==='handReleasePushups'));
+ assert.deepEqual(pushupDefinitions[0].prescribedReps,[17,10,10,10,10],'Strength 1 keeps the unchanged 57-repetition exact target');
+ assert.deepEqual(pushupDefinitions[1].prescribedReps,[8,8,8],'Strength 2 preserves the new exact 3 × 8 target through Firebase');
+ assert.deepEqual(pushupDefinitions[2].prescribedReps,[8,8],'Strength 3 preserves the new exact 2 × 8 target through Firebase');
+ assert.deepEqual(pushupDefinitions.map(exercise=>exercise.sets),[5,3,2]);
+ assert.deepEqual(pushupDefinitions.map(exercise=>exercise.targetRpe),['Set 1 ≤8; sets 2–5 6–7','5–6','5–6']);
+ assert.equal(pushupDefinitions.flatMap(exercise=>exercise.prescribedReps).reduce((sum,reps)=>sum+reps,0),97,'the three round-tripped active snapshots retain exactly 97 planned weekly push-up repetitions');
+ sessionKeys.forEach(sessionKey=>{
+  const result=byKey[sessionKey].exercises.find(exercise=>exercise.exerciseId==='handReleasePushups');
+  assert.equal(result.prescribedReps,undefined,`${sessionKey} keeps exact targets in snapshot metadata without changing the completed-result shape`);
+ });
+
+ const activeStrength3=byKey.strengthLowerSdc;
+ assert.equal(activeStrength3.dayLabel,'Strength 3 — Lower / Full Body and Push Support');
+ assert.equal(activeStrength3.prescriptionSnapshot.targetDuration,'Approximately 45–60 minutes');
+ assert.equal(activeStrength3.prescriptionSnapshot.exercises.some(exercise=>exercise.id==='gymConditioningCircuit'),false,'the v1.5.21 active Strength 3 cloud document contains no routine circuit definition');
+ assert.equal(activeStrength3.prescriptionSnapshot.exercises.some(exercise=>exercise.id==='sidePlank'),false,'the v1.5.21 active Strength 3 cloud document keeps side plank retired');
+ assert.equal(activeStrength3.exercises.some(exercise=>['gymConditioningCircuit','sidePlank'].includes(exercise.exerciseId)),false,'Firebase does not synthesize retired Strength 3 results');
+ assert.equal(currentProgram.version,'1.5.21');
+ assert.equal(currentProgram.effectiveDate,'2026-10-18');
+ assert.deepEqual(currentProgram.rotation,sessionKeys);
 }
 
 {

@@ -46,7 +46,7 @@ vm.runInContext(fs.readFileSync(path.join(root,'app.js'),'utf8'),context,{filena
 const evaluate=source=>vm.runInContext(source,context);
 
 assert.equal(evaluate('PROGRAM.name'),'AFT Foundation Block 1');
-assert.equal(evaluate('PROGRAM.version'),'1.5.20');
+assert.equal(evaluate('PROGRAM.version'),'1.5.21');
 assert.equal(evaluate('PROGRAM.effectiveDate'),'2026-10-18');
 assert.equal(evaluate('PROGRAM.currentRunStage'),null,'the strength-only AFT program has no active run stage');
 assert.equal(evaluate('currentProgramMeta().runStage'),null,'program metadata preserves an absent run stage without coercion');
@@ -125,9 +125,12 @@ assert.equal(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='deadlift
 assert.equal(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='deadlift').targetLoadVariation`),'Trap / hex bar');
 assert.equal(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='deadlift').targetRpe`),'6–8');
 assert.match(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='deadlift').coachingNotes`),/Hold 195 lb for confirmation.*later coach-directed increase.*technically clean.*do not grind/);
-assert.equal(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='handReleasePushups').prescription`),'4 × 10');
-assert.equal(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='handReleasePushups').targetRpe`),'5–7');
-assert.match(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='handReleasePushups').coachingNotes`),/four equal, technically clean, submaximal sets.*stop before failure.*lower-volume second weekly/);
+const activeStrength2Pushups=`${activeStrength2}.find(exercise=>exercise.id==='handReleasePushups')`;
+assert.equal(evaluate(`${activeStrength2Pushups}.prescription`),'3 × 8');
+assert.equal(evaluate(`${activeStrength2Pushups}.sets`),3);
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(${activeStrength2Pushups}.prescribedReps)`)),[8,8,8]);
+assert.equal(evaluate(`${activeStrength2Pushups}.targetRpe`),'5–6');
+assert.equal(evaluate(`${activeStrength2Pushups}.coachingNotes`),'Use three equal, test-standard, technically clean sets of 8 with 90–120 seconds rest. Stop rather than pause in-set, grind, or add repetitions. This is the smaller middle weekly exposure after Strength 1\'s continuous-set priority work.');
 assert.equal(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='squatOrLegPress').prescription`),'160 lb on the same confirmed leg-press machine/setup for 3 × 10');
 assert.equal(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='squatOrLegPress').targetLoad`),160);
 assert.equal(evaluate(`${activeStrength2}.find(exercise=>exercise.id==='squatOrLegPress').targetLoadVariation`),'Leg press');
@@ -149,7 +152,7 @@ assert.equal(evaluate(`${activeStrength2Carry}.sets`),4);
 assert.equal(evaluate(`${activeStrength2Carry}.targetRpe`),'6–8');
 assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(${activeStrength2Carry}.variations)`)),['Farmer carry','Heavy static hold','Suitcase carry']);
 assert.equal(evaluate(`${activeStrength2Carry}.defaultVariation`),'Farmer carry');
-assert.match(evaluate(`${activeStrength2Carry}.coachingNotes`),/45 lb per hand as the primary loaded-carry and grip exposure.*Strength 3 retains one controlled SDC-maintenance round.*Do not progress load, distance, or trips/);
+assert.equal(evaluate(`${activeStrength2Carry}.coachingNotes`),'Aim for approximately 40 yd per trip. Keep 45 lb per hand as the primary loaded-carry and grip exposure. Do not progress load, distance, or trips.');
 const activeStrength2Plank=`SESSIONS.strengthHeavyCarry.exercises.find(exercise=>exercise.id==='plank')`;
 assert.equal(evaluate(`${activeStrength2Plank}.prescription`),'3 × 50 sec');
 assert.equal(evaluate(`${activeStrength2Plank}.sets`),3);
@@ -167,12 +170,12 @@ assert.equal(evaluate(`LEGACY_SESSIONS.aerobicBase.exercises[1].optional`),true)
 assert.equal(evaluate(`LEGACY_SESSIONS.aerobicBase.exercises[1].targetRpe`),'1–2');
 
 assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(SESSIONS.strengthLowerSdc.exercises.map(exercise=>exercise.id))`)),[
- 'romanianDeadlift','squatPattern','inclinePress','oneArmRow','singleLegStrength','gymConditioningCircuit','plank','hammerCurl','overheadTricepsExtension'
+ 'romanianDeadlift','squatPattern','handReleasePushups','inclinePress','oneArmRow','singleLegStrength','plank','hammerCurl','overheadTricepsExtension'
 ]);
 assert.equal(evaluate(`SESSIONS.strengthLowerSdc.key`),'strengthLowerSdc');
-assert.equal(evaluate(`SESSIONS.strengthLowerSdc.label`),'Strength 3 — Lower / Full Body and SDC');
-assert.equal(evaluate(`SESSIONS.strengthLowerSdc.focus`),'Lower and full-body strength followed by one controlled SDC-maintenance round and front-plank work.');
-assert.equal(evaluate(`SESSIONS.strengthLowerSdc.targetDuration`),'Approximately 50–65 minutes');
+assert.equal(evaluate(`SESSIONS.strengthLowerSdc.label`),'Strength 3 — Lower / Full Body and Push Support');
+assert.equal(evaluate(`SESSIONS.strengthLowerSdc.focus`),'Lower and full-body strength with low-fatigue hand-release-push-up support and front-plank work; no routine SDC conditioning.');
+assert.equal(evaluate(`SESSIONS.strengthLowerSdc.targetDuration`),'Approximately 45–60 minutes');
 assert.equal(evaluate(`SESSIONS.strengthLowerSdc.targetSessionRpe`),'6–8');
 assert.equal(evaluate(`SESSIONS.strengthLowerSdc.sessionType`),'primary');
 assert.equal(evaluate(`SESSIONS.strengthLowerSdc.advancesPrimaryRotation`),true);
@@ -195,7 +198,15 @@ assert.equal(evaluate(`${activeStrength3Squat}.prescription`),'55 lb for 3 × 10
 assert.equal(evaluate(`${activeStrength3Squat}.sets`),3);
 assert.equal(evaluate(`${activeStrength3Squat}.targetLoad`),55);
 assert.equal(evaluate(`${activeStrength3Squat}.targetRpe`),'7–8');
-assert.match(evaluate(`${activeStrength3Squat}.coachingNotes`),/Hold the goblet-squat load and repetitions.*running quality.*one-round SDC-maintenance exposure/);
+assert.equal(evaluate(`${activeStrength3Squat}.coachingNotes`),'Hold the goblet-squat load and repetitions rather than adding lower-body volume so running quality remains protected.');
+const activeStrength3Pushups=`${activeStrength3}.find(exercise=>exercise.id==='handReleasePushups')`;
+assert.equal(evaluate(`${activeStrength3Pushups}.name`),'Hand-release push-ups');
+assert.equal(evaluate(`${activeStrength3Pushups}.prescription`),'2 × 8');
+assert.equal(evaluate(`${activeStrength3Pushups}.type`),'body');
+assert.equal(evaluate(`${activeStrength3Pushups}.sets`),2);
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(${activeStrength3Pushups}.prescribedReps)`)),[8,8]);
+assert.equal(evaluate(`${activeStrength3Pushups}.targetRpe`),'5–6');
+assert.equal(evaluate(`${activeStrength3Pushups}.coachingNotes`),'Use two equal sets of 8 crisp, test-standard repetitions with 90–120 seconds rest. Stop rather than pause in-set, grind, or add repetitions. This is a low-fatigue technique and support exposure; only Strength 1\'s first set progresses continuous event-specific capacity.');
 const activeStrength3Incline=`${activeStrength3}.find(exercise=>exercise.id==='inclinePress')`;
 assert.equal(evaluate(`${activeStrength3Incline}.prescription`),'35 lb per hand for 3 × 10');
 assert.equal(evaluate(`${activeStrength3Incline}.sets`),3);
@@ -215,14 +226,7 @@ assert.match(evaluate(`${activeStrength3}.find(exercise=>exercise.id==='singleLe
 assert.equal(evaluate(`${activeStrength3}.find(exercise=>exercise.id==='singleLegStrength').sets`),2);
 assert.equal(evaluate(`${activeStrength3}.find(exercise=>exercise.id==='singleLegStrength').targetRpe`),'5–7');
 assert.match(evaluate(`${activeStrength3}.find(exercise=>exercise.id==='singleLegStrength').coachingNotes`),/3-second descent and 1-second pause.*tempo and quality progression only.*do not add external load or extra repetitions.*preserve running quality/);
-const activeStrength3Circuit=`${activeStrength3}.find(exercise=>exercise.id==='gymConditioningCircuit')`;
-assert.equal(evaluate(`${activeStrength3Circuit}.prescription`),'Exactly 1 controlled round: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 recovery');
-assert.equal(evaluate(`${activeStrength3Circuit}.circuitVersion`),'foundation-1.4.5');
-assert.equal(evaluate(`${activeStrength3Circuit}.plannedRounds`),1);
-assert.equal(evaluate(`${activeStrength3Circuit}.targetRpe`),'6–7');
-assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(${activeStrength3Circuit}.defaults)`)),{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'30',restSeconds:'150'});
-assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(${activeStrength3Circuit}.modalities)`)),['Bike','Rower','Elliptical','Short safe sprint']);
-assert.match(evaluate(`${activeStrength3Circuit}.coachingNotes`),/exactly one controlled round.*TANK M4 at Level 3.*resistance setting, not a weight.*low-dose maintenance exposure, not a score-comparable AFT SDC rehearsal.*Do not use total circuit time to auto-progress, add a second round, extend hard cardio, increase TANK resistance, or convert resistance to pounds/i);
+assert.equal(evaluate(`${activeStrength3}.some(exercise=>exercise.id==='gymConditioningCircuit')`),false,'routine SDC is removed only from the active Strength 3 definition');
 const activeStrength3Plank=`${activeStrength3}.find(exercise=>exercise.id==='plank')`;
 assert.equal(evaluate(`${activeStrength3Plank}.prescription`),'3 × 55 sec');
 assert.equal(evaluate(`${activeStrength3Plank}.sets`),3);
@@ -230,6 +234,11 @@ assert.equal(evaluate(`${activeStrength3Plank}.targetRpe`),'6–8');
 assert.equal(evaluate(`JSON.stringify(${activeStrength3Plank}.prescribedTimes)`),'["0:55","0:55","0:55"]');
 assert.match(evaluate(`${activeStrength3Plank}.coachingNotes`),/clean position.*stop a set rather than extending through lumbar compensation/);
 assert.equal(evaluate(`${activeStrength3}.some(exercise=>exercise.id==='sidePlank')`),false,'side plank is removed only from the active Strength 3 definition');
+assert.equal(evaluate(`[
+ ...${activeStrength1Pushups}.prescribedReps,
+ ...${activeStrength2Pushups}.prescribedReps,
+ ...${activeStrength3Pushups}.prescribedReps
+].reduce((total,reps)=>total+reps,0)`),97,'the active three-session HRPU redistribution preserves exactly 97 planned weekly repetitions');
 const activeStrength3HammerCurl=`${activeStrength3}.find(exercise=>exercise.id==='hammerCurl')`;
 assert.equal(evaluate(`${activeStrength3HammerCurl}.prescription`),'Next smallest comparable dumbbell increment above 25 lb per hand (expected 30 lb per hand if available) for 2 × 10–12');
 assert.equal(evaluate(`${activeStrength3HammerCurl}.type`),'weighted');
@@ -305,17 +314,16 @@ assert.equal(
  '49fe1bb9d64bf111e0e727ed11aeb74a5ccfc6d698b642d2b9112b940c670a51',
  'Strength 1 exercise order remains byte-for-byte identical to v1.5.15'
 );
-const unchangedStrength2ExerciseHashes=Object.fromEntries(['deadlift','handReleasePushups','squatOrLegPress','horizontalPress','seatedRow','plank'].map(id=>[
+const unchangedStrength2ExerciseHashes=Object.fromEntries(['deadlift','squatOrLegPress','horizontalPress','seatedRow','plank'].map(id=>[
  id,crypto.createHash('sha256').update(evaluate(`JSON.stringify(SESSIONS.strengthHeavyCarry.exercises.find(exercise=>exercise.id==='${id}'))`)).digest('hex')
 ]));
 assert.deepEqual(unchangedStrength2ExerciseHashes,{
  deadlift:'1bf294847fb88acb86eb02265ccdb13bc0367fb844cbacf6189444d911e5207d',
- handReleasePushups:'fffbff582fa292dec7970055afed4ba03391882e325ba4e5c3d29250607149f4',
  squatOrLegPress:'1952d0e8a2f5e7c537236440a7f956803962afcab5e95c867c0f0297960710b3',
  horizontalPress:'fa3a22052888d055841b060b7619cdc2c72a59b0c64b9f9dbaf9cc31b9a82290',
  seatedRow:'92e9928b863bf3eebbf02f6bf05058adc06bf53115f5d156e2bc9137d04f2e3c',
  plank:'46034686ba6324e13f5938843a325937318eef413304a1f23394dcef6f2b3823'
-},'all non-carry Strength 2 exercises remain byte-for-byte identical to v1.5.19');
+},'all unchanged non-HRPU, non-carry Strength 2 exercises remain byte-for-byte identical to v1.5.20');
 const unchangedStrength3ExerciseHashes=Object.fromEntries(['inclinePress','oneArmRow','plank','hammerCurl','overheadTricepsExtension'].map(id=>[
  id,crypto.createHash('sha256').update(evaluate(`JSON.stringify(SESSIONS.strengthLowerSdc.exercises.find(exercise=>exercise.id==='${id}'))`)).digest('hex')
 ]));
@@ -349,7 +357,7 @@ assert.equal(evaluate('SESSIONS.skillMicrodose.weeklySkillDoseGroupId'),'aft_pus
 assert.equal(evaluate('SESSIONS.skillMicrodose.exercises.some(exercise=>/air squat/i.test(exercise.name))'),false);
 assert.equal(evaluate('sessionProgramMeta(SESSIONS.skillMicrodose).version'),'1.0');
 assert.equal(evaluate('sessionProgramMeta(SESSIONS.skillMicrodose).runStage'),'');
-assert.equal(evaluate('currentProgramMeta().version'),'1.5.20','the auxiliary template version remains independent of the primary program');
+assert.equal(evaluate('currentProgramMeta().version'),'1.5.21','the auxiliary template version remains independent of the primary program');
 assert.equal(evaluate('LEGACY_SESSIONS.day1.exercises.find(exercise=>exercise.id==="runWalkIntervals").runStage'),4);
 assert.equal(evaluate('LEGACY_SESSIONS.day4.exercises.find(exercise=>exercise.id==="primaryRun").runStage'),4);
 assert.equal(evaluate('LEGACY_SESSIONS.day4.exercises.find(exercise=>exercise.id==="handReleasePushups").prescription'),'4 × 9');
@@ -563,8 +571,9 @@ assert.equal(evaluate(`prescriptionAdherence(${activeStrength1Row},{type:'weight
 assert.equal(evaluate(`prescriptionAdherence(${activeStrength1Row},{type:'weighted',completed:true,variation:'Machine row',load:'110',sets:'3',reps:'10, 10, 10'})`),'met','the setup-specific next-increment cue intentionally does not enforce a universal load target');
 assert.equal(evaluate(`prescriptionAdherence(${currentActiveStrength2Deadlift},{type:'weighted',completed:true,variation:'Trap / hex bar',load:'75',loadMode:'platesPerSide',barWeight:'45',sets:'3',reps:'5, 5, 5'})`),'met','the active trap-bar target resolves to 195 lb total');
 assert.equal(evaluate(`prescriptionAdherence(${currentActiveStrength2Deadlift},{type:'weighted',completed:true,variation:'Trap / hex bar',load:'70',loadMode:'platesPerSide',barWeight:'45',sets:'3',reps:'5, 5, 5'})`),'modified','the prior 185-lb total no longer meets the active target');
-assert.equal(evaluate(`prescriptionAdherence(${currentActiveStrength2Pushups},{type:'body',completed:true,sets:'4',reps:'10, 10, 10, 10'})`),'met');
-assert.equal(evaluate(`prescriptionAdherence(${currentActiveStrength2Pushups},{type:'body',completed:true,sets:'4',reps:'10, 10, 10, 9'})`),'below_target');
+assert.equal(evaluate(`prescriptionAdherence(${currentActiveStrength2Pushups},{type:'body',completed:true,sets:'3',reps:'8, 8, 8'})`),'met','the exact Strength 2 per-set HRPU targets are met');
+assert.equal(evaluate(`prescriptionAdherence(${currentActiveStrength2Pushups},{type:'body',completed:true,sets:'3',reps:'8, 8, 7'})`),'below_target','a Strength 2 set below eight is below target');
+assert.equal(evaluate(`prescriptionAdherence(${currentActiveStrength2Pushups},{type:'body',completed:true,sets:'3',reps:'8, 8, 9'})`),'modified','a Strength 2 set above eight modifies the exact target');
 assert.equal(evaluate(`prescriptionAdherence(${currentActiveStrength2LegPress},{type:'weighted',completed:true,variation:'Leg press',load:'160',sets:'3',reps:'10, 10, 10'})`),'met');
 assert.equal(evaluate(`prescriptionAdherence(${currentActiveStrength2LegPress},{type:'weighted',completed:true,variation:'Leg press',load:'150',sets:'3',reps:'10, 10, 10'})`),'modified');
 assert.equal(evaluate(`prescriptionAdherence(${currentActiveStrength2LegPress},{type:'weighted',completed:true,variation:'Lying leg press',load:'160',sets:'3',reps:'10, 10, 10'})`),'modified','the active setup-specific leg-press target is not transferable to another variation');
@@ -577,13 +586,14 @@ assert.equal(evaluate(`prescriptionAdherence(${activeStrength3Incline},{type:'we
 assert.equal(evaluate(`prescriptionAdherence(${activeStrength3Incline},{type:'weighted',completed:true,variation:'Incline dumbbell press',load:'35',sets:'3',reps:'9, 9, 9'})`),'below_target','the prior three sets of 9 are below the active incline-press target');
 assert.equal(evaluate(`prescriptionAdherence(${activeStrength3Row},{type:'weighted',completed:true,variation:'One-arm dumbbell row',load:'50',sets:'3',reps:'10, 10, 10'})`),'met','all three sets of 10 per side meet the active Strength 3 row target');
 assert.equal(evaluate(`prescriptionAdherence(${activeStrength3Row},{type:'weighted',completed:true,variation:'One-arm dumbbell row',load:'50',sets:'3',reps:'9, 9, 9'})`),'below_target','the prior three sets of 9 per side are below the active row target');
+assert.equal(evaluate(`prescriptionAdherence(${activeStrength3Pushups},{type:'body',completed:true,sets:'2',reps:'8, 8'})`),'met','the exact Strength 3 per-set HRPU targets are met');
+assert.equal(evaluate(`prescriptionAdherence(${activeStrength3Pushups},{type:'body',completed:true,sets:'2',reps:'8, 7'})`),'below_target','a Strength 3 set below eight is below target');
+assert.equal(evaluate(`prescriptionAdherence(${activeStrength3Pushups},{type:'body',completed:true,sets:'2',reps:'8, 9'})`),'modified','a Strength 3 set above eight modifies the exact target');
 assert.equal(evaluate(`prescriptionAdherence(${activeStrength3Plank},{type:'timed',completed:true,sets:'3',times:'55, 55, 55'})`),'met','three 55-second sets meet the active Strength 3 plank target');
 assert.equal(evaluate(`prescriptionAdherence(${activeStrength3Plank},{type:'timed',completed:true,sets:'3',times:'50, 50, 50'})`),'below_target','the prior 50-second sets are below the active Strength 3 plank target');
 const completedActiveCircuitComponents=JSON.parse(evaluate(`JSON.stringify(CIRCUIT_TEMPLATES['foundation-1.4.5'].components.map((component,index)=>normalizeCircuitComponent({
  ...component,resultMode:'shared',sharedResult:{...component.planned,performed:true,modality:component.type==='cardio'?'Bike':undefined}
 },index)))`));
-assert.equal(evaluate(`prescriptionAdherence(${activeStrength3Circuit},{type:'circuit',circuitVersion:'foundation-1.4.5',completed:true,rounds:'1',components:${JSON.stringify(completedActiveCircuitComponents)}})`),'met','one completed round meets the active v1.5.20 circuit prescription');
-assert.equal(evaluate(`prescriptionAdherence(${activeStrength3Circuit},{type:'circuit',circuitVersion:'foundation-1.4.5',completed:true,rounds:'2',components:${JSON.stringify(completedActiveCircuitComponents)}})`),'modified','two completed rounds exceed and modify the active one-round circuit prescription');
 assert.equal(evaluate(`prescriptionAdherence(${activeStrength3HammerCurl},{type:'weighted',completed:true,variation:'Dumbbell hammer curl',load:'30',sets:'2',reps:'10, 10'})`),'met','the expected same-variation dumbbell increment with two sets of 10 meets the active hammer-curl target');
 assert.equal(evaluate(`prescriptionAdherence(${activeStrength3HammerCurl},{type:'weighted',completed:true,variation:'Dumbbell hammer curl',load:'25',sets:'2',reps:'12, 12'})`),'modified','the prior dumbbell load no longer meets the active hammer-curl target');
 assert.equal(evaluate(`prescriptionAdherence(${activeStrength3HammerCurl},{type:'weighted',completed:true,variation:'Rope cable hammer curl',load:'30',sets:'2',reps:'10, 10'})`),'modified','the dumbbell target does not transfer to the rope-cable variation');
@@ -1034,7 +1044,7 @@ assert.equal(evaluate(`circuitDirectiveAdherenceDetail(legacyCircuitDefinition,d
 assert.equal(evaluate(`circuitAdherenceDetail(legacyCircuitDefinition,directiveFixture.exercises[0]).value`),'modified','baseline prescription and directive adherence remain separate');
 evaluate(`entries=[directiveFixture]`);
 assert.equal(evaluate(`activeCoachOverlay('1.3','day3','gymConditioningCircuit','2026-08-12')`),null,'a saved completed occurrence consumes the directive');
-assert.equal(evaluate('PROGRAM.version'),'1.5.20','consuming a historical directive does not change the current program version');
+assert.equal(evaluate('PROGRAM.version'),'1.5.21','consuming a historical directive does not change the current program version');
 evaluate(`entries=[];activeProgramContext=currentProgramMeta();activeSessionDefinition=LEGACY_SESSIONS.day3;activeWorkoutDate='2026-08-08'`);
 
 const fakeCard={
@@ -1850,6 +1860,7 @@ const sessionSelectorHtml=elements.daySelect.innerHTML;
 const primarySelectorGroup=sessionSelectorHtml.match(/<optgroup label="Primary rotation">([\s\S]*?)<\/optgroup>/)?.[1]||'';
 activeRotation.forEach(key=>assert.match(primarySelectorGroup,new RegExp(`<option value="${key}">`),`${key} is selectable in the primary rotation`));
 assert.equal((primarySelectorGroup.match(/<option /g)||[]).length,3,'the primary selector contains exactly three active strength sessions');
+assert.match(primarySelectorGroup,/Strength 3 — Lower \/ Full Body and Push Support/,'the selector uses the v1.5.21 Strength 3 label while retaining its stable key');
 assert.doesNotMatch(primarySelectorGroup,/runStageA|aerobicBase|runStageB/,'retired run and aerobic sessions are absent from active selection');
 assert.doesNotMatch(primarySelectorGroup,/value="day[1-4]"/,'legacy Day 1–Day 4 keys are retired from active selection');
 assert.match(sessionSelectorHtml,/<optgroup label="Optional sessions">[\s\S]*value="recovery"[\s\S]*value="skillMicrodose"/,'Recovery and AFT Skill Microdose remain selectable outside the primary rotation');
@@ -1873,96 +1884,232 @@ assert.match(elements.progressGroups.innerHTML,/AFT(?: |-)?Tracker run history/i
 
 elements.sessionDate={value:'2026-10-18'};
 evaluate(`activeProgramContext=currentProgramMeta();activeSessionDefinition=SESSIONS.strengthLowerSdc;activeSavedExercises=[];editing=null`);
-const newV1520Strength3Workout=JSON.parse(evaluate('JSON.stringify(collectWorkoutItem())'));
-assert.equal(newV1520Strength3Workout.dayKey,'strengthLowerSdc');
-assert.equal(newV1520Strength3Workout.programVersion,'1.5.20','new primary workouts capture the synchronized program version');
-assert.equal(newV1520Strength3Workout.programEffectiveDate,'2026-10-18','new primary workouts capture the synchronized effective date');
-assert.equal(newV1520Strength3Workout.activeRunStage,'','new v1.5.20 strength workouts do not capture an AFT-managed run stage');
-assert.equal(newV1520Strength3Workout.prescriptionSnapshot.sessionKey,'strengthLowerSdc');
-assert.equal(newV1520Strength3Workout.prescriptionSnapshot.targetDuration,'Approximately 50–65 minutes');
-assert.equal(newV1520Strength3Workout.prescriptionSnapshot.targetSessionRpe,'6–8');
-const newV1520Strength3Exercises=Object.fromEntries(newV1520Strength3Workout.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
-assert.equal(newV1520Strength3Exercises.sidePlank,undefined,'new v1.5.20 snapshots omit the retired active side plank');
-assert.equal(newV1520Strength3Exercises.gymConditioningCircuit.plannedRounds,1);
-assert.equal(newV1520Strength3Exercises.gymConditioningCircuit.targetRpe,'6–7');
-assert.equal(newV1520Strength3Exercises.gymConditioningCircuit.circuitVersion,'foundation-1.4.5');
-assert.equal(newV1520Strength3Exercises.hammerCurl.prescription,'Next smallest comparable dumbbell increment above 25 lb per hand (expected 30 lb per hand if available) for 2 × 10–12');
-assert.equal(newV1520Strength3Exercises.hammerCurl.targetLoad,30);
-assert.equal(newV1520Strength3Exercises.hammerCurl.targetLoadVariation,'Dumbbell hammer curl');
-assert.deepEqual(newV1520Strength3Exercises.hammerCurl.variationUnits,{'Dumbbell hammer curl':'lb per hand','Rope cable hammer curl':'lb total'});
-assert.match(newV1520Strength3Exercises.hammerCurl.coachingNotes,/same dumbbell variation.*hold the new load for confirmation.*Do not transfer 30 lb per hand to the rope-cable variation/);
-const newV1520Strength3RoundTripFixture={
- ...newV1520Strength3Workout,id:'synthetic-v1520-strength3-round-trip',updatedAt:'2026-10-18T18:00:00.000Z',notes:'Invented v1.5.20 Strength 3 snapshot fixture.',
+const newV1521Strength3Workout=JSON.parse(evaluate('JSON.stringify(collectWorkoutItem())'));
+assert.equal(newV1521Strength3Workout.dayKey,'strengthLowerSdc');
+assert.equal(newV1521Strength3Workout.programVersion,'1.5.21','new primary workouts capture the synchronized program version');
+assert.equal(newV1521Strength3Workout.programEffectiveDate,'2026-10-18','new primary workouts capture the synchronized effective date');
+assert.equal(newV1521Strength3Workout.activeRunStage,'','new v1.5.21 strength workouts do not capture an AFT-managed run stage');
+assert.equal(newV1521Strength3Workout.prescriptionSnapshot.sessionKey,'strengthLowerSdc');
+assert.equal(newV1521Strength3Workout.prescriptionSnapshot.label,'Strength 3 — Lower / Full Body and Push Support');
+assert.equal(newV1521Strength3Workout.prescriptionSnapshot.targetDuration,'Approximately 45–60 minutes');
+assert.equal(newV1521Strength3Workout.prescriptionSnapshot.targetSessionRpe,'6–8');
+const newV1521Strength3Exercises=Object.fromEntries(newV1521Strength3Workout.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+assert.equal(newV1521Strength3Exercises.sidePlank,undefined,'new v1.5.21 snapshots keep side plank retired');
+assert.equal(newV1521Strength3Exercises.gymConditioningCircuit,undefined,'new v1.5.21 snapshots omit routine SDC');
+assert.deepEqual(newV1521Strength3Exercises.handReleasePushups.prescribedReps,[8,8]);
+assert.equal(newV1521Strength3Exercises.handReleasePushups.targetRpe,'5–6');
+assert.equal(newV1521Strength3Exercises.hammerCurl.prescription,'Next smallest comparable dumbbell increment above 25 lb per hand (expected 30 lb per hand if available) for 2 × 10–12');
+assert.equal(newV1521Strength3Exercises.hammerCurl.targetLoad,30);
+assert.equal(newV1521Strength3Exercises.hammerCurl.targetLoadVariation,'Dumbbell hammer curl');
+assert.deepEqual(newV1521Strength3Exercises.hammerCurl.variationUnits,{'Dumbbell hammer curl':'lb per hand','Rope cable hammer curl':'lb total'});
+const newV1521Strength3RoundTripFixture={
+ ...newV1521Strength3Workout,id:'synthetic-v1521-strength3-round-trip',updatedAt:'2026-10-18T18:00:00.000Z',notes:'Invented v1.5.21 Strength 3 snapshot fixture.',
  exercises:[
-  {exerciseId:'gymConditioningCircuit',name:'Gym conditioning circuit',type:'circuit',circuitVersion:'foundation-1.4.5',rounds:'1',rpe:'6',completed:true,components:completedActiveCircuitComponents,notes:'Invented active one-round circuit result.'},
+  {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'2',reps:'8, 8',rpe:'5',completed:true,notes:'Invented current push-up result.'},
   {exerciseId:'hammerCurl',name:'Hammer curl',type:'weighted',unit:'lb per hand',variation:'Dumbbell hammer curl',variationId:'dumbbellHammerCurl',load:'30',sets:'2',reps:'10, 10',rpe:'7',completed:true,notes:'Invented current hammer-curl result.'}
  ]
 };
-const normalizedNewV1520Strength3=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${JSON.stringify(newV1520Strength3RoundTripFixture)}))`));
-assert.deepEqual(normalizedNewV1520Strength3.prescriptionSnapshot,newV1520Strength3Workout.prescriptionSnapshot,'normalization preserves the exact v1.5.20 Strength 3 prescription snapshot');
-assert.deepEqual(normalizedNewV1520Strength3.exercises,newV1520Strength3RoundTripFixture.exercises,'normalization preserves every invented v1.5.20 Strength 3 result');
-const normalizedNewV1520Strength3Results=Object.fromEntries(normalizedNewV1520Strength3.exercises.map(exercise=>[exercise.exerciseId,exercise]));
-assert.equal(evaluate(`prescriptionAdherence(${JSON.stringify(newV1520Strength3Exercises.gymConditioningCircuit)},${JSON.stringify(normalizedNewV1520Strength3Results.gymConditioningCircuit)})`),'met');
-assert.equal(evaluate(`prescriptionAdherence(${JSON.stringify(newV1520Strength3Exercises.hammerCurl)},${JSON.stringify(normalizedNewV1520Strength3Results.hammerCurl)})`),'met');
-const importedNewV1520Strength3=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(JSON.parse(${JSON.stringify(JSON.stringify(newV1520Strength3RoundTripFixture))})))`));
-assert.deepEqual(importedNewV1520Strength3.prescriptionSnapshot,newV1520Strength3Workout.prescriptionSnapshot,'JSON import preserves the active v1.5.20 arrays and circuit rule');
-assert.deepEqual(importedNewV1520Strength3.exercises,newV1520Strength3RoundTripFixture.exercises,'JSON import preserves the invented active v1.5.20 results');
-evaluate(`entries=[normalizeEntry(${JSON.stringify(newV1520Strength3RoundTripFixture)})]`);
-const newV1520Strength3Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
-assert.equal(newV1520Strength3Backup.currentProgram.version,'1.5.20');
-assert.equal(newV1520Strength3Backup.version,11);
-assert.equal(newV1520Strength3Backup.entries[0].prescriptionSnapshot.exercises.some(exercise=>exercise.id==='sidePlank'),false);
-assert.equal(newV1520Strength3Backup.entries[0].prescriptionSnapshot.exercises.find(exercise=>exercise.id==='gymConditioningCircuit').plannedRounds,1);
-assert.equal(evaluate(`persistEntries('Before synthetic v1.5.20 Strength 3 persistence test')`),true);
-const reloadedNewV1520Strength3=JSON.parse(evaluate('JSON.stringify(loadEntries()[0])'));
-assert.deepEqual(reloadedNewV1520Strength3.prescriptionSnapshot,newV1520Strength3Workout.prescriptionSnapshot,'local persistence preserves the active v1.5.20 arrays and one-round circuit rule');
-assert.deepEqual(reloadedNewV1520Strength3.exercises,newV1520Strength3RoundTripFixture.exercises,'local persistence preserves every invented v1.5.20 Strength 3 result');
+const normalizedNewV1521Strength3=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${JSON.stringify(newV1521Strength3RoundTripFixture)}))`));
+assert.deepEqual(normalizedNewV1521Strength3.prescriptionSnapshot,newV1521Strength3Workout.prescriptionSnapshot,'normalization preserves the exact v1.5.21 Strength 3 prescription snapshot');
+assert.deepEqual(normalizedNewV1521Strength3.exercises,newV1521Strength3RoundTripFixture.exercises,'normalization preserves every invented v1.5.21 Strength 3 result');
+const normalizedNewV1521Strength3Results=Object.fromEntries(normalizedNewV1521Strength3.exercises.map(exercise=>[exercise.exerciseId,exercise]));
+assert.equal(evaluate(`prescriptionAdherence(${JSON.stringify(newV1521Strength3Exercises.handReleasePushups)},${JSON.stringify(normalizedNewV1521Strength3Results.handReleasePushups)})`),'met');
+const editedNewV1521Strength3=JSON.parse(evaluate(`JSON.stringify(normalizeEntry({...${JSON.stringify(normalizedNewV1521Strength3)},notes:'Invented edited v1.5.21 Strength 3 note.'}))`));
+assert.deepEqual(editedNewV1521Strength3.prescriptionSnapshot,newV1521Strength3Workout.prescriptionSnapshot,'editing preserves the exact v1.5.21 Strength 3 HRPU targets');
+const importedNewV1521Strength3=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(JSON.parse(${JSON.stringify(JSON.stringify(newV1521Strength3RoundTripFixture))})))`));
+assert.deepEqual(importedNewV1521Strength3.prescriptionSnapshot,newV1521Strength3Workout.prescriptionSnapshot,'JSON import preserves the active v1.5.21 Strength 3 HRPU array');
+assert.deepEqual(importedNewV1521Strength3.exercises,newV1521Strength3RoundTripFixture.exercises,'JSON import preserves the invented active v1.5.21 Strength 3 results');
 
 elements.sessionDate={value:'2026-10-18'};
-evaluate(`activeProgramContext=currentProgramMeta();activeSessionDefinition=SESSIONS.strengthUpperAft;activeSavedExercises=[];editing=null`);
-const newV1520Workout=JSON.parse(evaluate('JSON.stringify(collectWorkoutItem())'));
-assert.equal(newV1520Workout.dayKey,'strengthUpperAft');
-assert.equal(newV1520Workout.programVersion,'1.5.20');
-assert.equal(newV1520Workout.programEffectiveDate,'2026-10-18');
-assert.equal(newV1520Workout.activeRunStage,'');
-assert.equal(newV1520Workout.prescriptionSnapshot.sessionKey,'strengthUpperAft');
-const newV1520Exercises=Object.fromEntries(newV1520Workout.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
-assert.equal(newV1520Exercises.handReleasePushups.prescription,'Set 1: 17 continuous reps; Sets 2–5: 10 reps');
-assert.equal(newV1520Exercises.handReleasePushups.sets,5);
-assert.deepEqual(newV1520Exercises.handReleasePushups.prescribedReps,[17,10,10,10,10]);
-assert.equal(newV1520Exercises.handReleasePushups.targetRpe,'Set 1 ≤8; sets 2–5 6–7');
-assert.match(newV1520Exercises.handReleasePushups.coachingNotes,/stop at 17.*90–120 seconds between sets 2–5.*Future progression still applies only to set 1/);
-assert.equal(newV1520Exercises.verticalPull.prescription,'Next smallest increment above 187 lb on the same seated machine (approximately 198 lb displayed if it uses 11-lb increments) for 3 × 8–10');
-assert.equal(newV1520Exercises.verticalPull.sets,3);
-assert.equal(newV1520Exercises.verticalPull.targetRpe,'6–8');
-assert.equal(newV1520Exercises.verticalPull.targetLoad,undefined);
-assert.deepEqual(newV1520Exercises.verticalPull.variations,['Seated lat pulldown','Modified standing lat pulldown','Assisted pull-up','Band-assisted pull-up']);
-assert.equal(newV1520Exercises.verticalPull.defaultVariation,'Seated lat pulldown');
-assert.match(newV1520Exercises.verticalPull.coachingNotes,/above 187 lb only on the same seated machine and setup.*198 lb.*hold the new increment for confirmation/);
-assert.equal(newV1520Exercises.overheadPress.prescription,'30 lb per hand for 3 × 8');
-assert.match(newV1520Exercises.chestSupportedRow.prescription,/above 110 lb.*approximately 121 lb.*3 × 8–10/);
-assert.equal(newV1520Exercises.lateralRaise.prescription,'Next smallest comparable increment above 33 lb displayed per side on the same pain-free cable setup (approximately 44 lb if applicable) for 2 × 12–15');
-const newV1520RoundTripFixture={
- ...newV1520Workout,id:'synthetic-v1520-strength1-round-trip',updatedAt:'2026-10-18T18:00:00.000Z',notes:'Invented v1.5.20 round-trip fixture.',
+evaluate(`activeProgramContext=currentProgramMeta();activeSessionDefinition=SESSIONS.strengthHeavyCarry;activeSavedExercises=[];editing=null`);
+const newV1521Strength2Workout=JSON.parse(evaluate('JSON.stringify(collectWorkoutItem())'));
+assert.equal(newV1521Strength2Workout.dayKey,'strengthHeavyCarry');
+assert.equal(newV1521Strength2Workout.programVersion,'1.5.21');
+assert.equal(newV1521Strength2Workout.programEffectiveDate,'2026-10-18');
+const newV1521Strength2Exercises=Object.fromEntries(newV1521Strength2Workout.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+assert.deepEqual(newV1521Strength2Exercises.handReleasePushups.prescribedReps,[8,8,8]);
+assert.equal(newV1521Strength2Exercises.handReleasePushups.targetRpe,'5–6');
+assert.equal(newV1521Strength2Exercises.loadedCarry.coachingNotes,'Aim for approximately 40 yd per trip. Keep 45 lb per hand as the primary loaded-carry and grip exposure. Do not progress load, distance, or trips.');
+const newV1521Strength2RoundTripFixture={
+ ...newV1521Strength2Workout,id:'synthetic-v1521-strength2-round-trip',updatedAt:'2026-10-18T17:00:00.000Z',notes:'Invented v1.5.21 Strength 2 snapshot fixture.',
  exercises:[
-  {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'5',reps:'17, 10, 10, 10, 10',rpe:'7',completed:true,notes:'Invented current push-up result.'},
-  {exerciseId:'verticalPull',name:'Lat pulldown',type:'weighted',unit:'lb',variation:'Seated lat pulldown',variationId:'seatedLatPulldown',load:'198',sets:'3',reps:'8, 9, 10',rpe:'7',completed:true,notes:'Invented same-machine pulldown result.'}
+  {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'3',reps:'8, 8, 8',rpe:'5',completed:true,notes:'Invented current middle-exposure result.'}
  ]
 };
-assert.equal(newV1520RoundTripFixture.exercises[0].prescribedReps,undefined,'completed results keep the existing comma-separated reps shape');
-const normalizedNewV1520=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${JSON.stringify(newV1520RoundTripFixture)}))`));
-assert.deepEqual(normalizedNewV1520.prescriptionSnapshot,newV1520Workout.prescriptionSnapshot,'normalization preserves the exact v1.5.20 prescription snapshot');
-assert.deepEqual(normalizedNewV1520.exercises,newV1520RoundTripFixture.exercises,'normalization preserves every invented v1.5.20 result');
-const snapshotBackedV1520Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry(${JSON.stringify(normalizedNewV1520)}))`));
-const snapshotBackedV1520Pushups=snapshotBackedV1520Definition.exercises.find(exercise=>exercise.id==='handReleasePushups');
-assert.deepEqual(snapshotBackedV1520Pushups.prescribedReps,[17,10,10,10,10]);
-assert.equal(evaluate(`prescriptionAdherence(${JSON.stringify(snapshotBackedV1520Pushups)},${JSON.stringify(normalizedNewV1520.exercises[0])})`),'met');
+assert.equal(newV1521Strength2RoundTripFixture.exercises[0].prescribedReps,undefined,'completed results keep the existing comma-separated reps shape');
+const normalizedNewV1521Strength2=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${JSON.stringify(newV1521Strength2RoundTripFixture)}))`));
+assert.deepEqual(normalizedNewV1521Strength2.prescriptionSnapshot,newV1521Strength2Workout.prescriptionSnapshot,'normalization preserves the exact v1.5.21 Strength 2 prescription snapshot');
+assert.deepEqual(normalizedNewV1521Strength2.exercises,newV1521Strength2RoundTripFixture.exercises,'normalization preserves every invented v1.5.21 Strength 2 result');
+const importedNewV1521Strength2=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(JSON.parse(${JSON.stringify(JSON.stringify(newV1521Strength2RoundTripFixture))})))`));
+assert.deepEqual(importedNewV1521Strength2.prescriptionSnapshot,newV1521Strength2Workout.prescriptionSnapshot,'JSON import preserves the active v1.5.21 Strength 2 HRPU array');
+evaluate(`entries=[normalizeEntry(${JSON.stringify(newV1521Strength2RoundTripFixture)}),normalizeEntry(${JSON.stringify(newV1521Strength3RoundTripFixture)})]`);
+const newV1521Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
+assert.equal(newV1521Backup.currentProgram.version,'1.5.21');
+assert.equal(newV1521Backup.version,11);
+assert.deepEqual(newV1521Backup.entries.find(entry=>entry.dayKey==='strengthHeavyCarry').prescriptionSnapshot.exercises.find(exercise=>exercise.id==='handReleasePushups').prescribedReps,[8,8,8]);
+assert.deepEqual(newV1521Backup.entries.find(entry=>entry.dayKey==='strengthLowerSdc').prescriptionSnapshot.exercises.find(exercise=>exercise.id==='handReleasePushups').prescribedReps,[8,8]);
+elements.exportFrom.value='2026-10-18';
+elements.exportTo.value='2026-10-18';
+const newV1521Markdown=evaluate('buildMd()');
+assert.match(newV1521Markdown,/Strength 2 — Heavy Strength and Carries[\s\S]*Hand-release push-ups[\s\S]*Planned: 3 × 8/,'current export preserves the Strength 2 exact HRPU prescription');
+assert.match(newV1521Markdown,/Strength 3 — Lower \/ Full Body and Push Support[\s\S]*Hand-release push-ups[\s\S]*Planned: 2 × 8/,'current export preserves the Strength 3 exact HRPU prescription');
+assert.doesNotMatch(newV1521Markdown,/Gym conditioning circuit/,'current v1.5.21 Strength 3 exports contain no routine SDC circuit');
+assert.equal(evaluate(`persistEntries('Before synthetic v1.5.21 HRPU persistence test')`),true);
+const reloadedNewV1521=JSON.parse(evaluate('JSON.stringify(loadEntries())'));
+assert.deepEqual(reloadedNewV1521.find(entry=>entry.dayKey==='strengthHeavyCarry').prescriptionSnapshot,newV1521Strength2Workout.prescriptionSnapshot,'local persistence preserves the active Strength 2 exact HRPU array');
+assert.deepEqual(reloadedNewV1521.find(entry=>entry.dayKey==='strengthLowerSdc').prescriptionSnapshot,newV1521Strength3Workout.prescriptionSnapshot,'local persistence preserves the active Strength 3 exact HRPU array and circuit removal');
+
+const syntheticV1520Strength3Fixture=JSON.parse(evaluate(`JSON.stringify((()=>{
+ const prescriptionSnapshot=snapshotSession(SESSIONS.strengthLowerSdc);
+ Object.assign(prescriptionSnapshot,{
+  label:'Strength 3 — Lower / Full Body and SDC',
+  focus:'Lower and full-body strength followed by one controlled SDC-maintenance round and front-plank work.',
+  targetDuration:'Approximately 50–65 minutes'
+ });
+ const pushupIndex=prescriptionSnapshot.exercises.findIndex(exercise=>exercise.id==='handReleasePushups');
+ prescriptionSnapshot.exercises.splice(pushupIndex,1);
+ const byId=Object.fromEntries(prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ byId.squatPattern.coachingNotes='Hold the goblet-squat load and repetitions rather than adding lower-body volume so running quality and the one-round SDC-maintenance exposure remain protected.';
+ const plankIndex=prescriptionSnapshot.exercises.findIndex(exercise=>exercise.id==='plank');
+ prescriptionSnapshot.exercises.splice(plankIndex,0,{
+  id:'gymConditioningCircuit',name:'Gym conditioning circuit',
+  prescription:'Exactly 1 controlled round: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 recovery',
+  type:'circuit',circuitVersion:'foundation-1.4.5',plannedRounds:1,targetRpe:'6–7',
+  defaults:{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'30',restSeconds:'150'},
+  modalities:['Bike','Rower','Elliptical','Short safe sprint'],
+  coachingNotes:'Keep exactly one controlled round. Use the Torque Fitness TANK M4 at Level 3 on the same approximately 20-yard gym lane when available, and record that equipment label in the existing sled fields. Level 3 is a resistance setting, not a weight. This is a low-dose maintenance exposure, not a score-comparable AFT SDC rehearsal. Do not use total circuit time to auto-progress, add a second round, extend hard cardio, increase TANK resistance, or convert resistance to pounds.'
+ });
+ return {
+  id:'synthetic-v1520-strength3-history',date:'2026-10-18',updatedAt:'2026-10-18T12:00:00.000Z',
+  dayKey:'strengthLowerSdc',dayLabel:'Strength 3 — Lower / Full Body and SDC',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:PROGRAM.id,programName:PROGRAM.name,programVersion:'1.5.20',programEffectiveDate:'2026-10-18',activeRunStage:'',
+  targetSessionRpe:'6–8',duration:'55',sessionRpe:'6',notes:'Invented v1.5.20 immutable-history fixture.',
+  prescriptionSnapshot,
+  exercises:[{exerciseId:'gymConditioningCircuit',name:'Gym conditioning circuit',type:'circuit',circuitVersion:'foundation-1.4.5',rounds:'1',rpe:'6',completed:true,components:${JSON.stringify(completedActiveCircuitComponents)},notes:'Invented historical one-round circuit result.'}]
+ };
+})())`));
+const normalizedV1520Strength3=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${JSON.stringify(syntheticV1520Strength3Fixture)}))`));
+const snapshotBackedV1520Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry(${JSON.stringify(normalizedV1520Strength3)}))`));
+const snapshotBackedV1520ById=Object.fromEntries(snapshotBackedV1520Definition.exercises.map(exercise=>[exercise.id,exercise]));
+assert.equal(snapshotBackedV1520Definition.label,'Strength 3 — Lower / Full Body and SDC');
+assert.equal(snapshotBackedV1520Definition.targetDuration,'Approximately 50–65 minutes');
+assert.equal(snapshotBackedV1520ById.handReleasePushups,undefined,'v1.5.20 history never inherits the new Strength 3 HRPU');
+assert.equal(snapshotBackedV1520ById.sidePlank,undefined,'v1.5.20 history retains the prior active side-plank removal');
+assert.equal(snapshotBackedV1520ById.gymConditioningCircuit.plannedRounds,1);
+assert.equal(snapshotBackedV1520ById.gymConditioningCircuit.targetRpe,'6–7');
+assert.equal(evaluate(`prescriptionAdherence(${JSON.stringify(snapshotBackedV1520ById.gymConditioningCircuit)},${JSON.stringify(normalizedV1520Strength3.exercises[0])})`),'met','one completed round meets the immutable v1.5.20 circuit prescription');
+assert.equal(evaluate(`prescriptionAdherence(${JSON.stringify(snapshotBackedV1520ById.gymConditioningCircuit)},{type:'circuit',circuitVersion:'foundation-1.4.5',completed:true,rounds:'2',components:${JSON.stringify(completedActiveCircuitComponents)}})`),'modified','two rounds remain modified against the immutable v1.5.20 one-round prescription');
+const editedV1520Strength3=JSON.parse(evaluate(`JSON.stringify(normalizeEntry({...${JSON.stringify(normalizedV1520Strength3)},notes:'Invented edited v1.5.20 note.'}))`));
+assert.deepEqual(editedV1520Strength3.prescriptionSnapshot,syntheticV1520Strength3Fixture.prescriptionSnapshot,'editing preserves the complete v1.5.20 snapshot');
+const importedV1520Strength3=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(JSON.parse(${JSON.stringify(JSON.stringify(syntheticV1520Strength3Fixture))})))`));
+assert.deepEqual(importedV1520Strength3.prescriptionSnapshot,syntheticV1520Strength3Fixture.prescriptionSnapshot,'JSON import preserves the complete v1.5.20 snapshot');
+elements.exportFrom.value='2026-10-18';
+elements.exportTo.value='2026-10-18';
+evaluate(`entries=[normalizeEntry(${JSON.stringify(syntheticV1520Strength3Fixture)})]`);
+const v1520Strength3Markdown=evaluate('buildMd()');
+assert.match(v1520Strength3Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current public-app version');
+assert.match(v1520Strength3Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.20/,'the historical session retains its saved v1.5.20 version');
+assert.match(v1520Strength3Markdown,/Gym conditioning circuit[\s\S]*Planned: Exactly 1 controlled round[\s\S]*Prescription adherence: Met/);
+assert.doesNotMatch(v1520Strength3Markdown,/Hand-release push-ups/,'the v1.5.20 Strength 3 export does not inherit the new support exposure');
+const v1520Strength3Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
+assert.equal(v1520Strength3Backup.currentProgram.version,'1.5.21');
+assert.deepEqual(v1520Strength3Backup.entries[0].prescriptionSnapshot,syntheticV1520Strength3Fixture.prescriptionSnapshot,'JSON backup preserves the complete v1.5.20 snapshot');
+assert.equal(evaluate(`persistEntries('Before synthetic v1.5.20 history persistence test')`),true);
+const reloadedV1520Strength3=JSON.parse(evaluate('JSON.stringify(loadEntries()[0])'));
+assert.deepEqual(reloadedV1520Strength3.prescriptionSnapshot,syntheticV1520Strength3Fixture.prescriptionSnapshot,'local persistence preserves the v1.5.20 one-round circuit snapshot');
+assert.deepEqual(reloadedV1520Strength3.exercises,syntheticV1520Strength3Fixture.exercises,'local persistence preserves every invented v1.5.20 result');
+storage.set('aftWorkoutDraft.v1',JSON.stringify({savedAt:'2026-10-18T12:30:00.000Z',editingId:null,item:syntheticV1520Strength3Fixture}));
+const loadedSnapshotBackedV1520Draft=JSON.parse(evaluate('JSON.stringify(loadDraft().item)'));
+assert.deepEqual(loadedSnapshotBackedV1520Draft.prescriptionSnapshot,syntheticV1520Strength3Fixture.prescriptionSnapshot,'draft recovery preserves the v1.5.20 one-round circuit snapshot');
+storage.delete('aftWorkoutDraft.v1');
+
+const syntheticV1520Strength2Fixture=JSON.parse(evaluate(`JSON.stringify((()=>{
+ const prescriptionSnapshot=snapshotSession(SESSIONS.strengthHeavyCarry);
+ const byId=Object.fromEntries(prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ Object.assign(byId.handReleasePushups,{
+  prescription:'4 × 10',sets:4,targetRpe:'5–7',
+  coachingNotes:'Use four equal, technically clean, submaximal sets of 10 and stop before failure. This remains the lower-volume second weekly hand-release push-up exposure.'
+ });
+ delete byId.handReleasePushups.prescribedReps;
+ byId.loadedCarry.coachingNotes='Aim for approximately 40 yd per trip. Keep 45 lb per hand as the primary loaded-carry and grip exposure while Strength 3 retains one controlled SDC-maintenance round. Do not progress load, distance, or trips.';
+ return {
+  id:'synthetic-v1520-strength2-history',date:'2026-10-18',updatedAt:'2026-10-18T11:00:00.000Z',
+  dayKey:'strengthHeavyCarry',dayLabel:SESSIONS.strengthHeavyCarry.label,sessionType:'primary',advancesPrimaryRotation:true,
+  programId:PROGRAM.id,programName:PROGRAM.name,programVersion:'1.5.20',programEffectiveDate:'2026-10-18',activeRunStage:'',
+  targetSessionRpe:'6–8',duration:'58',sessionRpe:'6',notes:'Invented v1.5.20 Strength 2 compatibility fixture.',prescriptionSnapshot,
+  exercises:[{exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'4',reps:'10, 10, 10, 10',rpe:'6',completed:true}]
+ };
+})())`));
+const normalizedV1520Strength2=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${JSON.stringify(syntheticV1520Strength2Fixture)}))`));
+const snapshotBackedV1520Strength2Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry(${JSON.stringify(normalizedV1520Strength2)}))`));
+const snapshotBackedV1520Strength2Pushups=snapshotBackedV1520Strength2Definition.exercises.find(exercise=>exercise.id==='handReleasePushups');
+assert.equal(snapshotBackedV1520Strength2Pushups.prescription,'4 × 10');
+assert.equal(snapshotBackedV1520Strength2Pushups.sets,4);
+assert.equal(snapshotBackedV1520Strength2Pushups.prescribedReps,undefined,'v1.5.20 Strength 2 history does not inherit the new exact per-set array');
+assert.equal(snapshotBackedV1520Strength2Pushups.targetRpe,'5–7');
+assert.equal(evaluate(`prescriptionAdherence(${JSON.stringify(snapshotBackedV1520Strength2Pushups)},${JSON.stringify(normalizedV1520Strength2.exercises[0])})`),'met','the saved four-by-ten result meets its immutable v1.5.20 target');
+assert.equal(evaluate(`prescriptionAdherence(${activeStrength2Pushups},${JSON.stringify(normalizedV1520Strength2.exercises[0])})`),'modified','the old four-set result differs only when deliberately compared with v1.5.21');
+const importedV1520Strength2=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(JSON.parse(${JSON.stringify(JSON.stringify(syntheticV1520Strength2Fixture))})))`));
+assert.deepEqual(importedV1520Strength2.prescriptionSnapshot,syntheticV1520Strength2Fixture.prescriptionSnapshot,'JSON import preserves the v1.5.20 Strength 2 HRPU target');
+
+const snapshotlessV1520Strength3Fixture={
+ id:'synthetic-snapshotless-v1520-strength3',date:'2026-10-18',updatedAt:'2026-10-18T13:00:00.000Z',
+ dayKey:'strengthLowerSdc',dayLabel:'Strength 3 — Lower / Full Body and SDC',sessionType:'primary',advancesPrimaryRotation:true,
+ programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.20',programEffectiveDate:'2026-10-18',
+ targetSessionRpe:'6–8',duration:'54',sessionRpe:'6',notes:'Invented snapshotless v1.5.20 compatibility fixture.',
+ exercises:[
+  {exerciseId:'romanianDeadlift',name:'Romanian deadlift',prescription:'155 lb total for 2 × 8',type:'weighted',unit:'lb',sets:'2',targetLoad:155,targetLoadVariation:'Barbell',targetRpe:'6–8',coachingNotes:'Invented saved v1.5.20 strap guidance.',variation:'Barbell',load:'55',loadMode:'platesPerSide',barWeight:'45',reps:'8, 8',rpe:'6',completed:true},
+  {exerciseId:'gymConditioningCircuit',name:'Gym conditioning circuit',prescription:'Exactly 1 controlled round: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 recovery',type:'circuit',circuitVersion:'foundation-1.4.5',plannedRounds:1,targetRpe:'6–7',defaults:{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'30',restSeconds:'150'},modalities:['Bike','Rower','Elliptical','Short safe sprint'],coachingNotes:'Invented saved v1.5.20 one-round circuit guidance.',rounds:'1',rpe:'6',completed:true,components:completedActiveCircuitComponents}
+ ]
+};
+const normalizedSnapshotlessV1520=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${JSON.stringify(snapshotlessV1520Strength3Fixture)}))`));
+assert.equal(normalizedSnapshotlessV1520.prescriptionSnapshot,undefined,'the v1.5.20 snapshotless compatibility path stays snapshotless');
+const snapshotlessV1520Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry(${JSON.stringify(normalizedSnapshotlessV1520)}))`));
+const snapshotlessV1520ById=Object.fromEntries(snapshotlessV1520Definition.exercises.map(exercise=>[exercise.id,exercise]));
+assert.equal(snapshotlessV1520Definition.focus,'Historical workout using its saved exercise list.');
+assert.equal(snapshotlessV1520Definition.targetDuration,undefined,'snapshotless v1.5.20 history does not inherit current session metadata');
+assert.equal(snapshotlessV1520ById.handReleasePushups,undefined,'snapshotless v1.5.20 history does not inherit the new Strength 3 HRPU');
+assert.equal(snapshotlessV1520ById.gymConditioningCircuit.plannedRounds,undefined,'snapshotless reconstruction retains the original saved-field shape');
+assert.equal(evaluate(`circuitTemplate(${JSON.stringify(snapshotlessV1520ById.gymConditioningCircuit)}).plannedRounds`),1,'the saved exact-one-round prescription restores its v1.5.20 round target');
+assert.equal(evaluate(`prescriptionAdherence(${JSON.stringify(snapshotlessV1520ById.gymConditioningCircuit)},${JSON.stringify(normalizedSnapshotlessV1520.exercises[1])})`),'met');
+const importedSnapshotlessV1520=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(JSON.parse(${JSON.stringify(JSON.stringify(snapshotlessV1520Strength3Fixture))})))`));
+assert.deepEqual(importedSnapshotlessV1520.exercises,normalizedSnapshotlessV1520.exercises,'JSON import preserves snapshotless v1.5.20 prescription-facing fields and results');
+const editedSnapshotlessV1520=JSON.parse(evaluate(`JSON.stringify(normalizeEntry({...${JSON.stringify(normalizedSnapshotlessV1520)},notes:'Invented edited snapshotless v1.5.20 note.'}))`));
+assert.deepEqual(editedSnapshotlessV1520.exercises,normalizedSnapshotlessV1520.exercises,'editing preserves snapshotless v1.5.20 fields and results');
+storage.set('aftWorkoutDraft.v1',JSON.stringify({savedAt:'2026-10-18T13:30:00.000Z',editingId:null,item:snapshotlessV1520Strength3Fixture}));
+const loadedSnapshotlessV1520Draft=JSON.parse(evaluate('JSON.stringify(loadDraft().item)'));
+assert.equal(loadedSnapshotlessV1520Draft.prescriptionSnapshot,undefined);
+assert.deepEqual(loadedSnapshotlessV1520Draft.exercises,snapshotlessV1520Strength3Fixture.exercises,'draft recovery preserves snapshotless v1.5.20 circuit fields');
+storage.delete('aftWorkoutDraft.v1');
+evaluate(`entries=[normalizeEntry(${JSON.stringify(snapshotlessV1520Strength3Fixture)})]`);
+const snapshotlessV1520Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
+assert.equal(snapshotlessV1520Backup.entries[0].prescriptionSnapshot,undefined);
+assert.deepEqual(snapshotlessV1520Backup.entries[0].exercises,normalizedSnapshotlessV1520.exercises,'JSON export preserves snapshotless v1.5.20 prescription-facing fields and results');
+const snapshotlessV1520Markdown=evaluate('buildMd()');
+assert.match(snapshotlessV1520Markdown,/Gym conditioning circuit[\s\S]*Planned: Exactly 1 controlled round[\s\S]*Prescription adherence: Met/);
+assert.doesNotMatch(snapshotlessV1520Markdown,/Hand-release push-ups|Push Support/,'snapshotless v1.5.20 export does not inherit v1.5.21 session content');
+assert.equal(evaluate(`persistEntries('Before synthetic snapshotless v1.5.20 persistence test')`),true);
+const reloadedSnapshotlessV1520=JSON.parse(evaluate('JSON.stringify(loadEntries()[0])'));
+assert.equal(reloadedSnapshotlessV1520.prescriptionSnapshot,undefined);
+assert.deepEqual(reloadedSnapshotlessV1520.exercises,normalizedSnapshotlessV1520.exercises,'local persistence preserves snapshotless v1.5.20 circuit fields and results');
 
 const syntheticOct17V1519Strength3Fixture=JSON.parse(evaluate(`JSON.stringify((()=>{
  const prescriptionSnapshot=snapshotSession(SESSIONS.strengthLowerSdc);
  Object.assign(prescriptionSnapshot,{
+  label:'Strength 3 — Lower / Full Body and SDC',
   focus:'Lower and full-body strength followed by the capped two-round SDC circuit and trunk work.',
   targetDuration:'Approximately 60–75 minutes',targetSessionRpe:'7–8'
+ });
+ const pushupIndex=prescriptionSnapshot.exercises.findIndex(exercise=>exercise.id==='handReleasePushups');
+ prescriptionSnapshot.exercises.splice(pushupIndex,1);
+ const frontPlankIndex=prescriptionSnapshot.exercises.findIndex(exercise=>exercise.id==='plank');
+ prescriptionSnapshot.exercises.splice(frontPlankIndex,0,{
+  id:'gymConditioningCircuit',name:'Gym conditioning circuit',
+  prescription:'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 rest',
+  type:'circuit',circuitVersion:'foundation-1.4.5',targetRpe:'7–8',
+  defaults:{carryLoad:'45',carrySeconds:'30',stepReps:'6',intervalSeconds:'30',restSeconds:'150'},
+  modalities:['Bike','Rower','Elliptical','Short safe sprint'],
+  coachingNotes:'Keep exactly two rounds. Use the Torque Fitness TANK M4 at Level 3 on the same approximately 20-yard gym lane when available, and record that equipment label in the existing sled fields. Level 3 is a resistance setting, not a weight. Do not use total circuit time to auto-progress, add a third round, extend hard-cardio duration, or increase TANK resistance.'
  });
  const byId=Object.fromEntries(prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
  Object.assign(byId.romanianDeadlift,{
@@ -2014,10 +2161,11 @@ assert.equal(oct17V1519ById.gymConditioningCircuit.plannedRounds,undefined,'the 
 assert.equal(oct17V1519ById.gymConditioningCircuit.targetRpe,'7–8');
 assert.equal(oct17V1519ById.sidePlank.prescription,'3 × 55 sec each side');
 assert.deepEqual(oct17V1519ById.sidePlank.prescribedTimes,['0:55','0:55','0:55']);
+assert.equal(oct17V1519ById.handReleasePushups,undefined,'the v1.5.19 snapshot does not inherit the new Strength 3 HRPU');
 assert.equal(evaluate(`circuitTemplate(${JSON.stringify(oct17V1519ById.gymConditioningCircuit)}).plannedRounds`),2,'the saved exact-two-round prescription restores its historical round target without changing the template');
 assert.equal(evaluate(`prescriptionAdherence(${JSON.stringify(oct17V1519ById.gymConditioningCircuit)},${JSON.stringify(oct17V1519Results.gymConditioningCircuit)})`),'met','the October 17 two-round result still meets its saved v1.5.19 prescription');
 assert.equal(evaluate(`prescriptionAdherence(${JSON.stringify(oct17V1519ById.sidePlank)},${JSON.stringify(oct17V1519Results.sidePlank)})`),'not_assessable','the planned-but-uncompleted October 17 side plank remains not assessable rather than failed');
-assert.equal(evaluate(`prescriptionAdherence(${activeStrength3Circuit},${JSON.stringify(oct17V1519Results.gymConditioningCircuit)})`),'modified','the historical two-round result differs only when deliberately compared with the new active one-round rule');
+assert.equal(evaluate(`prescriptionAdherence(${JSON.stringify(snapshotBackedV1520ById.gymConditioningCircuit)},${JSON.stringify(oct17V1519Results.gymConditioningCircuit)})`),'modified','the historical two-round result differs only when deliberately compared with the later v1.5.20 one-round rule');
 const editedOct17V1519=JSON.parse(evaluate(`JSON.stringify(normalizeEntry({...${JSON.stringify(normalizedOct17V1519)},notes:'Invented edited October 17 note.'}))`));
 assert.deepEqual(editedOct17V1519.prescriptionSnapshot,syntheticOct17V1519Strength3Fixture.prescriptionSnapshot,'editing preserves the October 17 v1.5.19 snapshot');
 assert.deepEqual(editedOct17V1519.exercises,syntheticOct17V1519Strength3Fixture.exercises,'editing preserves the historical two-round circuit and planned-only side plank');
@@ -2028,14 +2176,14 @@ elements.exportFrom.value='2026-10-17';
 elements.exportTo.value='2026-10-17';
 evaluate(`entries=[normalizeEntry(${JSON.stringify(syntheticOct17V1519Strength3Fixture)})]`);
 const oct17V1519Markdown=evaluate('buildMd()');
-assert.match(oct17V1519Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.20/,'the export header uses the current public-app version');
+assert.match(oct17V1519Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current public-app version');
 assert.match(oct17V1519Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.19/,'the October 17 session retains its immutable saved version');
 assert.match(oct17V1519Markdown,/Gym conditioning circuit[\s\S]*Planned: Exactly 2 rounds[\s\S]*target RPE 7–8[\s\S]*Prescription adherence: Met/);
 assert.match(oct17V1519Markdown,/Side plank[\s\S]*Planned: 3 × 55 sec each side[\s\S]*Status: Not marked complete[\s\S]*Prescription adherence: Not assessable[\s\S]*Completed result: 3 sets/);
 assert.doesNotMatch(oct17V1519Markdown,/Planned: Exactly 1 controlled round|low-dose maintenance exposure/,'the October 17 export never substitutes v1.5.20 circuit guidance');
 const oct17V1519Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
 assert.equal(oct17V1519Backup.version,11);
-assert.equal(oct17V1519Backup.currentProgram.version,'1.5.20');
+assert.equal(oct17V1519Backup.currentProgram.version,'1.5.21');
 assert.deepEqual(oct17V1519Backup.entries[0].prescriptionSnapshot,syntheticOct17V1519Strength3Fixture.prescriptionSnapshot,'JSON backup preserves the complete October 17 snapshot');
 assert.deepEqual(oct17V1519Backup.entries[0].exercises,syntheticOct17V1519Strength3Fixture.exercises,'JSON backup preserves the October 17 circuit and uncompleted side plank');
 const oct17V1519Csv=evaluate('buildCsv()');
@@ -2064,10 +2212,11 @@ assert.equal(normalizedSnapshotlessOct17V1519.prescriptionSnapshot,undefined,'th
 const snapshotlessOct17V1519Definition=JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry(${JSON.stringify(normalizedSnapshotlessOct17V1519)}))`));
 const snapshotlessOct17V1519ById=Object.fromEntries(snapshotlessOct17V1519Definition.exercises.map(exercise=>[exercise.id,exercise]));
 const snapshotlessOct17V1519Results=Object.fromEntries(normalizedSnapshotlessOct17V1519.exercises.map(exercise=>[exercise.exerciseId,exercise]));
-assert.equal(snapshotlessOct17V1519Definition.focus,'Historical workout using its saved exercise list.','snapshotless history does not inherit the active v1.5.20 focus');
-assert.equal(snapshotlessOct17V1519Definition.targetDuration,undefined,'snapshotless history does not inherit the active v1.5.20 duration');
+assert.equal(snapshotlessOct17V1519Definition.focus,'Historical workout using its saved exercise list.','snapshotless history does not inherit the active v1.5.21 focus');
+assert.equal(snapshotlessOct17V1519Definition.targetDuration,undefined,'snapshotless history does not inherit the active v1.5.21 duration');
 assert.equal(snapshotlessOct17V1519Definition.targetSessionRpe,'7–8');
-assert.equal(snapshotlessOct17V1519ById.romanianDeadlift.coachingNotes,'Invented saved v1.5.19 grip guidance.','snapshotless history does not inherit the active v1.5.20 strap guidance');
+assert.equal(snapshotlessOct17V1519ById.romanianDeadlift.coachingNotes,'Invented saved v1.5.19 grip guidance.','snapshotless history does not inherit later active strap guidance');
+assert.equal(snapshotlessOct17V1519ById.handReleasePushups,undefined,'snapshotless v1.5.19 history does not inherit the active v1.5.21 support exposure');
 assert.equal(snapshotlessOct17V1519ById.gymConditioningCircuit.prescription,'Exactly 2 rounds: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 rest');
 assert.equal(snapshotlessOct17V1519ById.gymConditioningCircuit.plannedRounds,undefined);
 assert.equal(evaluate(`circuitTemplate(${JSON.stringify(snapshotlessOct17V1519ById.gymConditioningCircuit)}).plannedRounds`),2,'snapshotless exact-two-round history recovers its saved round target');
@@ -2203,7 +2352,7 @@ elements.exportFrom.value='2026-10-13';
 elements.exportTo.value='2026-10-13';
 evaluate(`entries=[normalizeEntry(${JSON.stringify(syntheticOct13V1518Strength1Fixture)})]`);
 const oct13V1518Markdown=evaluate('buildMd()');
-assert.match(oct13V1518Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.20/,'the export header uses the current public-app version');
+assert.match(oct13V1518Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current public-app version');
 assert.match(oct13V1518Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.18/,'the October 13 session retains its immutable saved version');
 assert.match(oct13V1518Markdown,/Hand-release push-ups[\s\S]*Planned: Set 1: 15 continuous reps; Sets 2–5: 10 reps/);
 assert.match(oct13V1518Markdown,/Lat pulldown[\s\S]*Planned: Next smallest increment above 176 lb[\s\S]*approximately 187 lb/);
@@ -2211,7 +2360,7 @@ assert.match(oct13V1518Markdown,/Cable lateral raise[\s\S]*Planned: Next smalles
 assert.doesNotMatch(oct13V1518Markdown,/Planned: Set 1: 17 continuous reps|Planned: Next smallest increment above 187 lb/,'the October 13 export never substitutes v1.5.19 targets');
 const oct13V1518Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
 assert.equal(oct13V1518Backup.version,11);
-assert.equal(oct13V1518Backup.currentProgram.version,'1.5.20');
+assert.equal(oct13V1518Backup.currentProgram.version,'1.5.21');
 assert.deepEqual(oct13V1518Backup.entries[0].prescriptionSnapshot,syntheticOct13V1518Strength1Fixture.prescriptionSnapshot,'JSON backup preserves the complete October 13 snapshot');
 assert.deepEqual(oct13V1518Backup.entries[0].exercises,syntheticOct13V1518Strength1Fixture.exercises,'JSON backup preserves every invented October 13 result');
 const oct13V1518Csv=evaluate('buildCsv()');
@@ -2277,14 +2426,14 @@ elements.exportFrom.value='2026-10-08';
 elements.exportTo.value='2026-10-08';
 evaluate(`entries=[normalizeEntry(${JSON.stringify(syntheticOct8V1517Strength3Fixture)})]`);
 const oct8V1517Markdown=evaluate('buildMd()');
-assert.match(oct8V1517Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.20/,'the export header uses the current public-app version');
+assert.match(oct8V1517Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current public-app version');
 assert.match(oct8V1517Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.17/,'the October 8 session retains its immutable saved version');
 assert.match(oct8V1517Markdown,/Side plank[\s\S]*Planned: 3 × 50 sec each side/);
 assert.match(oct8V1517Markdown,/Hammer curl[\s\S]*Planned: 25 lb per hand for 2 × 15/);
 assert.doesNotMatch(oct8V1517Markdown,/Planned: 3 × 55 sec each side|expected 30 lb per hand/,'the October 8 export never substitutes v1.5.18 targets');
 const oct8V1517Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
 assert.equal(oct8V1517Backup.version,11);
-assert.equal(oct8V1517Backup.currentProgram.version,'1.5.20');
+assert.equal(oct8V1517Backup.currentProgram.version,'1.5.21');
 assert.deepEqual(oct8V1517Backup.entries[0].prescriptionSnapshot,syntheticOct8V1517Strength3Fixture.prescriptionSnapshot,'JSON backup preserves the complete October 8 snapshot');
 assert.deepEqual(oct8V1517Backup.entries[0].exercises,syntheticOct8V1517Strength3Fixture.exercises,'JSON backup preserves every invented October 8 result');
 const oct8V1517Csv=evaluate('buildCsv()');
@@ -2297,12 +2446,21 @@ assert.deepEqual(reloadedOct8V1517.prescriptionSnapshot,syntheticOct8V1517Streng
 assert.deepEqual(reloadedOct8V1517.exercises,syntheticOct8V1517Strength3Fixture.exercises,'local persistence preserves every invented October 8 result');
 assert.equal(evaluate(`nextWorkoutDay([normalizeEntry(${JSON.stringify(syntheticOct8V1517Strength3Fixture)})])`),'strengthUpperAft','the saved primary Strength 3 entry still wraps to Strength 1');
 
-const syntheticOct6V1516Strength2Fixture=JSON.parse(evaluate(`JSON.stringify({
+const syntheticOct6V1516Strength2Fixture=JSON.parse(evaluate(`JSON.stringify((()=>{
+ const prescriptionSnapshot=snapshotSession(SESSIONS.strengthHeavyCarry);
+ const byId=Object.fromEntries(prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ Object.assign(byId.handReleasePushups,{
+  prescription:'4 × 10',sets:4,targetRpe:'5–7',
+  coachingNotes:'Use four equal, technically clean, submaximal sets of 10 and stop before failure. This remains the lower-volume second weekly hand-release push-up exposure.'
+ });
+ delete byId.handReleasePushups.prescribedReps;
+ byId.loadedCarry.coachingNotes='Aim for approximately 40 yd per trip. Keep the current load and do not progress it while Strength 3 includes the SDC circuit.';
+ return {
  id:'synthetic-oct6-v1516-strength2',date:'2026-10-06',updatedAt:'2026-10-06T18:00:00.000Z',
  dayKey:'strengthHeavyCarry',dayLabel:SESSIONS.strengthHeavyCarry.label,sessionType:'primary',advancesPrimaryRotation:true,
  programId:PROGRAM.id,programName:PROGRAM.name,programVersion:'1.5.16',programEffectiveDate:'2026-10-05',activeRunStage:'',
  targetSessionRpe:'6–8',duration:'64',sessionRpe:'7',painDuring:'0',notes:'Invented October 6 compatibility fixture.',
- prescriptionSnapshot:snapshotSession(SESSIONS.strengthHeavyCarry),
+ prescriptionSnapshot,
  exercises:[
   {exerciseId:'deadlift',name:'Trap-bar deadlift',type:'weighted',unit:'lb total',variation:'Trap / hex bar',load:'75',loadMode:'platesPerSide',barWeight:'45',totalLoad:'195',sets:'3',reps:'5, 5, 5',rpe:'7',completed:true},
   {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'4',reps:'10, 10, 10, 10',rpe:'6',completed:true},
@@ -2312,7 +2470,8 @@ const syntheticOct6V1516Strength2Fixture=JSON.parse(evaluate(`JSON.stringify({
   {exerciseId:'loadedCarry',name:'Farmer carry',type:'carry',unit:'lb per hand',variation:'Farmer carry',load:'45',sets:'4',distance:'40',rpe:'7',completed:true},
   {exerciseId:'plank',name:'Front plank',type:'timed',sets:'3',times:'0:50, 0:50, 0:50',rpe:'7',completed:true}
  ]
-})`));
+ };
+})())`));
 const normalizedOct6V1516=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${JSON.stringify(syntheticOct6V1516Strength2Fixture)}))`));
 assert.equal(normalizedOct6V1516.programVersion,'1.5.16','the October 6 workout retains its immutable saved version');
 assert.equal(normalizedOct6V1516.programEffectiveDate,'2026-10-05');
@@ -2340,13 +2499,13 @@ elements.exportFrom.value='2026-10-06';
 elements.exportTo.value='2026-10-06';
 evaluate(`entries=[normalizeEntry(${JSON.stringify(syntheticOct6V1516Strength2Fixture)})]`);
 const oct6V1516Markdown=evaluate('buildMd()');
-assert.match(oct6V1516Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.20/,'the export header uses the current public-app version');
+assert.match(oct6V1516Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current public-app version');
 assert.match(oct6V1516Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.16/,'the October 6 session retains its immutable saved version');
 assert.match(oct6V1516Markdown,/Trap-bar deadlift[\s\S]*Planned: 195 lb total for 3 × 5/);
 assert.match(oct6V1516Markdown,/Front plank[\s\S]*Planned: 3 × 50 sec/);
 const oct6V1516Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
 assert.equal(oct6V1516Backup.version,11);
-assert.equal(oct6V1516Backup.currentProgram.version,'1.5.20');
+assert.equal(oct6V1516Backup.currentProgram.version,'1.5.21');
 assert.deepEqual(oct6V1516Backup.entries[0].prescriptionSnapshot,syntheticOct6V1516Strength2Fixture.prescriptionSnapshot,'JSON backup preserves the complete October 6 snapshot');
 assert.deepEqual(oct6V1516Backup.entries[0].exercises,syntheticOct6V1516Strength2Fixture.exercises,'JSON backup preserves every invented October 6 result');
 assert.equal(evaluate(`persistEntries('Before synthetic October 6 persistence test')`),true);
@@ -2417,14 +2576,14 @@ elements.exportFrom.value='2026-10-04';
 elements.exportTo.value='2026-10-04';
 evaluate(`entries=[normalizeEntry(${JSON.stringify(syntheticOct4V1515Strength1Fixture)})]`);
 const oct4V1515Markdown=evaluate('buildMd()');
-assert.match(oct4V1515Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.20/,'the export header uses the current public-app version');
+assert.match(oct4V1515Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current public-app version');
 assert.match(oct4V1515Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.15/,'the October 4 session retains its immutable saved version');
 assert.match(oct4V1515Markdown,/Seated dumbbell overhead press[\s\S]*Planned: 25 lb per hand for 3 × 10/);
 assert.match(oct4V1515Markdown,/Machine row[\s\S]*Planned: 110 lb displayed on the same confirmed machine\/setup for 3 × 10/);
 assert.doesNotMatch(oct4V1515Markdown,/Current coach-directed run stage/);
 const oct4V1515Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
 assert.equal(oct4V1515Backup.version,11);
-assert.equal(oct4V1515Backup.currentProgram.version,'1.5.20');
+assert.equal(oct4V1515Backup.currentProgram.version,'1.5.21');
 assert.deepEqual(oct4V1515Backup.entries[0].prescriptionSnapshot,syntheticOct4V1515Strength1Fixture.prescriptionSnapshot,'JSON backup preserves the complete October 4 snapshot');
 assert.deepEqual(oct4V1515Backup.entries[0].exercises,syntheticOct4V1515Strength1Fixture.exercises,'JSON backup preserves every invented October 4 result');
 const oct4V1515Csv=evaluate('buildCsv()');
@@ -2509,7 +2668,7 @@ elements.exportFrom.value='2026-10-01';
 elements.exportTo.value='2026-10-01';
 evaluate(`entries=[normalizeEntry(${JSON.stringify(syntheticOct1V1514Strength3Fixture)})]`);
 const oct1V1514Markdown=evaluate('buildMd()');
-assert.match(oct1V1514Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.20/,'the export header uses the current public-app version');
+assert.match(oct1V1514Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current public-app version');
 assert.match(oct1V1514Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.14/,'the October 1 session retains its immutable saved version');
 assert.match(oct1V1514Markdown,/Incline dumbbell press[\s\S]*Planned: 35 lb per hand for 3 × 9/);
 assert.match(oct1V1514Markdown,/One-arm dumbbell row[\s\S]*Planned: 50 lb for 3 × 9 each side/);
@@ -2518,7 +2677,7 @@ assert.match(oct1V1514Markdown,/Overhead cable triceps extension[\s\S]*Planned: 
 assert.doesNotMatch(oct1V1514Markdown,/Current coach-directed run stage/);
 const oct1V1514Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
 assert.equal(oct1V1514Backup.version,11);
-assert.equal(oct1V1514Backup.currentProgram.version,'1.5.20');
+assert.equal(oct1V1514Backup.currentProgram.version,'1.5.21');
 assert.deepEqual(oct1V1514Backup.entries[0].prescriptionSnapshot,syntheticOct1V1514Strength3Fixture.prescriptionSnapshot,'JSON backup preserves the complete October 1 snapshot');
 assert.deepEqual(oct1V1514Backup.entries[0].exercises,syntheticOct1V1514Strength3Fixture.exercises,'JSON backup preserves every invented October 1 result');
 const oct1V1514Csv=evaluate('buildCsv()');
@@ -2536,6 +2695,12 @@ assert.equal(evaluate(`nextWorkoutDay([normalizeEntry(${JSON.stringify(synthetic
 const syntheticSep29V1513Strength2Fixture=JSON.parse(evaluate(`JSON.stringify((()=>{
  const prescriptionSnapshot=snapshotSession(SESSIONS.strengthHeavyCarry);
  const byId=Object.fromEntries(prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ Object.assign(byId.handReleasePushups,{
+  prescription:'4 × 10',sets:4,targetRpe:'5–7',
+  coachingNotes:'Use four equal, technically clean, submaximal sets of 10 and stop before failure. This remains the lower-volume second weekly hand-release push-up exposure.'
+ });
+ delete byId.handReleasePushups.prescribedReps;
+ byId.loadedCarry.coachingNotes='Aim for approximately 40 yd per trip. Keep the current load and do not progress it while Strength 3 includes the SDC circuit.';
  Object.assign(byId.deadlift,{
   prescription:'185 lb total for 3 × 5',targetLoad:185,targetLoadVariation:'Trap / hex bar',targetRpe:'6–8',
   coachingNotes:'Use the trap/hex bar when available. Hold 185 lb for a full-volume confirmation, maintain technically clean repetitions, do not pursue grinders, and do not make another load jump next cycle. Record the actual bar weight and plate weight per side; use another listed variation when equipment requires it. Future progression remains coach-directed and performance-based.'
@@ -2591,7 +2756,7 @@ elements.exportFrom.value='2026-09-29';
 elements.exportTo.value='2026-09-29';
 evaluate(`entries=[normalizeEntry(${JSON.stringify(syntheticSep29V1513Strength2Fixture)})]`);
 const sep29V1513Markdown=evaluate('buildMd()');
-assert.match(sep29V1513Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.20/,'the export header uses the current public-app version');
+assert.match(sep29V1513Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current public-app version');
 assert.match(sep29V1513Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.13/,'the September 29 session retains its immutable saved version');
 assert.match(sep29V1513Markdown,/Trap-bar deadlift[\s\S]*Planned: 185 lb total for 3 × 5/);
 assert.match(sep29V1513Markdown,/Seated cable row[\s\S]*Planned: 154 lb displayed on the same cable setup for 3 × 10/);
@@ -2599,7 +2764,7 @@ assert.match(sep29V1513Markdown,/Front plank[\s\S]*Planned: 3 × 45 sec/);
 assert.doesNotMatch(sep29V1513Markdown,/Current coach-directed run stage/);
 const sep29V1513Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
 assert.equal(sep29V1513Backup.version,11);
-assert.equal(sep29V1513Backup.currentProgram.version,'1.5.20');
+assert.equal(sep29V1513Backup.currentProgram.version,'1.5.21');
 assert.deepEqual(sep29V1513Backup.entries[0].prescriptionSnapshot,syntheticSep29V1513Strength2Fixture.prescriptionSnapshot,'JSON backup preserves the complete September 29 snapshot');
 assert.deepEqual(sep29V1513Backup.entries[0].exercises,syntheticSep29V1513Strength2Fixture.exercises,'JSON backup preserves every September 29 result');
 const sep29V1513Csv=evaluate('buildCsv()');
@@ -2673,7 +2838,7 @@ elements.exportFrom.value='2026-09-27';
 elements.exportTo.value='2026-09-27';
 evaluate(`entries=[normalizeEntry(${JSON.stringify(syntheticSep27V1512Strength1Fixture)})]`);
 const sep27V1512Markdown=evaluate('buildMd()');
-assert.match(sep27V1512Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.20/,'the export header uses the current public-app version');
+assert.match(sep27V1512Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current public-app version');
 assert.match(sep27V1512Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.12/,'the September 27 session retains its immutable saved version');
 assert.match(sep27V1512Markdown,/Hand-release push-ups[\s\S]*Planned: 5 × 11/);
 assert.match(sep27V1512Markdown,/Seated dumbbell overhead press[\s\S]*Planned: 25 lb per hand for 3 × 8–10/);
@@ -2681,7 +2846,7 @@ assert.match(sep27V1512Markdown,/Machine row[\s\S]*Planned: 110 lb displayed on 
 assert.doesNotMatch(sep27V1512Markdown,/Current coach-directed run stage/);
 const sep27V1512Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
 assert.equal(sep27V1512Backup.version,11);
-assert.equal(sep27V1512Backup.currentProgram.version,'1.5.20');
+assert.equal(sep27V1512Backup.currentProgram.version,'1.5.21');
 assert.deepEqual(sep27V1512Backup.entries[0].prescriptionSnapshot,syntheticSep27V1512Strength1Fixture.prescriptionSnapshot,'JSON backup preserves the complete September 27 snapshot');
 assert.deepEqual(sep27V1512Backup.entries[0].exercises,syntheticSep27V1512Strength1Fixture.exercises,'JSON backup preserves every September 27 result');
 const sep27V1512Csv=evaluate('buildCsv()');
@@ -2703,9 +2868,10 @@ const syntheticSep22V1511Strength2Fixture=JSON.parse(evaluate(`JSON.stringify(((
   coachingNotes:'Use the trap/hex bar when available. Hold 175 lb for confirmation, maintain technically clean repetitions, and do not pursue grinders or another load jump next cycle. Record the actual bar weight and plate weight per side; use another listed variation when equipment requires it. Future progression remains coach-directed and performance-based.'
  });
  Object.assign(byId.handReleasePushups,{
-  prescription:'4 × 9',
+  prescription:'4 × 9',sets:4,targetRpe:'5–7',
   coachingNotes:'Use four equal, technically clean sets of 9 and stop before failure.'
  });
+ delete byId.handReleasePushups.prescribedReps;
  Object.assign(byId.squatOrLegPress,{
   prescription:'Next smallest comparable increment above 140 lb on the same machine/setup for 3 × 8–10',
   coachingNotes:'Use the next smallest increment above 140 lb only on the same comparable leg-press machine and setup. Do not treat the displayed value as comparable on other equipment, and keep all three sets controlled at approximately RPE 7.'
@@ -2763,7 +2929,7 @@ elements.exportFrom.value='2026-09-22';
 elements.exportTo.value='2026-09-22';
 evaluate(`entries=[normalizeEntry(${JSON.stringify(syntheticSep22V1511Strength2Fixture)})]`);
 const sep22V1511Markdown=evaluate('buildMd()');
-assert.match(sep22V1511Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.20/,'the export header uses the current public-app version');
+assert.match(sep22V1511Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current public-app version');
 assert.match(sep22V1511Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.11/,'the September 22 session retains its immutable saved version');
 assert.match(sep22V1511Markdown,/Trap-bar deadlift[\s\S]*Planned: 175 lb total for 3 × 5[\s\S]*Prescription adherence: Modified[\s\S]*Load above target: 185 lb completed vs 175 lb prescribed[\s\S]*185 lb total/);
 assert.match(sep22V1511Markdown,/Leg press[\s\S]*Planned: Next smallest comparable increment above 140 lb[\s\S]*Completed result: Leg press · 160 lb plates total \(80 lb\/side; carriage excluded\)/);
@@ -2771,7 +2937,7 @@ assert.match(sep22V1511Markdown,/Seated cable row[\s\S]*Planned: 132 lb displaye
 assert.doesNotMatch(sep22V1511Markdown,/Current coach-directed run stage/);
 const sep22V1511Backup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
 assert.equal(sep22V1511Backup.version,11);
-assert.equal(sep22V1511Backup.currentProgram.version,'1.5.20');
+assert.equal(sep22V1511Backup.currentProgram.version,'1.5.21');
 assert.deepEqual(sep22V1511Backup.entries[0].prescriptionSnapshot,syntheticSep22V1511Strength2Fixture.prescriptionSnapshot,'JSON backup preserves the complete September 22 snapshot');
 assert.deepEqual(sep22V1511Backup.entries[0].exercises,syntheticSep22V1511Strength2Fixture.exercises,'JSON backup preserves every September 22 result');
 const sep22V1511Csv=evaluate('buildCsv()');
@@ -2830,7 +2996,7 @@ elements.exportFrom.value='2026-09-18';
 elements.exportTo.value='2026-09-18';
 evaluate(`entries=[normalizeEntry(${JSON.stringify(syntheticSep18V159Strength1Fixture)})]`);
 const sep18V159Markdown=evaluate('buildMd()');
-assert.match(sep18V159Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.20/,'the export header uses the current v1.5.20 program');
+assert.match(sep18V159Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current v1.5.21 program');
 assert.doesNotMatch(sep18V159Markdown,/Current coach-directed run stage/,'current-program exports omit an active AFT run-stage line');
 assert.match(sep18V159Markdown,/active run stage 4/,'historical session metadata retains its saved AFT run stage');
 assert.match(sep18V159Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.9/,'the September 18 session retains its saved public-app version');
@@ -3036,7 +3202,7 @@ evaluate(`entries=[{
  ]
 }]`);
 const markdown=evaluate('buildMd()');
-assert.match(markdown,/AFT Foundation Block 1 · version 1\.5\.20/);
+assert.match(markdown,/AFT Foundation Block 1 · version 1\.5\.21/);
 assert.doesNotMatch(markdown,/Current coach-directed run stage/,'current export headers do not advertise an AFT-managed run stage');
 assert.match(markdown,/active run stage 1/,'historical entries keep their saved run-stage metadata');
 assert.match(markdown,/Program: AFT Foundation Block 1 · version 1\.2/,'historical entry version must remain visible');
@@ -3062,7 +3228,7 @@ assert.match(csv,/"14:16"/);
 assert.match(csv,/"Relaxed pace\.\nNo pain\."/);
 const jsonBackup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
 assert.equal(jsonBackup.version,11);
-assert.equal(jsonBackup.currentProgram.version,'1.5.20');
+assert.equal(jsonBackup.currentProgram.version,'1.5.21');
 assert.equal(jsonBackup.currentProgram.runStage,null,'JSON backup metadata records that the current AFT program has no run stage');
 assert.equal(jsonBackup.entries[0].exercises[0].deviceReportedPace,'14:16');
 
@@ -3070,7 +3236,7 @@ elements.exportFrom.value='2026-09-03';
 elements.exportTo.value='2026-09-03';
 evaluate(`entries=[normalizeEntry(${syntheticSep3V151Day3Fixture})]`);
 const sep3Markdown=evaluate('buildMd()');
-assert.match(sep3Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.20/,'the export header uses the current public-app version');
+assert.match(sep3Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current public-app version');
 assert.match(sep3Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.1/,'the September 3 session retains its immutable saved version');
 assert.match(sep3Markdown,/Romanian deadlift[\s\S]*Planned: 135 lb total for 2 × 8/,'the September 3 export uses its saved prescription snapshot');
 assert.doesNotMatch(sep3Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.2/,'the unapplied v1.5.2 app version is never synthesized');
@@ -3079,7 +3245,7 @@ elements.exportFrom.value='2026-09-05';
 elements.exportTo.value='2026-09-05';
 evaluate(`entries=[normalizeEntry(${syntheticSep5V153Day4Fixture})]`);
 const sep5Markdown=evaluate('buildMd()');
-assert.match(sep5Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.20/,'the export header uses the current v1.5.20 program');
+assert.match(sep5Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current v1.5.21 program');
 assert.match(sep5Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.3/,'the September 5 session retains its immutable saved version');
 assert.match(sep5Markdown,/Front plank[\s\S]*Planned: 3 × 45 sec/,'the September 5 export uses its saved plank prescription');
 assert.doesNotMatch(sep5Markdown,/Front plank[\s\S]*Planned: 3 × 50 sec/,'the active plank target does not rewrite September 5 history');
@@ -3127,7 +3293,7 @@ elements.exportFrom.value='2026-09-13';
 elements.exportTo.value='2026-09-13';
 evaluate(`entries=[normalizeEntry(${JSON.stringify(syntheticSep13V156Day2Fixture)})]`);
 const sep13Markdown=evaluate('buildMd()');
-assert.match(sep13Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.20/,'the export header uses the current v1.5.20 program');
+assert.match(sep13Markdown,/\*\*Program:\*\* AFT Foundation Block 1 · version 1\.5\.21/,'the export header uses the current v1.5.21 program');
 assert.match(sep13Markdown,/Program: AFT Foundation Block 1 · version 1\.5\.6/,'the September 13 session retains its saved public-app version');
 assert.match(sep13Markdown,/Hand-release push-ups[\s\S]*Planned: 5 × 10/,'the September 13 push-up target remains frozen');
 assert.match(sep13Markdown,/Lat pulldown[\s\S]*Planned: Next smallest increment above 165 lb[\s\S]*approximately 176 lb/,'the September 13 pulldown target remains frozen');
@@ -3324,18 +3490,18 @@ assert.match(styles,/\.primary,\.secondary,\.danger,\.file-button\{[^}]*min-heig
 assert.match(styles,/button:focus-visible,summary:focus-visible,a:focus-visible\{[^}]*outline:/,'calculator buttons and summaries retain visible keyboard focus');
 assert.match(styles,/\.plate-calculator input,\.plate-adjustments button,\.plate-alternatives button\{border-color:#596768\}/,'plate planner controls retain visible non-text boundaries');
 assert.doesNotMatch(styles,/\.sticky-actions\{position:sticky;bottom:calc\(7px/,'mobile workout actions must remain in page flow');
-assert.match(indexHtml,/styles\.css\?v=67/);
-assert.ok(indexHtml.indexOf('program-config.js?v=67')<indexHtml.indexOf('cloud-config.js?v=67'));
-assert.ok(indexHtml.indexOf('cloud-config.js?v=67')<indexHtml.indexOf('cloud-sync.js?v=67'));
-assert.ok(indexHtml.indexOf('cloud-sync.js?v=67')<indexHtml.indexOf('app.js?v=67'));
-assert.doesNotMatch(indexHtml,/\?v=65/,'the app shell contains no stale v65 asset query');
-assert.match(serviceWorker,/aft-workout-tracker-v67/);
-assert.match(serviceWorker,/styles\.css\?v=67/);
-assert.match(serviceWorker,/program-config\.js\?v=67/);
-assert.match(serviceWorker,/cloud-config\.js\?v=67/);
-assert.match(serviceWorker,/cloud-sync\.js\?v=67/);
-assert.match(serviceWorker,/app\.js\?v=67/);
-assert.doesNotMatch(serviceWorker,/\?v=65/,'the service worker contains no stale v65 asset query');
+assert.match(indexHtml,/styles\.css\?v=68/);
+assert.ok(indexHtml.indexOf('program-config.js?v=68')<indexHtml.indexOf('cloud-config.js?v=68'));
+assert.ok(indexHtml.indexOf('cloud-config.js?v=68')<indexHtml.indexOf('cloud-sync.js?v=68'));
+assert.ok(indexHtml.indexOf('cloud-sync.js?v=68')<indexHtml.indexOf('app.js?v=68'));
+assert.doesNotMatch(indexHtml,/\?v=67/,'the app shell contains no stale v67 asset query');
+assert.match(serviceWorker,/aft-workout-tracker-v68/);
+assert.match(serviceWorker,/styles\.css\?v=68/);
+assert.match(serviceWorker,/program-config\.js\?v=68/);
+assert.match(serviceWorker,/cloud-config\.js\?v=68/);
+assert.match(serviceWorker,/cloud-sync\.js\?v=68/);
+assert.match(serviceWorker,/app\.js\?v=68/);
+assert.doesNotMatch(serviceWorker,/\?v=67/,'the service worker contains no stale v67 asset query');
 assert.match(indexHtml,/id="sessionRpe"[^>]+step="0\.5"[^>]+inputmode="decimal"/,'session RPE accepts half-point values');
 assert.match(appSource,/addEventListener\('invalid',revealInvalidWorkoutControl,true\)/,'invalid workout values must produce visible feedback');
 assert.equal((appSource.match(/Component RPE',performance\.rpe,\{min:1,max:10,step:'\.5'\}/g)||[]).length,4,'all circuit component RPE inputs accept half-point values');

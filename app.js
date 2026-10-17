@@ -1312,7 +1312,12 @@ function fields(definition,state,setPlan,directive=null){
 }
 
 function circuitTemplate(definition){
- return clone(CIRCUIT_TEMPLATES[definition?.circuitVersion]||{plannedRounds:2,components:[]});
+ const template=clone(CIRCUIT_TEMPLATES[definition?.circuitVersion]||{plannedRounds:2,components:[]});
+ const explicitRounds=numberOrNull(definition?.plannedRounds);
+ const savedPrescriptionRounds=String(definition?.prescription||'').match(/\bExactly\s+(\d+)\s+(?:controlled\s+)?rounds?\b/i);
+ const prescribedRounds=explicitRounds??numberOrNull(savedPrescriptionRounds?.[1]);
+ if(prescribedRounds!=null)template.plannedRounds=Math.max(1,Math.floor(prescribedRounds));
+ return template;
 }
 
 function normalizeCircuitPerformance(performance){
@@ -1565,7 +1570,7 @@ function circuitComponentMarkup(component,rounds){
   <div class="circuit-component-body">
    <div class="circuit-component-controls">
     <label class="check-label" data-component-performed-wrap><input data-component-performed type="checkbox" ${circuitComponentPerformance(component).some(performance=>performance.performed)?'checked':''}><span>Performed</span></label>
-    <label>Result applies to<select data-component-mode><option value="shared" ${component.resultMode!=='per_round'?'selected':''}>Both rounds</option><option value="per_round" ${component.resultMode==='per_round'?'selected':''}>Different by round</option></select></label>
+    <label>Result applies to<select data-component-mode><option value="shared" ${component.resultMode!=='per_round'?'selected':''}>All completed rounds</option><option value="per_round" ${component.resultMode==='per_round'?'selected':''}>Different by round</option></select></label>
    </div>
    <div data-component-shared class="${component.resultMode==='per_round'?'hidden':''}">${circuitPerformanceFields(component,shared)}</div>
    <div data-component-rounds class="circuit-round-results ${component.resultMode==='per_round'?'':'hidden'}">
@@ -1580,13 +1585,14 @@ function circuitComponentMarkup(component,rounds){
 function circuitFields(definition,state,directive){
  const template=circuitTemplate(definition);
  const applied=directive?.circuitDirective?directive:null;
- const rounds=state.rounds||applied?.circuitDirective?.plannedRounds||template.plannedRounds||2;
+ const plannedRounds=applied?.circuitDirective?.plannedRounds||template.plannedRounds||2;
+ const rounds=state.rounds||plannedRounds;
  const components=circuitComponentsForRender(definition,state,applied);
  const directiveSnapshot=applied?{
   id:applied.id,scope:applied.scope||'next_occurrence',effectiveDate:applied.effectiveDate||'',text:applied.text||'',reason:applied.reason||'',
   circuitDirective:clone(applied.circuitDirective)
  }:null;
- return `<section class="circuit-logger" data-circuit-version="${attr(definition.circuitVersion||'')}" data-planned-rounds="${attr(applied?.circuitDirective?.plannedRounds||template.plannedRounds||2)}" ${directiveSnapshot?`data-circuit-directive="${attr(JSON.stringify(directiveSnapshot))}"`:''}>
+ return `<section class="circuit-logger" data-circuit-version="${attr(definition.circuitVersion||'')}" data-planned-rounds="${attr(plannedRounds)}" ${directiveSnapshot?`data-circuit-directive="${attr(JSON.stringify(directiveSnapshot))}"`:''}>
   <div class="circuit-overall">
    ${grid(
     select('rounds','Rounds completed',state.rounds,circuitRoundOptions(state.rounds)),
@@ -1594,7 +1600,7 @@ function circuitFields(definition,state,directive){
     num('rpe','Overall circuit RPE',state.rpe,1,10,1)
    )}
    <button class="secondary subtle" type="button" data-fill-circuit-plan>${applied?'Performed as directed':'Performed as planned'}</button>
-   <p class="muted">This applies the known targets to both rounds. Sled setup, timing, surface, and RPE remain blank until you record them.</p>
+   <p class="muted">This applies the known targets to all completed rounds. Sled setup, timing, surface, and RPE remain blank until you record them.</p>
   </div>
   <div class="circuit-component-list">
    ${components.map(component=>circuitComponentMarkup(component,rounds)).join('')}
@@ -2069,7 +2075,7 @@ function fillCircuitPlan(logger){
  updateCircuitRoundVisibility(logger);
  updateCardAdherence(card);
  scheduleDraft();
- toast('Known circuit targets applied to both rounds. Add the actual effort and sled details.');
+ toast('Known circuit targets applied to all completed rounds. Add the actual effort and sled details.');
 }
 
 function bindCircuitControls(){
@@ -4492,7 +4498,7 @@ function markdownCircuitResult(definition,result){
   const detail=circuitComponentAdherence(baseline,component);
   output+=`      ${component.order}. **${component.name}**\n`;
   output+=`         - Versioned prescription: ${baseline?.prescription||'Not part of the versioned circuit'}\n`;
-  output+=`         - Result format: ${component.resultMode==='per_round'?'Recorded separately by round':'Shared across both rounds'}\n`;
+  output+=`         - Result format: ${component.resultMode==='per_round'?'Recorded separately by round':'Shared across completed rounds'}\n`;
   const performances=circuitComponentPerformance(component).filter(hasCircuitPerformance);
   if(!performances.length){
    output+='         - Result: Not recorded\n';

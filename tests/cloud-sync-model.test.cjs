@@ -82,6 +82,31 @@ Object.assign(syntheticStrength3V1518Snapshot.exercises.find(exercise=>exercise.
  coachingNotes:'Use the next smallest increment only for the same dumbbell variation, keep repetitions controlled, and hold the new load for confirmation. Do not transfer 30 lb per hand to the rope-cable variation.'
 });
 
+const syntheticStrength3V1519Snapshot=JSON.parse(JSON.stringify(syntheticStrength3V1518Snapshot));
+
+const syntheticStrength3V1520Snapshot=JSON.parse(JSON.stringify(syntheticStrength3V1519Snapshot));
+Object.assign(syntheticStrength3V1520Snapshot,{
+ focus:'Lower and full-body strength followed by one controlled SDC-maintenance round and front-plank work.',
+ targetSessionRpe:'6–8',
+ targetDuration:'Approximately 50–65 minutes'
+});
+Object.assign(syntheticStrength3V1520Snapshot.exercises.find(exercise=>exercise.id==='romanianDeadlift'),{
+ coachingNotes:'Hold 155 lb. Use chalk first and maintain clean hinge technique. If grip threatens hinge position or range of motion, complete set 1 strapless and straps may be used for set 2; record strap use in the exercise notes. Do not use mixed grip, grind, or progress the load yet.'
+});
+Object.assign(syntheticStrength3V1520Snapshot.exercises.find(exercise=>exercise.id==='squatPattern'),{
+ coachingNotes:'Hold the goblet-squat load and repetitions rather than adding lower-body volume so running quality and the one-round SDC-maintenance exposure remain protected.'
+});
+Object.assign(syntheticStrength3V1520Snapshot.exercises.find(exercise=>exercise.id==='singleLegStrength'),{
+ coachingNotes:'Use body weight for two sets of 12 each leg with a deliberate 3-second descent and 1-second pause at the bottom of every repetition. This is a tempo and quality progression only; do not add external load or extra repetitions, and preserve running quality.'
+});
+Object.assign(syntheticStrength3V1520Snapshot.exercises.find(exercise=>exercise.id==='gymConditioningCircuit'),{
+ prescription:'Exactly 1 controlled round: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 recovery',
+ plannedRounds:1,
+ targetRpe:'6–7',
+ coachingNotes:'Keep exactly one controlled round. Use the Torque Fitness TANK M4 at Level 3 on the same approximately 20-yard gym lane when available, and record that equipment label in the existing sled fields. Level 3 is a resistance setting, not a weight. This is a low-dose maintenance exposure, not a score-comparable AFT SDC rehearsal. Do not use total circuit time to auto-progress, add a second round, extend hard cardio, increase TANK resistance, or convert resistance to pounds.'
+});
+syntheticStrength3V1520Snapshot.exercises=syntheticStrength3V1520Snapshot.exercises.filter(exercise=>exercise.id!=='sidePlank');
+
 const syntheticStrength3Results=({inclineReps,rowReps,plankTimes,tricepsLoad,tricepsReps,sidePlankTimes='50, 50, 50',hammerLoad='25',hammerReps='15, 15'})=>[
  {exerciseId:'romanianDeadlift',name:'Romanian deadlift',type:'weighted',unit:'lb',variation:'Barbell',load:'155',sets:'2',reps:'8, 8',rpe:'7',completed:true,notes:'Invented hinge result.'},
  {exerciseId:'squatPattern',name:'Goblet squat',type:'weighted',unit:'lb',variation:'Goblet squat',load:'55',sets:'3',reps:'10, 10, 10',rpe:'7',completed:true,notes:'Invented squat result.'},
@@ -659,6 +684,124 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
  assert.match(activeCircuit.components.find(component=>component.id==='backwardSledDrag').sharedResult.equipmentLabel,/TANK M4 · Level 3/);
  assert.equal(historical.programVersion,'1.5.17');
  assert.equal(active.programVersion,'1.5.18');
+ assert.equal(historical.activeRunStage,'');
+ assert.equal(active.activeRunStage,'');
+}
+
+{
+ const oct17Results=syntheticStrength3Results({
+  inclineReps:'10, 10, 10',rowReps:'10, 10, 10',plankTimes:'55, 55, 55',
+  tricepsLoad:'121',tricepsReps:'10, 10',sidePlankTimes:'',hammerLoad:'30',hammerReps:'11, 10'
+ });
+ Object.assign(oct17Results.find(exercise=>exercise.exerciseId==='sidePlank'),{
+  sets:'3',times:'',rpe:'',completed:false,notes:'Invented planned-but-uncompleted side-plank result.'
+ });
+ const oct18Results=syntheticStrength3Results({
+  inclineReps:'10, 10, 10',rowReps:'10, 10, 10',plankTimes:'55, 55, 55',
+  tricepsLoad:'121',tricepsReps:'11, 10',hammerLoad:'30',hammerReps:'10, 10'
+ }).filter(exercise=>exercise.exerciseId!=='sidePlank');
+ Object.assign(oct18Results.find(exercise=>exercise.exerciseId==='gymConditioningCircuit'),{
+  rounds:'1',rpe:'6',notes:'Invented one-round SDC-maintenance result.'
+ });
+
+ const oct17V1519Strength3=workout('synthetic-oct17-v1519-strength3','2026-10-17T18:00:00.000Z',{
+  date:'2026-10-17',dayKey:'strengthLowerSdc',dayLabel:'Strength 3 — Lower / Full Body and SDC',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.19',programEffectiveDate:'2026-10-14',
+  activeRunStage:'',targetSessionRpe:'7–8',duration:'63',sessionRpe:'7',painDuring:'0',notes:'Invented October 17 v1.5.19 Strength 3 cloud fixture; values are synthetic.',
+  prescriptionSnapshot:JSON.parse(JSON.stringify(syntheticStrength3V1519Snapshot)),
+  exercises:oct17Results
+ });
+ const oct18V1520Strength3=workout('synthetic-oct18-v1520-strength3','2026-10-18T18:00:00.000Z',{
+  date:'2026-10-18',dayKey:'strengthLowerSdc',dayLabel:'Strength 3 — Lower / Full Body and SDC',sessionType:'primary',advancesPrimaryRotation:true,
+  programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.20',programEffectiveDate:'2026-10-18',
+  activeRunStage:'',targetSessionRpe:'6–8',duration:'57',sessionRpe:'6',painDuring:'0',notes:'Invented October 18 v1.5.20 Strength 3 cloud fixture; values are synthetic.',
+  prescriptionSnapshot:JSON.parse(JSON.stringify(syntheticStrength3V1520Snapshot)),
+  exercises:oct18Results
+ });
+
+ const uploads=model.mergeWorkoutRecords([oct17V1519Strength3,oct18V1520Strength3],[],null).uploads;
+ assert.deepEqual(uploads.find(upload=>upload.entryId===oct17V1519Strength3.id).payload,oct17V1519Strength3,'Firebase upload preserves the complete invented October 17 v1.5.19 Strength 3 document');
+ assert.deepEqual(uploads.find(upload=>upload.entryId===oct18V1520Strength3.id).payload,oct18V1520Strength3,'Firebase upload preserves the complete invented v1.5.20 Strength 3 document');
+ const remoteChangedAt={
+  [oct17V1519Strength3.id]:'2026-10-17T19:00:00.000Z',
+  [oct18V1520Strength3.id]:'2026-10-18T19:00:00.000Z'
+ };
+ const remote=uploads.map(upload=>({...upload,changedAt:remoteChangedAt[upload.entryId]}));
+ const pulled=model.mergeWorkoutRecords([],remote,null).entries;
+ const historical=pulled.find(entry=>entry.id===oct17V1519Strength3.id);
+ const active=pulled.find(entry=>entry.id===oct18V1520Strength3.id);
+ assert.deepEqual(historical,oct17V1519Strength3,'Firebase round trips preserve the immutable invented October 17 v1.5.19 snapshot, two-round circuit, and planned-but-uncompleted side plank');
+ assert.deepEqual(active,oct18V1520Strength3,'Firebase round trips preserve the complete invented v1.5.20 Strength 3 snapshot, one-round circuit, and every invented result');
+
+ const historicalById=Object.fromEntries(historical.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ const activeById=Object.fromEntries(active.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ const historicalOrder=['romanianDeadlift','squatPattern','inclinePress','oneArmRow','singleLegStrength','gymConditioningCircuit','plank','sidePlank','hammerCurl','overheadTricepsExtension'];
+ const activeOrder=['romanianDeadlift','squatPattern','inclinePress','oneArmRow','singleLegStrength','gymConditioningCircuit','plank','hammerCurl','overheadTricepsExtension'];
+ assert.deepEqual(historical.prescriptionSnapshot.exercises.map(exercise=>exercise.id),historicalOrder,'the immutable October 17 snapshot retains every v1.5.19 Strength 3 exercise ID in stable order');
+ assert.deepEqual(active.prescriptionSnapshot.exercises.map(exercise=>exercise.id),activeOrder,'the v1.5.20 snapshot removes only active side plank and preserves every remaining stable exercise ID in order');
+ assert.equal(activeById.sidePlank,undefined,'the active v1.5.20 Strength 3 snapshot has no side-plank definition');
+ assert.equal(active.exercises.some(exercise=>exercise.exerciseId==='sidePlank'),false,'the active v1.5.20 result array has no synthesized side-plank result');
+
+ assert.equal(historical.prescriptionSnapshot.focus,'Lower and full-body strength followed by the capped two-round SDC circuit and trunk work.');
+ assert.equal(historical.prescriptionSnapshot.targetDuration,'Approximately 60–75 minutes');
+ assert.equal(historical.prescriptionSnapshot.targetSessionRpe,'7–8');
+ assert.equal(active.prescriptionSnapshot.focus,'Lower and full-body strength followed by one controlled SDC-maintenance round and front-plank work.');
+ assert.equal(active.prescriptionSnapshot.targetDuration,'Approximately 50–65 minutes');
+ assert.equal(active.prescriptionSnapshot.targetSessionRpe,'6–8');
+
+ assert.equal(historicalById.sidePlank.prescription,'3 × 55 sec each side');
+ assert.deepEqual(historicalById.sidePlank.prescribedTimes,['0:55','0:55','0:55']);
+ assert.equal(historicalById.sidePlank.targetRpe,'6–8');
+ const historicalSidePlank=historical.exercises.find(exercise=>exercise.exerciseId==='sidePlank');
+ assert.equal(historicalSidePlank.completed,false,'the invented October 17 side plank remains planned but uncompleted');
+ assert.equal(historicalSidePlank.times,'','the uncompleted historical side plank does not gain synthesized times');
+ assert.equal(historicalSidePlank.rpe,'','the uncompleted historical side plank remains not assessable from its saved result');
+
+ const historicalCircuitPlan=historicalById.gymConditioningCircuit;
+ const activeCircuitPlan=activeById.gymConditioningCircuit;
+ assert.equal(historicalCircuitPlan.circuitVersion,'foundation-1.4.5');
+ assert.match(historicalCircuitPlan.prescription,/exactly 2 rounds/i);
+ assert.equal(historicalCircuitPlan.plannedRounds,undefined,'the immutable v1.5.19 circuit definition is not backfilled with the v1.5.20 planned-round field');
+ assert.equal(historicalCircuitPlan.targetRpe,'7–8');
+ assert.equal(historicalCircuitPlan.defaults.restSeconds,'150');
+ assert.equal(activeCircuitPlan.circuitVersion,'foundation-1.4.5');
+ assert.equal(activeCircuitPlan.prescription,'Exactly 1 controlled round: 30-sec farmer carry, 6 lateral step-ups each side, approximately 30-sec hard cardio, one backward sled drag, one forward sled push, then 2:30 recovery');
+ assert.equal(activeCircuitPlan.plannedRounds,1,'Firebase round trips preserve the structured v1.5.20 one-round prescription');
+ assert.equal(activeCircuitPlan.targetRpe,'6–7');
+ assert.deepEqual(activeCircuitPlan.defaults,historicalCircuitPlan.defaults,'v1.5.20 retains all circuit defaults including the 150-second recovery');
+ assert.deepEqual(activeCircuitPlan.modalities,historicalCircuitPlan.modalities,'v1.5.20 retains every circuit modality');
+ assert.match(activeCircuitPlan.coachingNotes,/exactly one controlled round.*low-dose maintenance exposure.*not a score-comparable AFT SDC rehearsal.*do not.*add a second round.*convert resistance to pounds/i);
+
+ const historicalCircuit=historical.exercises.find(exercise=>exercise.exerciseId==='gymConditioningCircuit');
+ const activeCircuit=active.exercises.find(exercise=>exercise.exerciseId==='gymConditioningCircuit');
+ const stableComponents=[
+  ['farmerCarry','loadedCarry'],['lateralStepUps','lateralStepUps'],['hardCardio','hardCardio'],
+  ['backwardSledDrag','backwardSledDrag'],['forwardSledPush','forwardSledPush'],['rest','circuitRest']
+ ];
+ assert.equal(historicalCircuit.rounds,'2','the immutable invented October 17 circuit remains two completed rounds');
+ assert.equal(activeCircuit.rounds,'1','the invented active v1.5.20 circuit remains one completed round');
+ assert.deepEqual(historicalCircuit.components.map(component=>[component.id,component.exerciseId]),stableComponents,'October 17 retains every stable circuit component ID');
+ assert.deepEqual(activeCircuit.components.map(component=>[component.id,component.exerciseId]),stableComponents,'v1.5.20 retains every stable circuit component ID');
+ assert.deepEqual(activeCircuit.components,historicalCircuit.components,'the component result structure survives unchanged while the active prescribed round count changes');
+ assert.equal(activeCircuit.components.find(component=>component.id==='rest').sharedResult.durationSeconds,'150');
+ const activeSled=activeCircuit.components.find(component=>component.id==='backwardSledDrag').sharedResult;
+ assert.equal(activeSled.equipmentLabel,'Torque Fitness TANK M4 · Level 3');
+ assert.equal(activeSled.loadMode,'unknown');
+ assert.equal(activeSled.load,undefined,'TANK M4 Level 3 is not converted to pounds during Firebase round trips');
+
+ assert.equal(activeById.romanianDeadlift.prescription,'155 lb total for 2 × 8');
+ assert.equal(activeById.romanianDeadlift.sets,2);
+ assert.equal(activeById.romanianDeadlift.targetLoad,155);
+ assert.equal(activeById.romanianDeadlift.targetRpe,'6–8');
+ assert.match(activeById.romanianDeadlift.coachingNotes,/chalk first.*grip threatens hinge position.*set 1 strapless.*straps may be used for set 2.*exercise notes.*do not use mixed grip.*progress the load/i);
+ assert.equal(active.exercises.find(exercise=>exercise.exerciseId==='romanianDeadlift').strapUse,undefined,'strap guidance does not add a new result field or schema shape');
+ for(const exerciseId of ['inclinePress','oneArmRow','plank','hammerCurl','overheadTricepsExtension']){
+  assert.deepEqual(activeById[exerciseId],historicalById[exerciseId],`${exerciseId} remains unchanged between the invented v1.5.19 and v1.5.20 snapshots`);
+ }
+ assert.equal(historical.programVersion,'1.5.19');
+ assert.equal(historical.programEffectiveDate,'2026-10-14');
+ assert.equal(active.programVersion,'1.5.20');
+ assert.equal(active.programEffectiveDate,'2026-10-18');
  assert.equal(historical.activeRunStage,'');
  assert.equal(active.activeRunStage,'');
 }

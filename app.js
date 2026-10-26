@@ -68,7 +68,7 @@ const VARIATION_ID_BY_LABEL={
  'Leg press':'unspecifiedLegPress','Lying leg press':'lyingLegPress','Upright leg press':'uprightLegPress',
  'Plate-loaded leg press':'plateLoadedLegPress','Selectorized leg press':'selectorizedLegPress','Other leg press':'otherLegPress',
  'Dumbbell bench press':'dumbbellBenchPress','Barbell bench press':'barbellBenchPress','Chest-press machine':'machineChestPress',
- 'Lat pulldown':'latPulldown','Seated lat pulldown':'seatedLatPulldown','Modified standing lat pulldown':'modifiedStandingLatPulldown',
+ 'Lat pulldown':'latPulldown','Machine lat pulldown':'machineLatPulldown','Seated lat pulldown':'seatedLatPulldown','Modified standing lat pulldown':'modifiedStandingLatPulldown',
  'Assisted pull-up':'assistedPullup','Band-assisted pull-up':'assistedPullup',
  'Seated cable row':'seatedCableRow','Chest-supported machine row':'machineRow','Chest-supported dumbbell row':'chestSupportedDumbbellRow',
  'Dumbbell row':'chestSupportedDumbbellRow','Machine row':'machineRow','T-bar row':'tBarRow',
@@ -82,6 +82,9 @@ const VARIATION_ID_BY_LABEL={
  'Rope overhead cable extension':'ropeOverheadCableExtension','Single-arm overhead cable extension':'singleArmOverheadCableExtension',
  'Other equivalent cable variation':'otherOverheadCableExtension'
 };
+const PULLDOWN_VARIATION_IDS=new Set([
+ 'latPulldown','machineLatPulldown','seatedLatPulldown','modifiedStandingLatPulldown','assistedPullup'
+]);
 
 let entries=[];
 let editing=null;
@@ -366,7 +369,7 @@ function definitionForSavedEntry(entry){
    unit:saved.unit||template.unit
   };
   [
-   'prescribedReps','prescribedTimes','adherenceTarget','adherenceNotApplicable','skippedSessionNotApplicable',
+   'prescribedReps','diagnosticRepSets','prescribedTimes','adherenceTarget','adherenceNotApplicable','skippedSessionNotApplicable',
    'targetLoad','targetLoadVariation','loadTolerance','targetRpe','coachingNotes','prescribedLoad',
    'runStage','circuitVersion','optional','group','defaults','modalities',
    'variations','defaultVariation','barWeights','perSideVariations','barWeightOptions','variationUnits'
@@ -375,7 +378,7 @@ function definitionForSavedEntry(entry){
   });
   if(saved.variation){
    historical.variations=[...new Set([saved.variation,...(historical.variations||[])])];
-   if(!historical.defaultVariation&&!template.defaultVariation)historical.defaultVariation=saved.variation;
+   if(!historical.defaultVariation)historical.defaultVariation=saved.variation;
   }
   return mergeCurrentLoggingOptions(historical,template);
  });
@@ -910,9 +913,17 @@ function formatAdherenceReason(reason){
 
 function adherenceTarget(definition){
  if(['weighted','body'].includes(definition?.type)&&Array.isArray(definition.prescribedReps)&&definition.prescribedReps.length){
-  const exactRepsBySet=definition.prescribedReps.map(Number);
-  if(exactRepsBySet.every(value=>Number.isFinite(value)&&value>=0)){
-   return {kind:'reps',sets:exactRepsBySet.length,exactRepsBySet};
+  const diagnosticRepSets=normalizeDiagnosticRepSets(definition.diagnosticRepSets,definition.prescribedReps.length);
+  const diagnosticSetNumbers=new Set(diagnosticRepSets.map(diagnostic=>diagnostic.setNumber));
+  const exactRepsBySet=definition.prescribedReps.map((value,index)=>{
+   if(value==null)return diagnosticSetNumbers.has(index+1)?null:NaN;
+   return Number(value);
+  });
+  if(exactRepsBySet.every(value=>value===null||(Number.isFinite(value)&&value>=0))){
+   return {
+    kind:'reps',sets:exactRepsBySet.length,exactRepsBySet,
+    ...(diagnosticRepSets.length?{diagnosticRepSets}:{})
+   };
   }
  }
  if(definition?.adherenceTarget)return clone(definition.adherenceTarget);
@@ -965,6 +976,18 @@ function adherenceTarget(definition){
   if(fixed)return {kind:'reps',sets:Number(fixed[1]),minReps:Number(fixed[2])};
  }
  return null;
+}
+
+function normalizeDiagnosticRepSets(value,setCount=Infinity){
+ if(!Array.isArray(value))return [];
+ const seen=new Set();
+ return value.flatMap(item=>{
+  const setNumber=Number(item?.setNumber);
+  const durationSeconds=Number(item?.durationSeconds);
+  if(!Number.isInteger(setNumber)||setNumber<1||setNumber>setCount||!Number.isFinite(durationSeconds)||durationSeconds<=0||seen.has(setNumber))return [];
+  seen.add(setNumber);
+  return [{setNumber,durationSeconds}];
+ });
 }
 
 function carryAdherenceDetail(target,result){
@@ -1105,17 +1128,31 @@ function prescriptionAdherenceDetail(definition,result){
  if(target.kind==='carry')return carryAdherenceDetail(target,result);
  if(target.kind==='reps'){
   const reasons=[];
-  const reps=parseSetValues(result.reps).filter(value=>value!=='').map(Number);
-  if(reps.some(value=>!Number.isFinite(value)))return {value:'not_assessable',reasons:[]};
-  if(reps.length<target.sets)reasons.push(adherenceReason('sets_below_target',{actual:reps.length,expected:target.sets}));
   if(Array.isArray(target.exactRepsBySet)){
-   if(reps.length>target.sets)reasons.push(adherenceReason('sets_above_target',{actual:reps.length,expected:target.sets}));
-   reps.slice(0,target.exactRepsBySet.length).forEach((value,index)=>{
+   const rawReps=parseSetValues(result.reps);
+   const prescribedReps=rawReps.slice(0,target.sets);
+   const recordedReps=prescribedReps.filter(value=>value!=='');
+   const extraReps=rawReps.slice(target.sets).filter(value=>value!=='');
+   if(recordedReps.some(value=>!Number.isFinite(Number(value))))return {value:'not_assessable',reasons:[]};
+   if(extraReps.some(value=>!Number.isFinite(Number(value))))return {value:'not_assessable',reasons:[]};
+   const diagnosticSetNumbers=new Set((target.diagnosticRepSets||[]).map(diagnostic=>diagnostic.setNumber));
+   const invalidDiagnostic=rawReps.some((value,index)=>
+    value!==''&&diagnosticSetNumbers.has(index+1)&&(!Number.isInteger(Number(value))||Number(value)<0)
+   );
+   if(invalidDiagnostic)return {value:'not_assessable',reasons:[]};
+   if(recordedReps.length<target.sets)reasons.push(adherenceReason('sets_below_target',{actual:recordedReps.length,expected:target.sets}));
+   if(extraReps.length)reasons.push(adherenceReason('sets_above_target',{actual:target.sets+extraReps.length,expected:target.sets}));
+   rawReps.slice(0,target.exactRepsBySet.length).forEach((rawValue,index)=>{
     const expected=target.exactRepsBySet[index];
+    if(rawValue===''||expected==null)return;
+    const value=Number(rawValue);
     if(value<expected)reasons.push(adherenceReason('reps_below_minimum',{componentName:`Set ${index+1}`,actual:value,expected,exact:true}));
     if(value>expected)reasons.push(adherenceReason('reps_above_target',{componentName:`Set ${index+1}`,actual:value,expected}));
    });
   }else{
+   const reps=parseSetValues(result.reps).filter(value=>value!=='').map(Number);
+   if(reps.some(value=>!Number.isFinite(value)))return {value:'not_assessable',reasons:[]};
+   if(reps.length<target.sets)reasons.push(adherenceReason('sets_below_target',{actual:reps.length,expected:target.sets}));
    const lowest=reps.length?Math.min(...reps):0;
    if(reps.some(value=>value<target.minReps))reasons.push(adherenceReason('reps_below_minimum',{actual:lowest,expected:target.minReps}));
   }
@@ -1877,11 +1914,20 @@ function fillPrescribedResult(card){
  if(target.kind==='reps'){
   const targets=repetitionTargetsForFill(target,sets);
   card.querySelectorAll('.set-rep-select').forEach((selectInput,inputIndex)=>{
-   const value=String(targets[inputIndex]??target.minReps);
+   const prescribedValue=targets[inputIndex]??target.minReps;
+   const custom=selectInput.closest('label').querySelector('.custom-reps');
+   if(prescribedValue==null){
+    selectInput.value='';
+    if(custom){
+     custom.value='';
+     custom.classList.add('hidden');
+    }
+    return;
+   }
+   const value=String(prescribedValue);
    if([...selectInput.options].some(option=>option.value===value))selectInput.value=value;
    else{
     selectInput.value='custom';
-    const custom=selectInput.closest('label').querySelector('.custom-reps');
     custom.value=value;
     custom.classList.remove('hidden');
    }
@@ -2184,6 +2230,11 @@ function weightedVariationTransition(previousVariation,nextVariation,state,barWe
  if(!previousVariation||previousVariation===nextVariation)return null;
  const previousKind=plateCalculatorKind(barWeights,previousVariation);
  const nextKind=plateCalculatorKind(barWeights,nextVariation);
+ const previousVariationId=variationIdFor(previousVariation);
+ const nextVariationId=variationIdFor(nextVariation);
+ const switchesPulldownSetup=previousVariationId!==nextVariationId
+  &&PULLDOWN_VARIATION_IDS.has(previousVariationId)
+  &&PULLDOWN_VARIATION_IDS.has(nextVariationId);
  const hasLoad=numberOrNull(state?.load)!=null;
  if(previousKind==='bar'&&nextKind==='bar'){
   const total=totalLoadValue(state);
@@ -2203,7 +2254,7 @@ function weightedVariationTransition(previousVariation,nextVariation,state,barWe
    preservedTotal:total
   };
  }
- if(previousKind||nextKind){
+ if(previousKind||nextKind||switchesPulldownSetup){
   return {load:'',loadMode:'',barWeight:'',cleared:hasLoad,preservedTotal:null};
  }
  return null;
@@ -2636,9 +2687,10 @@ function setRepLogger(state,plan,type,definition={}){
  const values=parseSetValues(state.reps);
  const count=Math.max(1,Number(state.sets)||values.length||plan.default);
  const targets=Array.isArray(definition.prescribedReps)?definition.prescribedReps:[];
+ const diagnosticRepSets=normalizeDiagnosticRepSets(definition.diagnosticRepSets,plan.max);
  return `<div class="set-log" data-rep-type="${type}">
   <p class="set-log-title">Reps completed</p>
-  <div class="set-rep-grid" data-rep-targets="${attr(JSON.stringify(targets))}">${setRepRows(count,values,type,targets)}</div>
+  <div class="set-rep-grid" data-rep-targets="${attr(JSON.stringify(targets))}" data-diagnostic-rep-sets="${attr(JSON.stringify(diagnosticRepSets))}">${setRepRows(count,values,type,targets,diagnosticRepSets)}</div>
  </div>`;
 }
 
@@ -2661,17 +2713,22 @@ function setTimeRows(count,values,targets){
  }).join('');
 }
 
-function setRepRows(count,values,type,targets=[]){
- return Array.from({length:count},(_,index)=>repSelect(index,values[index]||'',type,targets[index])).join('');
+function setRepRows(count,values,type,targets=[],diagnosticRepSets=[]){
+ return Array.from({length:count},(_,index)=>
+  repSelect(index,values[index]||'',type,targets[index],diagnosticRepSets.find(diagnostic=>diagnostic.setNumber===index+1))
+ ).join('');
 }
 
-function repSelect(index,value,type,target){
+function repSelect(index,value,type,target,diagnostic=null){
  const choices=type==='body'
   ?[...Array.from({length:30},(_,i)=>i+1),35,40,45,50,60,75,100]
   :Array.from({length:20},(_,i)=>i+1);
  const normalized=String(value||'').trim();
  const custom=normalized&&!choices.some(choice=>String(choice)===normalized);
- return `<label>Set ${index+1} reps${target!==''&&target!=null?` <span class="set-target">Target ${esc(target)}</span>`:''}
+ const helper=target!==''&&target!=null
+  ?`Target ${target}`
+  :diagnostic?`${fmtSec(diagnostic.durationSeconds)} diagnostic · record total reps`:'';
+ return `<label>Set ${index+1} reps${helper?` <span class="set-target">${esc(helper)}</span>`:''}
   <select class="set-rep-select" data-rep-index="${index}">
    <option value="">—</option>
    ${choices.map(choice=>`<option value="${choice}" ${String(choice)===normalized?'selected':''}>${choice}</option>`).join('')}
@@ -2703,9 +2760,10 @@ function bindSetControls(){
   if(repLogger){
    const values=readRepValues(card);
    const grid=repLogger.querySelector('.set-rep-grid');
-   let targets=[];
+   let targets=[],diagnosticRepSets=[];
    try{targets=JSON.parse(grid.dataset.repTargets||'[]')}catch{}
-   grid.innerHTML=setRepRows(Number(selectInput.value),values,repLogger.dataset.repType,targets);
+   try{diagnosticRepSets=JSON.parse(grid.dataset.diagnosticRepSets||'[]')}catch{}
+   grid.innerHTML=setRepRows(Number(selectInput.value),values,repLogger.dataset.repType,targets,diagnosticRepSets);
    bindCustomRepControls(repLogger);
   }
   const timeLogger=card.querySelector('.time-log');

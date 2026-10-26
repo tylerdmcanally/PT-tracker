@@ -57,9 +57,15 @@ const syntheticResultsForSnapshot=snapshot=>snapshot.exercises.map(exercise=>({
  name:exercise.name,
  type:exercise.type,
  ...(exercise.sets?{sets:String(exercise.sets)}:{}),
- ...(exercise.id==='handReleasePushups'?{reps:exercise.prescribedReps.join(', '),rpe:'5'}:{}),
+ ...(exercise.id==='handReleasePushups'?{
+  reps:exercise.diagnosticRepSets?.length
+   ? ['25',...exercise.prescribedReps.slice(1)].join(', ')
+   : exercise.prescribedReps.join(', '),
+  rpe:'5'
+ }:{}),
+ ...(exercise.id==='verticalPull'?{variation:'Machine lat pulldown',variationId:'machineLatPulldown',load:'110',reps:'8, 9, 10',rpe:'7'}:{}),
  completed:true,
- notes:'Invented v1.5.21 full-document persistence result.'
+ notes:'Invented v1.5.22 full-document persistence result.'
 }));
 
 const syntheticStrength3V1514Snapshot={
@@ -841,7 +847,7 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
  const dates=['2099-01-01','2099-01-02','2099-01-03'];
  const entries=sessionKeys.map((sessionKey,index)=>{
   const prescriptionSnapshot=activeSessionSnapshot(sessionKey);
-  return workout(`synthetic-v1521-${sessionKey}`,`${dates[index]}T18:00:00.000Z`,{
+  return workout(`synthetic-v1522-${sessionKey}`,`${dates[index]}T18:00:00.000Z`,{
    date:dates[index],
    dayKey:sessionKey,
    dayLabel:prescriptionSnapshot.label,
@@ -849,28 +855,28 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
    advancesPrimaryRotation:true,
    programId:currentProgram.id,
    programName:currentProgram.name,
-   programVersion:'1.5.21',
-   programEffectiveDate:'2026-10-18',
+   programVersion:'1.5.22',
+   programEffectiveDate:'2026-10-27',
    activeRunStage:'',
    targetSessionRpe:prescriptionSnapshot.targetSessionRpe,
    duration:'50',
    sessionRpe:'6',
    painDuring:'0',
-   notes:'Invented v1.5.21 full-document Firebase fixture; all values are synthetic.',
+   notes:'Invented v1.5.22 full-document Firebase fixture; all values are synthetic.',
    prescriptionSnapshot,
    exercises:syntheticResultsForSnapshot(prescriptionSnapshot)
   });
  });
 
  const uploads=model.mergeWorkoutRecords(entries,[],null).uploads;
- assert.equal(uploads.length,3,'Firebase queues one complete v1.5.21 document for every active strength session');
+ assert.equal(uploads.length,3,'Firebase queues one complete v1.5.22 document for every active strength session');
  entries.forEach(entry=>{
-  assert.deepEqual(uploads.find(upload=>upload.entryId===entry.id).payload,entry,`Firebase upload preserves the complete invented ${entry.dayKey} v1.5.21 document`);
+  assert.deepEqual(uploads.find(upload=>upload.entryId===entry.id).payload,entry,`Firebase upload preserves the complete invented ${entry.dayKey} v1.5.22 document`);
  });
  const remote=uploads.map((upload,index)=>({...upload,changedAt:`${dates[index]}T19:00:00.000Z`}));
  const pulled=model.mergeWorkoutRecords([],remote,null).entries;
  entries.forEach(entry=>{
-  assert.deepEqual(pulled.find(candidate=>candidate.id===entry.id),entry,`Firebase round trips preserve the complete invented ${entry.dayKey} v1.5.21 document`);
+  assert.deepEqual(pulled.find(candidate=>candidate.id===entry.id),entry,`Firebase round trips preserve the complete invented ${entry.dayKey} v1.5.22 document`);
  });
 
  const byKey=Object.fromEntries(pulled.map(entry=>[entry.dayKey,entry]));
@@ -880,31 +886,91 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
   strengthLowerSdc:['romanianDeadlift','squatPattern','handReleasePushups','inclinePress','oneArmRow','singleLegStrength','plank','hammerCurl','overheadTricepsExtension']
  };
  Object.entries(expectedOrders).forEach(([sessionKey,exerciseOrder])=>{
-  assert.deepEqual(byKey[sessionKey].prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,`${sessionKey} preserves its exact active v1.5.21 exercise order through Firebase`);
+  assert.deepEqual(byKey[sessionKey].prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,`${sessionKey} preserves its exact active v1.5.22 exercise order through Firebase`);
   assert.deepEqual(byKey[sessionKey].exercises.map(exercise=>exercise.exerciseId),exerciseOrder,`${sessionKey} preserves its complete invented result order through Firebase`);
  });
 
  const pushupDefinitions=sessionKeys.map(sessionKey=>byKey[sessionKey].prescriptionSnapshot.exercises.find(exercise=>exercise.id==='handReleasePushups'));
- assert.deepEqual(pushupDefinitions[0].prescribedReps,[17,10,10,10,10],'Strength 1 keeps the unchanged 57-repetition exact target');
+ assert.deepEqual(pushupDefinitions[0].prescribedReps,[null,10,10,10,10],'Strength 1 preserves the untargeted diagnostic plus exact back-offs through Firebase');
+ assert.deepEqual(pushupDefinitions[0].diagnosticRepSets,[{setNumber:1,durationSeconds:120}]);
  assert.deepEqual(pushupDefinitions[1].prescribedReps,[8,8,8],'Strength 2 preserves the new exact 3 × 8 target through Firebase');
  assert.deepEqual(pushupDefinitions[2].prescribedReps,[8,8],'Strength 3 preserves the new exact 2 × 8 target through Firebase');
  assert.deepEqual(pushupDefinitions.map(exercise=>exercise.sets),[5,3,2]);
- assert.deepEqual(pushupDefinitions.map(exercise=>exercise.targetRpe),['Set 1 ≤8; sets 2–5 6–7','5–6','5–6']);
- assert.equal(pushupDefinitions.flatMap(exercise=>exercise.prescribedReps).reduce((sum,reps)=>sum+reps,0),97,'the three round-tripped active snapshots retain exactly 97 planned weekly push-up repetitions');
+ assert.deepEqual(pushupDefinitions.map(exercise=>exercise.targetRpe),['Set 1: diagnostic; sets 2–5 6–7','5–6','5–6']);
+ assert.equal(pushupDefinitions.flatMap(exercise=>exercise.prescribedReps).filter(reps=>reps!=null).reduce((sum,reps)=>sum+reps,0),80,'the three round-tripped active snapshots retain 80 fixed repetitions plus one untargeted diagnostic');
  sessionKeys.forEach(sessionKey=>{
   const result=byKey[sessionKey].exercises.find(exercise=>exercise.exerciseId==='handReleasePushups');
   assert.equal(result.prescribedReps,undefined,`${sessionKey} keeps exact targets in snapshot metadata without changing the completed-result shape`);
  });
 
+ const activeStrength1=byKey.strengthUpperAft;
+ const activeStrength1PulldownDefinition=activeStrength1.prescriptionSnapshot.exercises.find(exercise=>exercise.id==='verticalPull');
+ const activeStrength1PulldownResult=activeStrength1.exercises.find(exercise=>exercise.exerciseId==='verticalPull');
+ assert.equal(activeStrength1PulldownDefinition.defaultVariation,'Machine lat pulldown');
+ assert.equal(activeStrength1PulldownDefinition.targetLoad,undefined);
+ assert.ok(activeStrength1PulldownDefinition.variations.includes('Seated lat pulldown'));
+ assert.equal(activeStrength1PulldownResult.variationId,'machineLatPulldown');
+ assert.equal(activeStrength1PulldownResult.load,'110');
+
  const activeStrength3=byKey.strengthLowerSdc;
  assert.equal(activeStrength3.dayLabel,'Strength 3 — Lower / Full Body and Push Support');
  assert.equal(activeStrength3.prescriptionSnapshot.targetDuration,'Approximately 45–60 minutes');
- assert.equal(activeStrength3.prescriptionSnapshot.exercises.some(exercise=>exercise.id==='gymConditioningCircuit'),false,'the v1.5.21 active Strength 3 cloud document contains no routine circuit definition');
- assert.equal(activeStrength3.prescriptionSnapshot.exercises.some(exercise=>exercise.id==='sidePlank'),false,'the v1.5.21 active Strength 3 cloud document keeps side plank retired');
+ assert.equal(activeStrength3.prescriptionSnapshot.exercises.some(exercise=>exercise.id==='gymConditioningCircuit'),false,'the v1.5.22 active Strength 3 cloud document contains no routine circuit definition');
+ assert.equal(activeStrength3.prescriptionSnapshot.exercises.some(exercise=>exercise.id==='sidePlank'),false,'the v1.5.22 active Strength 3 cloud document keeps side plank retired');
  assert.equal(activeStrength3.exercises.some(exercise=>['gymConditioningCircuit','sidePlank'].includes(exercise.exerciseId)),false,'Firebase does not synthesize retired Strength 3 results');
- assert.equal(currentProgram.version,'1.5.21');
- assert.equal(currentProgram.effectiveDate,'2026-10-18');
+ assert.equal(currentProgram.version,'1.5.22');
+ assert.equal(currentProgram.effectiveDate,'2026-10-27');
  assert.deepEqual(currentProgram.rotation,sessionKeys);
+}
+
+{
+ const prescriptionSnapshot=activeSessionSnapshot('strengthUpperAft');
+ const historicalPushups=prescriptionSnapshot.exercises.find(exercise=>exercise.id==='handReleasePushups');
+ Object.assign(historicalPushups,{
+  prescription:'Set 1: 17 continuous reps; Sets 2–5: 10 reps',
+  prescribedReps:[17,10,10,10,10],
+  targetRpe:'Set 1 ≤8; sets 2–5 6–7',
+  coachingNotes:'Invented saved v1.5.21 fixed-first-set guidance.'
+ });
+ delete historicalPushups.diagnosticRepSets;
+ Object.assign(prescriptionSnapshot.exercises.find(exercise=>exercise.id==='verticalPull'),{
+  prescription:'Next smallest increment above 187 lb on the same seated machine (approximately 198 lb displayed if it uses 11-lb increments) for 3 × 8–10',
+  variations:['Seated lat pulldown','Modified standing lat pulldown','Assisted pull-up','Band-assisted pull-up'],
+  defaultVariation:'Seated lat pulldown',
+  coachingNotes:'Invented saved v1.5.21 seated-machine guidance.'
+ });
+ const historical=workout('synthetic-oct26-v1521-strength1-cloud','2026-10-26T18:00:00.000Z',{
+  date:'2026-10-26',
+  dayKey:'strengthUpperAft',
+  dayLabel:prescriptionSnapshot.label,
+  sessionType:'primary',
+  advancesPrimaryRotation:true,
+  programId:currentProgram.id,
+  programName:currentProgram.name,
+  programVersion:'1.5.21',
+  programEffectiveDate:'2026-10-18',
+  activeRunStage:'',
+  targetSessionRpe:prescriptionSnapshot.targetSessionRpe,
+  duration:'61',
+  sessionRpe:'7',
+  painDuring:'0',
+  notes:'Invented immutable October 26 v1.5.21 Firebase fixture.',
+  prescriptionSnapshot,
+  exercises:[
+   {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'5',reps:'17, 10, 10, 10, 10',rpe:'7',completed:true,notes:'Invented fixed-target result.'},
+   {exerciseId:'verticalPull',name:'Lat pulldown',type:'weighted',unit:'lb',variation:'Seated lat pulldown',variationId:'seatedLatPulldown',load:'110',sets:'3',reps:'8, 9, 10',rpe:'7',completed:true,notes:'Invented seated-machine result.'}
+  ]
+ });
+ const upload=model.mergeWorkoutRecords([historical],[],null).uploads[0];
+ assert.deepEqual(upload.payload,historical,'Firebase upload preserves the complete invented October 26 v1.5.21 document');
+ const pulled=model.mergeWorkoutRecords([],[{...upload,changedAt:'2026-10-26T19:00:00.000Z'}],null).entries[0];
+ assert.deepEqual(pulled,historical,'Firebase pull preserves the complete invented October 26 v1.5.21 document');
+ const pulledById=Object.fromEntries(pulled.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
+ assert.deepEqual(pulledById.handReleasePushups.prescribedReps,[17,10,10,10,10]);
+ assert.equal(pulledById.handReleasePushups.diagnosticRepSets,undefined,'historical Firebase data does not inherit active diagnostic metadata');
+ assert.equal(pulledById.verticalPull.defaultVariation,'Seated lat pulldown');
+ assert.equal(pulledById.verticalPull.variations.includes('Machine lat pulldown'),false,'historical Firebase snapshots do not inherit the active machine branch');
+ assert.equal(pulled.exercises.find(exercise=>exercise.exerciseId==='verticalPull').variationId,'seatedLatPulldown');
 }
 
 {

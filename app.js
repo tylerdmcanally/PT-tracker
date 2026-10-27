@@ -22,6 +22,7 @@ const CLOUD_STATE_KEY='aftCloudSyncState.v1';
 const DATA_VERSION=11;
 const MAX_SNAPSHOTS=5;
 const WEEKLY_SKILL_DOSE_GROUP_ID='aft_pushup_plank_microdose';
+const HRPU_VOLUME_TEMPLATE_ID='aft-hrpu-volume-microdose';
 const PLATE_CALCULATOR_DENOMINATIONS=[45,35,25,10,5,2.5];
 const PLATE_ONLY_VARIATIONS=new Set(['Leg press','Plate-loaded leg press']);
 const PLATE_ONLY_VARIATION_IDS=new Set(['unspecifiedLegPress','plateLoadedLegPress']);
@@ -150,7 +151,7 @@ function populateSessionSelect(){
   return `<option value="${attr(key)}">${esc(session.label+suffix)}</option>`;
  }).join('');
  const alternatives=Object.keys(SESSIONS).filter(key=>SESSIONS[key].coachDirectedAlternative);
- $('daySelect').innerHTML=`<optgroup label="Primary rotation">${options(ROTATION)}</optgroup>${alternatives.length?`<optgroup label="Coach-directed alternatives">${options(alternatives)}</optgroup>`:''}<optgroup label="Optional sessions">${options(['recovery','skillMicrodose'])}</optgroup>`;
+ $('daySelect').innerHTML=`<optgroup label="Primary rotation">${options(ROTATION)}</optgroup>${alternatives.length?`<optgroup label="Coach-directed alternatives">${options(alternatives)}</optgroup>`:''}<optgroup label="Optional sessions">${options(['recovery','skillMicrodose','hrpuVolumeMicrodose'])}</optgroup>`;
 }
 
 function bind(){
@@ -308,6 +309,7 @@ function snapshotSession(definition){
   focus:definition.focus,
   warmup:definition.warmup,
   targetSessionRpe:definition.targetSessionRpe,
+  hardCapRpe:definition.hardCapRpe,
   targetDuration:definition.targetDuration,
   coachInstructions:definition.coachInstructions,
   advancesPrimaryRotation:definition.advancesPrimaryRotation!==false,
@@ -317,6 +319,8 @@ function snapshotSession(definition){
   templateEffectiveDate:definition.templateEffectiveDate,
   weeklySkillDoseGroupId:definition.weeklySkillDoseGroupId,
   frequency:definition.frequency,
+  weeklyFrequency:definition.weeklyFrequency,
+  requiredExerciseIds:Array.isArray(definition.requiredExerciseIds)?clone(definition.requiredExerciseIds):undefined,
   optional:Boolean(definition.optional),
   exercises:clone(definition.exercises)
  };
@@ -341,6 +345,7 @@ function definitionForSavedEntry(entry){
    focus:snapshot.focus||'Saved prescription',
    warmup:snapshot.warmup||'',
    targetSessionRpe:snapshot.targetSessionRpe||entry.targetSessionRpe||'',
+   hardCapRpe:snapshot.hardCapRpe??entry.hardCapRpe??'',
    targetDuration:snapshot.targetDuration||'',
    coachInstructions:snapshot.coachInstructions||'',
    advancesPrimaryRotation:snapshot.advancesPrimaryRotation!==false,
@@ -350,6 +355,10 @@ function definitionForSavedEntry(entry){
    templateEffectiveDate:snapshot.templateEffectiveDate||entry.templateEffectiveDate||'',
    weeklySkillDoseGroupId:snapshot.weeklySkillDoseGroupId||entry.weeklySkillDoseGroupId||'',
    frequency:snapshot.frequency||'',
+   weeklyFrequency:snapshot.weeklyFrequency??entry.weeklyFrequency??'',
+   requiredExerciseIds:Array.isArray(snapshot.requiredExerciseIds)
+    ?clone(snapshot.requiredExerciseIds)
+    :Array.isArray(entry.requiredExerciseIds)?clone(entry.requiredExerciseIds):undefined,
    optional:Boolean(snapshot.optional),
    exercises
   };
@@ -391,6 +400,7 @@ function definitionForSavedEntry(entry){
   focus:'Historical workout using its saved exercise list.',
   warmup:'',
   targetSessionRpe:entry.targetSessionRpe||'',
+  hardCapRpe:entry.hardCapRpe??'',
   optional:['recovery','skill_microdose'].includes(entry.sessionType),
   advancesPrimaryRotation:entry.advancesPrimaryRotation!==false&&(entry.sessionType||'primary')==='primary',
   templateId:entry.templateId||'',
@@ -398,6 +408,9 @@ function definitionForSavedEntry(entry){
   templateVersion:entry.templateVersion||'',
   templateEffectiveDate:entry.templateEffectiveDate||'',
   weeklySkillDoseGroupId:entry.weeklySkillDoseGroupId||'',
+  frequency:entry.frequency||'',
+  weeklyFrequency:entry.weeklyFrequency??'',
+  requiredExerciseIds:Array.isArray(entry.requiredExerciseIds)?clone(entry.requiredExerciseIds):undefined,
   exercises
  };
 }
@@ -457,16 +470,16 @@ function renderWorkout(saved=null,{preserveSession=false}={}){
  const isTemplate=session.sessionType==='skill_microdose';
  const isAlternative=Boolean(session.coachDirectedAlternative);
  const summaryEyebrow=isTemplate?'OPTIONAL SESSION':`${parts[0].trim()}${session.optional?' · OPTIONAL':''}`;
- const contextName=saved?.templateName||session.templateName||activeProgramContext.name;
- const contextVersion=saved?.templateVersion||session.templateVersion||activeProgramContext.version;
- const contextEffective=saved?.templateEffectiveDate||session.templateEffectiveDate||activeProgramContext.effectiveDate;
+ const contextName=session.templateName||saved?.templateName||activeProgramContext.name;
+ const contextVersion=session.templateVersion||saved?.templateVersion||activeProgramContext.version;
+ const contextEffective=session.templateEffectiveDate||saved?.templateEffectiveDate||activeProgramContext.effectiveDate;
  const programLine=saved
   ?(contextName&&contextVersion?`${contextName} · v${contextVersion}`:'Legacy saved workout')
   :`${contextName} · v${contextVersion}${contextEffective?` · effective ${dateFmt(contextEffective)}`:''}`;
  $('workoutSummary').innerHTML=`
   <p class="eyebrow">${esc(summaryEyebrow)}</p>
   <h2>${esc(parts.slice(1).join('—').trim()||session.label)}</h2>
-  <div class="session-targets">${session.targetDuration?`<span>${esc(session.targetDuration.replace(/^Approximately /i,''))}</span>`:''}${session.targetSessionRpe?`<span>RPE ${esc(session.targetSessionRpe)}</span>`:''}</div>
+  <div class="session-targets">${session.targetDuration?`<span>${esc(session.targetDuration.replace(/^Approximately /i,''))}</span>`:''}${session.targetSessionRpe?`<span>RPE ${esc(session.targetSessionRpe)}</span>`:''}${session.hardCapRpe!=null&&session.hardCapRpe!==''?`<span>Hard cap RPE ${esc(session.hardCapRpe)}</span>`:''}</div>
   <details class="session-brief">
    <summary>${isTemplate?'Session guidance':'Warm-up & session plan'}</summary>
    ${session.warmup?`<p class="workout-warmup"><strong>${isTemplate?'Getting started':'Warm-up before Exercise 1'}:</strong> ${esc(session.warmup)}</p>`:''}
@@ -529,17 +542,31 @@ function updatePainVisibility(){
 }
 
 function isSkillMicrodoseEntry(entry){
- return entry?.sessionType==='skill_microdose'||entry?.dayKey==='skillMicrodose';
+ if(entry?.prescriptionSnapshot?.sessionType)return entry.prescriptionSnapshot.sessionType==='skill_microdose';
+ return entry?.sessionType==='skill_microdose'||['skillMicrodose','hrpuVolumeMicrodose'].includes(entry?.dayKey);
+}
+
+function microdoseTemplateIdentity(value){
+ const explicit=value?.prescriptionSnapshot?.templateId||value?.templateId||'';
+ if(explicit)return explicit;
+ const key=value?.prescriptionSnapshot?.sessionKey||value?.key||value?.dayKey||'';
+ if(key==='skillMicrodose')return 'aft-skill-microdose';
+ if(key==='hrpuVolumeMicrodose')return HRPU_VOLUME_TEMPLATE_ID;
+ return '';
+}
+
+function microdoseTemplateName(value){
+ return value?.prescriptionSnapshot?.templateName||value?.templateName||value?.label||value?.dayLabel||'Skill microdose';
 }
 
 function sessionCategoryLabel(entry){
- if(isSkillMicrodoseEntry(entry))return 'Skill microdose';
+ if(isSkillMicrodoseEntry(entry))return microdoseTemplateName(entry);
  if(entry?.sessionType==='recovery')return 'Recovery session';
  return 'Primary workout';
 }
 
 function resultSessionSource(entry,exercise){
- if(isSkillMicrodoseEntry(entry))return 'Skill microdose';
+ if(isSkillMicrodoseEntry(entry))return microdoseTemplateName(entry);
  if(entry?.sessionType==='recovery')return 'Recovery session';
  const identity=exerciseIdentity(exercise);
  if(entry?.dayKey==='day3'&&['handReleasePushups','plank'].includes(identity))return 'Day 3 optional practice';
@@ -547,23 +574,46 @@ function resultSessionSource(entry,exercise){
 }
 
 function skillDoseExerciseResult(entry,exerciseId){
- const exercise=(entry?.exercises||[]).find(item=>exerciseIdentity(item)===exerciseId);
- const performance=exerciseId==='handReleasePushups'
+ const canonicalId=canonicalExerciseId(exerciseId);
+ const exercise=(entry?.exercises||[]).find(item=>exerciseIdentity(item)===canonicalId);
+ const performance=canonicalId==='handReleasePushups'
   ?parseSetValues(exercise?.reps).some(value=>String(value).trim()!=='')
   :parseSetValues(exercise?.times).some(value=>String(value).trim()!=='');
  return {completed:Boolean(exercise?.completed&&performance),performed:Boolean(exercise&&(exercise.completed||performance))};
 }
 
-function weeklySkillDoseEntryStatus(entry){
- const legacyDay3=entry?.dayKey==='day3'
+function legacyDay3SkillDoseEntry(entry){
+ return entry?.dayKey==='day3'
   &&!programVersionAtLeast(entry?.programVersion,'1.4')
-  &&(!entry.weeklySkillDoseGroupId||entry.weeklySkillDoseGroupId===WEEKLY_SKILL_DOSE_GROUP_ID);
+  &&(!skillDoseGroupIdentity(entry)||skillDoseGroupIdentity(entry)===WEEKLY_SKILL_DOSE_GROUP_ID);
+}
+
+function skillDoseGroupIdentity(entry){
+ return entry?.prescriptionSnapshot?.weeklySkillDoseGroupId||entry?.weeklySkillDoseGroupId||'';
+}
+
+function requiredSkillDoseExerciseIds(entry){
+ const snapshotRequired=entry?.prescriptionSnapshot?.requiredExerciseIds;
+ const entryRequired=entry?.requiredExerciseIds;
+ const explicit=Array.isArray(snapshotRequired)?snapshotRequired:Array.isArray(entryRequired)?entryRequired:null;
+ if(explicit)return [...new Set(explicit.map(canonicalExerciseId).filter(Boolean))];
+ const templateId=microdoseTemplateIdentity(entry);
+ if(templateId===HRPU_VOLUME_TEMPLATE_ID)return ['handReleasePushups'];
+ if(templateId==='aft-skill-microdose'||legacyDay3SkillDoseEntry(entry))return ['handReleasePushups','plank'];
+ return [];
+}
+
+function weeklySkillDoseEntryStatus(entry){
+ const legacyDay3=legacyDay3SkillDoseEntry(entry);
+ const groupId=skillDoseGroupIdentity(entry);
+ if(groupId&&groupId!==WEEKLY_SKILL_DOSE_GROUP_ID)return null;
  const relevant=isSkillMicrodoseEntry(entry)||legacyDay3;
  if(!relevant)return null;
- const pushups=skillDoseExerciseResult(entry,'handReleasePushups');
- const plank=skillDoseExerciseResult(entry,'plank');
- if(pushups.completed&&plank.completed)return 'full';
- if(pushups.performed||plank.performed)return 'partial';
+ const requiredIds=requiredSkillDoseExerciseIds(entry);
+ if(!requiredIds.length)return null;
+ const results=requiredIds.map(exerciseId=>skillDoseExerciseResult(entry,exerciseId));
+ if(results.every(result=>result.completed))return 'full';
+ if(results.some(result=>result.performed))return 'partial';
  return null;
 }
 
@@ -592,7 +642,7 @@ function weeklySkillDoseState(value,{source=entries,excludeEntryId=''}={}){
 
 function weeklySkillDoseMessage(state){
  if(state.status==='available')return {
-  tone:'available',title:'Available this week',body:`No complete push-up and plank skill dose is logged for the week of ${dateFmt(state.week)}.`
+  tone:'available',title:'Available this week',body:`No complete optional skill dose is logged for the week of ${dateFmt(state.week)}.`
  };
  if(state.status==='full'&&state.full&&state.full.entry.dayKey==='day3')return {
   tone:'complete',title:'Weekly skill dose already completed during Day 3',body:'The complete optional Day 3 push-up and plank bundle already satisfied this week’s dose.'
@@ -601,7 +651,7 @@ function weeklySkillDoseMessage(state){
   tone:'complete',title:'Weekly microdose completed',body:`A complete skill microdose is already logged for ${dateFmt(state.full.entry.date)}.`
  };
  return {
-  tone:'partial',title:'Some optional skill work already performed',body:'Part of this week’s push-up and plank practice is already logged. Skip this session or use the explicit coach-directed override; the prescription will not be rewritten.'
+  tone:'partial',title:'Some optional skill work already performed',body:'Part of this week’s optional skill dose is already logged. Skip this session or use the explicit coach-directed override; the prescription will not be rewritten.'
  };
 }
 
@@ -631,7 +681,7 @@ function refreshWeeklySkillDoseUi(){
 }
 
 function startAdditionalSkillSession(){
- const acknowledged=confirm('The normal weekly push-up and plank skill dose has already been partly or fully completed. Start an additional coach-directed skill session and record that the standard weekly frequency was exceeded?');
+ const acknowledged=confirm('The normal weekly optional skill dose has already been partly or fully completed. Start an additional coach-directed skill session and record that the standard weekly frequency was exceeded?');
  if(!acknowledged)return;
  activeWeeklyOverride=true;
  refreshWeeklySkillDoseUi();
@@ -1983,6 +2033,11 @@ function updateExerciseCardSummary(card,index=[...document.querySelectorAll('.ex
  const hasResult=Boolean(result.completed||hasMeaningfulResultData(result));
  display.textContent=hasResult?compactResultSummary(definition,result):'Tap to log result';
  display.classList.toggle('has-result',hasResult);
+ const volumeSummary=card.querySelector('[data-rep-volume-summary]');
+ if(volumeSummary){
+  const prescribedSets=Number(volumeSummary.dataset.prescribedSets)||4;
+  volumeSummary.textContent=repVolumeSummary(result.reps,prescribedSets).text;
+ }
 }
 
 function refreshExerciseCardSummaryForEvent(target){
@@ -2173,7 +2228,8 @@ function bindPreviousResultControls(){
   card.querySelector('[data-field="variation"]')?.addEventListener('change',render);
   reference.onclick=event=>{
    if(!event.target.closest('[data-use-last-load]'))return;
-   const previous=previousResultData(definition,currentVariation()).selected;
+   const templateId=isSkillMicrodoseEntry(activeSessionDefinition)?microdoseTemplateIdentity(activeSessionDefinition):'';
+   const previous=previousResultData(definition,currentVariation(),{templateId}).selected;
    if(!previous?.comparable)return;
    applyPreviousLoad(card,definition,previous.exercise,currentVariation());
   };
@@ -2688,9 +2744,14 @@ function setRepLogger(state,plan,type,definition={}){
  const count=Math.max(1,Number(state.sets)||values.length||plan.default);
  const targets=Array.isArray(definition.prescribedReps)?definition.prescribedReps:[];
  const diagnosticRepSets=normalizeDiagnosticRepSets(definition.diagnosticRepSets,plan.max);
+ const prescribedSets=targets.length||plan.default;
+ const volumeSummary=microdoseTemplateIdentity(activeSessionDefinition)===HRPU_VOLUME_TEMPLATE_ID
+  &&canonicalExerciseId(definition.id)==='handReleasePushups'
+   ?`<p class="rep-volume-summary" data-rep-volume-summary data-prescribed-sets="${prescribedSets}" aria-live="polite">${esc(repVolumeSummary(values,prescribedSets).text)}</p>`:'';
  return `<div class="set-log" data-rep-type="${type}">
   <p class="set-log-title">Reps completed</p>
   <div class="set-rep-grid" data-rep-targets="${attr(JSON.stringify(targets))}" data-diagnostic-rep-sets="${attr(JSON.stringify(diagnosticRepSets))}">${setRepRows(count,values,type,targets,diagnosticRepSets)}</div>
+  ${volumeSummary}
  </div>`;
 }
 
@@ -2740,6 +2801,22 @@ function repSelect(index,value,type,target,diagnostic=null){
 
 function parseSetValues(value){
  return String(value||'').split(',').map(item=>item.trim()).filter((item,index,items)=>item||index<items.length-1);
+}
+
+function validRepValues(value){
+ const values=Array.isArray(value)?value:parseSetValues(value);
+ return values.map(item=>String(item??'').trim()).filter(Boolean).map(Number)
+  .filter(number=>Number.isInteger(number)&&number>=0);
+}
+
+function repVolumeSummary(value,prescribedSets=4){
+ const reps=validRepValues(value);
+ const totalReps=reps.reduce((sum,number)=>sum+number,0);
+ return {
+  setsLogged:reps.length,
+  totalReps,
+  text:`Sets logged: ${reps.length} of ${prescribedSets} · Total reps: ${totalReps}`
+ };
 }
 
 function readRepValues(card){
@@ -3641,6 +3718,7 @@ function collectWorkoutItem({draft=false}={}){
   ...(activeSessionDefinition.rotationDayKey?{rotationDayKey:activeSessionDefinition.rotationDayKey}:{}),
   ...(activeSessionDefinition.coachDirectedAlternative?{coachDirectedAlternative:true}:{}),
   targetSessionRpe:activeSessionDefinition.targetSessionRpe||'',
+  hardCapRpe:activeSessionDefinition.hardCapRpe??'',
   programId:program.id,
   programName:program.name,
   programVersion:program.version,
@@ -3651,6 +3729,9 @@ function collectWorkoutItem({draft=false}={}){
   templateEffectiveDate:activeSessionDefinition.templateEffectiveDate||'',
   advancesPrimaryRotation:activeSessionDefinition.advancesPrimaryRotation!==false,
   weeklySkillDoseGroupId:activeSessionDefinition.weeklySkillDoseGroupId||'',
+  frequency:activeSessionDefinition.frequency||'',
+  weeklyFrequency:activeSessionDefinition.weeklyFrequency??'',
+  requiredExerciseIds:Array.isArray(activeSessionDefinition.requiredExerciseIds)?clone(activeSessionDefinition.requiredExerciseIds):undefined,
   weeklySkillDoseWeek:activeSessionDefinition.weeklySkillDoseGroupId?weekStart(sessionDate):'',
   weeklyFrequencyOverride:skillMicrodose&&activeWeeklyOverride,
   weeklyFrequencyOverrideReason:skillMicrodose&&activeWeeklyOverride?'additional_coach_directed_skill_session':'',
@@ -3841,10 +3922,11 @@ function compareEntries(a,b){
   ||String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));
 }
 
-function previousResultData(definition,variation,{source=entries,excludeEntryId=editing,limit=3}={}){
+function previousResultData(definition,variation,{source=entries,excludeEntryId=editing,limit=3,templateId=''}={}){
  const definitionId=canonicalExerciseId(definition.id);
  const candidates=source.slice().sort(compareEntries).flatMap(entry=>{
   if(excludeEntryId&&entry.id===excludeEntryId)return [];
+  if(templateId&&microdoseTemplateIdentity(entry)!==templateId)return [];
   return (entry.exercises||[])
    .filter(exercise=>exerciseIdentity(exercise)===definitionId&&hasMeaningfulResultData(exercise))
    .map(exercise=>({entry,exercise,comparable:isComparableResult(definition,variation,exercise)}));
@@ -3867,7 +3949,8 @@ function isComparableResult(definition,variation,exercise){
 }
 
 function previousResultReference(definition,variation){
- const data=previousResultData(definition,variation);
+ const templateId=isSkillMicrodoseEntry(activeSessionDefinition)?microdoseTemplateIdentity(activeSessionDefinition):'';
+ const data=previousResultData(definition,variation,{templateId});
  if(!data.selected)return `<p class="previous-result previous-empty"><strong>Previous:</strong> none logged</p>`;
  const {entry,exercise,comparable}=data.selected;
  const variationLabel=exerciseVariationLabel(exercise);
@@ -4040,8 +4123,8 @@ function renderHistory(){
     ?`<span class="history-adherence-reasons">${adherence.reasons.map(formatAdherenceReason).map(esc).join(' · ')}</span>`:'';
    return `<li><strong>${esc(exercise.name)}:</strong> ${esc(summary(exercise,planned))}<span class="history-adherence adherence-${attr(adherence.value)}">Prescription: ${esc(ADHERENCE_LABELS[adherence.value])}</span>${reasons}${exercise.notes?`<span class="history-exercise-note"><strong>Exercise notes:</strong> ${esc(exercise.notes).replaceAll('\n','<br>')}</span>`:''}</li>`;
   }).join('');
-  const contextName=entry.templateName||entry.programName;
-  const contextVersion=entry.templateVersion||entry.programVersion;
+  const contextName=isSkillMicrodoseEntry(entry)?microdoseTemplateName(entry):entry.templateName||entry.programName;
+  const contextVersion=entry.prescriptionSnapshot?.templateVersion||entry.templateVersion||entry.programVersion;
   const program=contextVersion
    ?`${contextName||'AFT program'} · v${contextVersion}`
    :'Legacy workout';
@@ -4129,7 +4212,9 @@ function renderProgress(){
  const hasCurrentRunStage=PROGRAM.currentRunStage!=null&&PROGRAM.currentRunStage!=='';
  const stage=hasCurrentRunStage?getRunStage(PROGRAM.currentRunStage):null;
  const weeks=weeklyMetrics(entries);
- const currentWeek=weeks.find(week=>week.week===weekStart(today()))||{pushups:0,plankSeconds:0};
+ const currentWeek=weeks.find(week=>week.week===weekStart(today()))||{
+  pushups:0,primaryPushups:0,volumeMicrodoseSets:0,volumeMicrodosePushups:0,otherSkillMicrodosePushups:0,plankSeconds:0
+ };
  const runs=runRecords(entries);
  const recentRun=runs[0]||null;
  const currentRunWeek=weeklyRunMetrics(runs,weekStart(today()));
@@ -4154,7 +4239,10 @@ function renderProgress(){
  const progressGroups=[
   ['AFT Tracker run history',stage?[...runMetricCards,['Current-stage completions',currentStageCompletions||'—']]:runMetricCards],
   ['AFT practice & strength',[
-   ['This week push-ups',currentWeek.pushups||'—'],
+   ['This week push-ups (combined)',currentWeek.pushups||'—'],
+   ['This week primary push-ups',currentWeek.primaryPushups||'—'],
+   ['This week volume microdose',currentWeek.volumeMicrodoseSets?`${currentWeek.volumeMicrodoseSets} sets · ${currentWeek.volumeMicrodosePushups} reps`:'—'],
+   ['This week other microdose push-ups',currentWeek.otherSkillMicrodosePushups||'—'],
    ['This week front plank',currentWeek.plankSeconds?fmtSec(currentWeek.plankSeconds):'—'],
    ['Best push-up set',bestRep('handReleasePushups')],
    ['Longest continuous front plank',bestTime('plank')],
@@ -4183,7 +4271,7 @@ function renderProgress(){
   return `<details class="card progress-group"><summary><span>${esc(label)}</span><span class="summary-status">${available.length} tracked</span></summary><div class="metric-grid">${available.length?available.map(metric).join(''):'<p class="muted">No results tracked yet.</p>'}</div></details>`;
  }).join('');
  $('weeklyTestProgress').innerHTML=weeks.length
-  ?`<div class="weekly-table"><div class="weekly-row weekly-head"><span>Week of</span><span>Push-ups</span><span>Front plank</span></div>${weeks.slice(0,10).map(week=>`<div class="weekly-row"><strong>${dateFmt(week.week)}</strong><span>${week.pushups||'—'} reps</span><span>${week.plankSeconds?fmtSec(week.plankSeconds):'—'}</span></div>`).join('')}</div>`
+  ?`<div class="weekly-table"><div class="weekly-row weekly-head"><span>Week of</span><span>HRPU breakdown</span><span>Front plank</span></div>${weeks.slice(0,10).map(week=>`<div class="weekly-row"><strong>${dateFmt(week.week)}</strong><span class="weekly-breakdown"><span>Primary: ${week.primaryPushups} reps</span><span>Volume: ${week.volumeMicrodoseSets} sets · ${week.volumeMicrodosePushups} reps</span><span>Other microdose: ${week.otherSkillMicrodosePushups} reps</span><strong>Combined: ${week.pushups} reps</strong></span><span>${week.plankSeconds?fmtSec(week.plankSeconds):'—'}</span></div>`).join('')}</div>`
   :'<div class="empty-state">Weekly push-up and front-plank totals will appear after completed sets are logged.</div>';
  const recent=entries.slice(0,8);
  $('recentProgress').innerHTML=recent.length?recent.map(entry=>{
@@ -4198,19 +4286,29 @@ function weeklyMetrics(source){
  const groups=new Map();
  source.forEach(entry=>{
   const key=weekStart(entry.date);
-  if(!groups.has(key))groups.set(key,{week:key,pushups:0,plankSeconds:0});
+  if(!groups.has(key))groups.set(key,{
+   week:key,pushups:0,primaryPushups:0,volumeMicrodoseSets:0,volumeMicrodosePushups:0,otherSkillMicrodosePushups:0,plankSeconds:0
+  });
   const group=groups.get(key);
-  (entry.exercises||[]).filter(exercise=>exercise.completed).forEach(exercise=>{
+  (entry.exercises||[]).forEach(exercise=>{
    const identity=exerciseIdentity(exercise);
    if(identity==='handReleasePushups'){
-    group.pushups+=parseSetValues(exercise.reps).reduce((sum,value)=>sum+(Number(value)||0),0);
+    const reps=validRepValues(exercise.reps);
+    const total=reps.reduce((sum,value)=>sum+value,0);
+    group.pushups+=total;
+    if(microdoseTemplateIdentity(entry)===HRPU_VOLUME_TEMPLATE_ID){
+     group.volumeMicrodoseSets+=reps.length;
+     group.volumeMicrodosePushups+=total;
+    }else if(isSkillMicrodoseEntry(entry)||legacyDay3SkillDoseEntry(entry)){
+     group.otherSkillMicrodosePushups+=total;
+    }else group.primaryPushups+=total;
    }
-   if(identity==='plank'){
+   if(identity==='plank'&&exercise.completed){
     group.plankSeconds+=String(exercise.times||'').split(',').reduce((sum,value)=>sum+Math.max(0,parseTime(value.trim())||0),0);
    }
   });
  });
- return [...groups.values()].filter(group=>group.pushups||group.plankSeconds).sort((a,b)=>b.week.localeCompare(a.week));
+ return [...groups.values()].filter(group=>group.pushups||group.volumeMicrodoseSets||group.plankSeconds).sort((a,b)=>b.week.localeCompare(a.week));
 }
 
 function weeklyMetricsForSelection(selected,source=entries){
@@ -4462,9 +4560,9 @@ function buildMd(){
  output+=`**Average session RPE:** ${averageRpe}`;
  output+=stage?`  \n**Current coach-directed run stage:** Stage ${stage.id} — ${stage.label}\n\n`:'\n\n';
  if(weeks.length){
-  output+='## AFT-event practice volume\n\nPractice volume reflects accumulated training work and is not a benchmark or official AFT event result.\n\n| Week of | Hand-release push-ups | Front-plank time |\n|---|---:|---:|\n';
+  output+='## AFT-event practice volume\n\nPractice volume reflects accumulated training work and is not a benchmark or official AFT event result.\n\n| Week of | Primary HRPU reps | Volume-microdose sets | Volume-microdose reps | Other skill-microdose HRPU reps | Combined HRPU reps | Front-plank time |\n|---|---:|---:|---:|---:|---:|---:|\n';
   weeks.slice().reverse().forEach(week=>{
-   output+=`| ${dateFmt(week.week)} | ${week.pushups} reps | ${fmtSec(week.plankSeconds)} |\n`;
+   output+=`| ${dateFmt(week.week)} | ${week.primaryPushups} | ${week.volumeMicrodoseSets} | ${week.volumeMicrodosePushups} | ${week.otherSkillMicrodosePushups} | ${week.pushups} | ${fmtSec(week.plankSeconds)} |\n`;
   });
   output+='\n';
  }
@@ -4476,8 +4574,10 @@ function buildMd(){
    const definition=definitionForSavedEntry(entry);
    output+=`### ${dateFmt(entry.date)} — ${entry.dayLabel}\n\n`;
    if(isSkillMicrodoseEntry(entry)){
-    output+=`Session category: Skill microdose  \n`;
-    output+=`Template: ${entry.templateName||entry.programName||'AFT Skill Microdose'}${entry.templateVersion||entry.programVersion?` · version ${entry.templateVersion||entry.programVersion}`:''}  \n`;
+    const savedTemplateName=microdoseTemplateName(entry);
+    const savedTemplateVersion=entry.prescriptionSnapshot?.templateVersion||entry.templateVersion||entry.programVersion||'';
+    output+=`Session category: ${microdoseTemplateName(entry)}  \n`;
+    output+=`Template: ${savedTemplateName}${savedTemplateVersion?` · version ${savedTemplateVersion}`:''}  \n`;
     output+=`Does not advance the primary workout rotation  \n`;
     if(entry.weeklyFrequencyOverride)output+=`Weekly frequency: Additional coach-directed session; standard weekly frequency exceeded  \n`;
    }else{
@@ -4489,6 +4589,7 @@ function buildMd(){
    if(entry.duration)metadata.push(`${entry.duration} min`);
    if(definition.targetDuration)metadata.push(`target duration ${definition.targetDuration.toLowerCase()}`);
    if(entry.targetSessionRpe)metadata.push(`target session RPE ${entry.targetSessionRpe}`);
+   if(definition.hardCapRpe!=null&&definition.hardCapRpe!=='')metadata.push(`hard cap RPE ${definition.hardCapRpe}`);
    if(entry.sessionRpe)metadata.push(`session RPE ${entry.sessionRpe}/10`);
    if(entry.activeRunStage)metadata.push(`active run stage ${entry.activeRunStage}`);
    if(entry.bodyWeight)metadata.push(`${entry.bodyWeight} lb body weight`);
@@ -4614,8 +4715,9 @@ function markdownAppliedCircuitDirective(definition,result){
 function previousComparableForExport(entry,planned,completed){
  if(!entry||!completed)return null;
  const priorEntries=entries.filter(candidate=>candidate.id!==entry.id&&compareEntries(candidate,entry)>0);
+ const templateId=isSkillMicrodoseEntry(entry)?microdoseTemplateIdentity(entry):'';
  const selected=previousResultData(planned,exerciseVariationLabel(completed),{
-  source:priorEntries,excludeEntryId:entry.id,limit:1
+  source:priorEntries,excludeEntryId:entry.id,limit:1,templateId
  }).selected;
  return selected?.comparable?selected:null;
 }
@@ -4742,9 +4844,9 @@ function exportJson(){
 function buildCsv(){
  const headers=[
   'date','session_type','session_key','day','rotation_day_key','advances_primary_rotation','coach_directed_alternative','program_id','program_name','program_version','program_effective_date',
-  'template_id','template_name','template_version','template_effective_date','weekly_skill_dose_group_id','weekly_skill_dose_week',
+  'template_id','template_name','template_version','template_effective_date','weekly_skill_dose_group_id','weekly_frequency','required_exercise_ids','weekly_skill_dose_week',
   'weekly_frequency_override','weekly_frequency_override_reason','active_run_stage',
-  'target_session_rpe','duration_minutes','session_rpe','body_weight_lb','pre_session_soreness',
+  'target_session_rpe','session_hard_cap_rpe','duration_minutes','session_rpe','body_weight_lb','pre_session_soreness',
   'pre_session_readiness','sleep_quality','pain_during_session','pain_location','legacy_pain_discomfort',
   'post_session_soreness','exercise_id','exercise','planned_prescription','target_exercise_rpe',
   'variation','variation_id','entered_load','load_entry_mode','plate_weight_per_side','bar_weight','total_load',
@@ -4775,9 +4877,10 @@ function buildCsv(){
    const pain=exercise.exercisePain||{};
    rows.push([
     entry.date,entry.sessionType||'primary',entry.dayKey,entry.dayLabel,entry.rotationDayKey||'',entry.advancesPrimaryRotation===false?'no':'yes',entry.coachDirectedAlternative?'yes':'no',entry.programId||'',entry.programName||'',
-    entry.programVersion||'',entry.programEffectiveDate||'',entry.templateId||'',entry.templateName||'',entry.templateVersion||'',
-    entry.templateEffectiveDate||'',entry.weeklySkillDoseGroupId||'',entry.weeklySkillDoseWeek||'',entry.weeklyFrequencyOverride?'yes':'no',
-    entry.weeklyFrequencyOverrideReason||'',entry.activeRunStage??'',entry.targetSessionRpe||'',entry.duration,
+    entry.programVersion||'',entry.programEffectiveDate||'',entry.prescriptionSnapshot?.templateId||entry.templateId||'',isSkillMicrodoseEntry(entry)?microdoseTemplateName(entry):entry.prescriptionSnapshot?.templateName||entry.templateName||'',entry.prescriptionSnapshot?.templateVersion||entry.templateVersion||'',
+    entry.prescriptionSnapshot?.templateEffectiveDate||entry.templateEffectiveDate||'',entry.prescriptionSnapshot?.weeklySkillDoseGroupId||entry.weeklySkillDoseGroupId||'',entry.prescriptionSnapshot?.weeklyFrequency??entry.prescriptionSnapshot?.frequency??entry.weeklyFrequency??entry.frequency??'',
+    (Array.isArray(entry.prescriptionSnapshot?.requiredExerciseIds)?entry.prescriptionSnapshot.requiredExerciseIds:Array.isArray(entry.requiredExerciseIds)?entry.requiredExerciseIds:[]).join('|'),entry.weeklySkillDoseWeek||'',entry.weeklyFrequencyOverride?'yes':'no',
+    entry.weeklyFrequencyOverrideReason||'',entry.activeRunStage??'',entry.targetSessionRpe||'',entry.prescriptionSnapshot?.hardCapRpe??entry.hardCapRpe??'',entry.duration,
     entry.sessionRpe,entry.bodyWeight,entry.preSoreness,entry.readiness,entry.sleepQuality,entry.painDuring,entry.painLocation,
     entry.painScore,entry.postSoreness,exerciseIdentity(exercise),exercise.name,planned.prescription||exercise.prescription,
     exercise.targetRpe||'',exercise.variation||'',exerciseVariationId(exercise),exercise.load||'',exercise.loadMode||'',

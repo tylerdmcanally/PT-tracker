@@ -286,13 +286,16 @@ assert.deepEqual(legacyDaySessionHashes,{
  day3:'feb9a04b66bc44ce42ffd7a12e630461e8dc9031f5de940da603c16511cc8748',
  day4:'4f2dd93ce919638e84639e65dd78ca4beeb296d3ec7317fb7bea23afc1522b5a'
 },'legacy Day 1–Day 4 definitions remain byte-for-byte identical to v1.5.11');
-const unchangedActiveSessionHashes=Object.fromEntries(['recovery','skillMicrodose'].map(key=>[
- key,crypto.createHash('sha256').update(evaluate(`JSON.stringify(SESSIONS.${key})`)).digest('hex')
-]));
-assert.deepEqual(unchangedActiveSessionHashes,{
- recovery:'35b7aac9d13080156acbc8fd22a1fd37a2ae022622ca60936add89f633503178',
- skillMicrodose:'1b862680f821ebe3769e0c8e9f0aeb4ecc0bfd0fda4fe4ad8583d4a847c75f80'
-},'recovery and skill remain byte-for-byte identical to v1.5.21');
+assert.equal(
+ crypto.createHash('sha256').update(evaluate(`JSON.stringify(SESSIONS.recovery)`)).digest('hex'),
+ '35b7aac9d13080156acbc8fd22a1fd37a2ae022622ca60936add89f633503178',
+ 'recovery remains byte-for-byte identical to v1.5.21'
+);
+assert.equal(
+ crypto.createHash('sha256').update(evaluate(`(()=>{const definition=clone(SESSIONS.skillMicrodose);delete definition.requiredExerciseIds;return JSON.stringify(definition)})()`)).digest('hex'),
+ '1b862680f821ebe3769e0c8e9f0aeb4ecc0bfd0fda4fe4ad8583d4a847c75f80',
+ 'the original skill prescription remains byte-for-byte identical apart from approved completion metadata'
+);
 const unchangedStrength1ExerciseHashes=Object.fromEntries(['overheadPress','chestSupportedRow','lateralRaise','chestFly','trunkStability','preacherCurl','tricepsPressdown'].map(id=>[
  id,crypto.createHash('sha256').update(evaluate(`JSON.stringify(SESSIONS.strengthUpperAft.exercises.find(exercise=>exercise.id==='${id}'))`)).digest('hex')
 ]));
@@ -355,9 +358,29 @@ assert.equal(evaluate('SESSIONS.skillMicrodose.sessionType'),'skill_microdose');
 assert.equal(evaluate('SESSIONS.skillMicrodose.templateVersion'),'1.0');
 assert.equal(evaluate('SESSIONS.skillMicrodose.templateEffectiveDate'),'2026-08-06');
 assert.equal(evaluate('SESSIONS.skillMicrodose.weeklySkillDoseGroupId'),'aft_pushup_plank_microdose');
+assert.deepEqual(JSON.parse(evaluate('JSON.stringify(SESSIONS.skillMicrodose.requiredExerciseIds)')),['handReleasePushups','frontPlank']);
 assert.equal(evaluate('SESSIONS.skillMicrodose.exercises.some(exercise=>/air squat/i.test(exercise.name))'),false);
 assert.equal(evaluate('sessionProgramMeta(SESSIONS.skillMicrodose).version'),'1.0');
 assert.equal(evaluate('sessionProgramMeta(SESSIONS.skillMicrodose).runStage'),'');
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.key'),'hrpuVolumeMicrodose');
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.sessionType'),'skill_microdose');
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.optional'),true);
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.advancesPrimaryRotation'),false);
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.templateId'),'aft-hrpu-volume-microdose');
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.templateName'),'Optional HRPU Volume Microdose');
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.templateVersion'),'1.0');
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.templateEffectiveDate'),'2026-10-28');
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.weeklySkillDoseGroupId'),'aft_pushup_plank_microdose');
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.weeklyFrequency'),1);
+assert.deepEqual(JSON.parse(evaluate('JSON.stringify(SESSIONS.hrpuVolumeMicrodose.requiredExerciseIds)')),['handReleasePushups']);
+assert.deepEqual(JSON.parse(evaluate('JSON.stringify(SESSIONS.hrpuVolumeMicrodose.exercises.map(exercise=>exercise.id))')),['handReleasePushups']);
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.hardCapRpe'),5);
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.exercises[0].prescription'),'4 × 5 across the day');
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.exercises[0].sets'),4);
+assert.deepEqual(JSON.parse(evaluate('JSON.stringify(SESSIONS.hrpuVolumeMicrodose.exercises[0].prescribedReps)')),[5,5,5,5]);
+assert.equal(evaluate('SESSIONS.hrpuVolumeMicrodose.exercises[0].targetRpe'),'3–4');
+assert.match(evaluate('SESSIONS.hrpuVolumeMicrodose.coachInstructions'),/two-minute Strength 1 diagnostic.*at most once in a Monday–Sunday week.*at least 90 minutes.*preferably 2–3 hours.*never above 5.*Do not add extra sets or repetitions.*Progression is coach-directed only/);
+assert.match(evaluate('SESSIONS.hrpuVolumeMicrodose.coachInstructions'),/records evidence only and never unlocks progression.*two separate clean exposures.*5 × 5.*one variable only: 5 × 6 or a second weekly exposure.*failed gate holds or regresses/);
 assert.equal(evaluate('currentProgramMeta().version'),'1.5.22','the auxiliary template version remains independent of the primary program');
 assert.equal(evaluate('LEGACY_SESSIONS.day1.exercises.find(exercise=>exercise.id==="runWalkIntervals").runStage'),4);
 assert.equal(evaluate('LEGACY_SESSIONS.day4.exercises.find(exercise=>exercise.id==="primaryRun").runStage'),4);
@@ -786,7 +809,28 @@ const completeMicrodose=`{
   {exerciseId:'plank',type:'timed',completed:true,sets:'3',times:'20, 20, 20'}
  ]
 }`;
+const completeVolumeMicrodose=`{
+ id:'volume-microdose-1',date:'2026-10-28',dayKey:'hrpuVolumeMicrodose',sessionType:'skill_microdose',
+ templateId:'aft-hrpu-volume-microdose',weeklySkillDoseGroupId:'aft_pushup_plank_microdose',
+ requiredExerciseIds:['handReleasePushups'],advancesPrimaryRotation:false,
+ exercises:[{exerciseId:'handReleasePushups',type:'body',completed:true,sets:'4',reps:'5, 5, 5, 5'}]
+}`;
 assert.equal(evaluate(`weeklySkillDoseState('2026-08-06',{source:[${completeMicrodose}]}).status`),'full');
+assert.equal(evaluate(`weeklySkillDoseState('2026-10-28',{source:[${completeVolumeMicrodose}]}).status`),'full','the HRPU-only volume template completes its explicit required exercise set');
+assert.equal(evaluate(`weeklySkillDoseState('2026-10-28',{source:[${completeVolumeMicrodose},${completeMicrodose}]}).status`),'full','either template consumes the shared weekly group allowance');
+assert.equal(evaluate(`weeklySkillDoseState('2026-10-28',{source:[{
+ id:'other-group',date:'2026-10-28',dayKey:'skillMicrodose',sessionType:'skill_microdose',weeklySkillDoseGroupId:'different_group',
+ requiredExerciseIds:['handReleasePushups'],exercises:[{exerciseId:'handReleasePushups',completed:true,reps:'5'}]
+}]}).status`),'available','a different weekly group does not consume the push-up/plank allowance');
+assert.equal(evaluate(`weeklySkillDoseEntryStatus({
+ id:'snapshot-required',date:'2026-10-28',dayKey:'hrpuVolumeMicrodose',sessionType:'skill_microdose',
+ prescriptionSnapshot:{sessionKey:'hrpuVolumeMicrodose',templateId:'aft-hrpu-volume-microdose',requiredExerciseIds:['handReleasePushups']},
+ exercises:[{exerciseId:'handReleasePushups',completed:true,reps:'5, 5'}]
+})`),'full','snapshot-backed required-exercise metadata governs completion');
+assert.equal(evaluate(`weeklySkillDoseEntryStatus({
+ id:'legacy-original-partial',date:'2026-08-06',dayKey:'skillMicrodose',sessionType:'skill_microdose',
+ exercises:[{exerciseId:'handReleasePushups',completed:true,reps:'4, 4, 4'}]
+})`),'partial','snapshotless original AFT Skill Microdose keeps its HRPU-plus-plank fallback');
 assert.equal(evaluate(`weeklySkillDoseState('2026-08-06',{source:[{
  id:'blank-complete',date:'2026-08-06',dayKey:'skillMicrodose',sessionType:'skill_microdose',exercises:[
   {exerciseId:'handReleasePushups',type:'body',completed:true,reps:''},{exerciseId:'plank',type:'timed',completed:true,times:''}
@@ -821,6 +865,20 @@ assert.equal(evaluate(`programVersionAtLeast('1.4.1','1.4')`),true);
 assert.equal(evaluate(`programVersionAtLeast('1.4.2','1.4')`),true);
 assert.equal(evaluate(`programVersionAtLeast('1.4.3','1.4')`),true);
 assert.equal(evaluate(`programVersionAtLeast('1.4.4','1.4')`),true);
+assert.equal(evaluate(`nextWorkoutDay([
+ {id:'primary-before-volume',dayKey:'strengthUpperAft',sessionType:'primary',advancesPrimaryRotation:true,date:'2026-10-27'},
+ ${completeVolumeMicrodose}
+])`),'strengthHeavyCarry','the HRPU Volume Microdose never advances or resets the primary rotation');
+
+const microdosePreviousSource=`[
+ {id:'old-original',date:'2026-10-30',updatedAt:'2026-10-30T18:00:00.000Z',dayKey:'skillMicrodose',sessionType:'skill_microdose',
+  templateName:'AFT Skill Microdose',exercises:[{exerciseId:'handReleasePushups',type:'body',completed:true,reps:'4, 4, 4'}]},
+ {id:'new-volume',date:'2026-10-29',updatedAt:'2026-10-29T18:00:00.000Z',dayKey:'hrpuVolumeMicrodose',sessionType:'skill_microdose',
+  templateId:'aft-hrpu-volume-microdose',templateName:'Optional HRPU Volume Microdose',exercises:[{exerciseId:'handReleasePushups',type:'body',completed:true,reps:'5, 5, 5, 5'}]}
+]`;
+assert.equal(evaluate(`previousResultData(SESSIONS.hrpuVolumeMicrodose.exercises[0],'',{source:${microdosePreviousSource},excludeEntryId:null,templateId:'aft-hrpu-volume-microdose'}).selected.entry.id`),'new-volume','volume-microdose comparisons stay within the new template identity');
+assert.equal(evaluate(`previousResultData(SESSIONS.skillMicrodose.exercises[0],'',{source:${microdosePreviousSource},excludeEntryId:null,templateId:'aft-skill-microdose'}).selected.entry.id`),'old-original','snapshotless original microdose history stays bound to its legacy template identity');
+assert.equal(evaluate(`resultSessionSource(${microdosePreviousSource}[1],${microdosePreviousSource}[1].exercises[0])`),'Optional HRPU Volume Microdose','comparison labels use the saved template name');
 
 const microPushups='SESSIONS.skillMicrodose.exercises.find(exercise=>exercise.id==="handReleasePushups")';
 const microPlank='SESSIONS.skillMicrodose.exercises.find(exercise=>exercise.id==="plank")';
@@ -832,6 +890,12 @@ assert.equal(evaluate(`prescriptionAdherence(${microPlank},{type:'timed',complet
 assert.equal(evaluate(`prescriptionAdherence(${microPlank},{type:'timed',completed:true,sets:'3',times:'20, 19, 20'})`),'below_target');
 assert.equal(evaluate(`prescriptionAdherence(${microPlank},{type:'timed',completed:true,sets:'3',times:'20, 20'})`),'partial');
 assert.equal(evaluate(`prescriptionAdherence(${microPlank},{type:'timed',completed:false,sets:'3',times:''})`),'not_applicable');
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(validRepValues('5, , 4, invalid, 0, '))`)),[5,4,0],'only explicit nonblank nonnegative whole-number repetitions count');
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(repVolumeSummary('5, , 4, invalid, 0, ',4))`)),{
+ setsLogged:3,totalReps:9,text:'Sets logged: 3 of 4 · Total reps: 9'
+});
+assert.match(evaluate(`(()=>{const prior=activeSessionDefinition;activeSessionDefinition=SESSIONS.hrpuVolumeMicrodose;const html=setRepLogger({sets:'4',reps:'5, , 4'},getSetPlan(SESSIONS.hrpuVolumeMicrodose.exercises[0]),'body',SESSIONS.hrpuVolumeMicrodose.exercises[0]);activeSessionDefinition=prior;return html})()`),/data-rep-volume-summary[^>]*>Sets logged: 2 of 4 · Total reps: 9/,'the volume template renders a live derived total');
+assert.doesNotMatch(evaluate(`(()=>{const prior=activeSessionDefinition;activeSessionDefinition=SESSIONS.skillMicrodose;const definition=SESSIONS.skillMicrodose.exercises[0];const html=setRepLogger({sets:'3',reps:'4, 4'},getSetPlan(definition),'body',definition);activeSessionDefinition=prior;return html})()`),/data-rep-volume-summary/,'the original AFT Skill Microdose keeps its existing logger');
 
 assert.equal(evaluate(`totalLoadValue({load:'35',loadMode:'platesPerSide',barWeight:'45'})`),115);
 assert.equal(evaluate(`totalLoadValue({load:'70',loadMode:'plates',barWeight:'45'})`),115);
@@ -1263,7 +1327,29 @@ const weeks=evaluate(`weeklyMetrics([{
 }])`);
 assert.equal(weeks[0].week,'2026-07-27','weeks start on Monday');
 assert.equal(weeks[0].pushups,30);
+assert.equal(weeks[0].primaryPushups,30);
 assert.equal(weeks[0].plankSeconds,55,'side-plank time must stay separate');
+const hrpuBreakdown=JSON.parse(evaluate(`JSON.stringify(weeklyMetrics([
+ {id:'primary-volume',date:'2026-10-28',dayKey:'strengthHeavyCarry',sessionType:'primary',exercises:[
+  {exerciseId:'handReleasePushups',completed:true,reps:'6, 6'}
+ ]},
+ {id:'volume-partial',date:'2026-10-29',dayKey:'hrpuVolumeMicrodose',sessionType:'skill_microdose',templateId:'aft-hrpu-volume-microdose',exercises:[
+  {exerciseId:'handReleasePushups',completed:false,reps:'5, , 4, '}
+ ]},
+ {id:'other-microdose',date:'2026-10-30',dayKey:'skillMicrodose',sessionType:'skill_microdose',templateId:'aft-skill-microdose',exercises:[
+  {exerciseId:'handReleasePushups',completed:true,reps:'4, 4'},
+  {exerciseId:'plank',completed:true,times:'20'}
+ ]},
+ {id:'prescribed-only',date:'2026-10-30',dayKey:'hrpuVolumeMicrodose',sessionType:'skill_microdose',templateId:'aft-hrpu-volume-microdose',exercises:[
+  {exerciseId:'handReleasePushups',completed:false,prescription:'4 × 5 across the day',reps:''}
+ ]}
+]))`))[0];
+assert.equal(hrpuBreakdown.primaryPushups,12);
+assert.equal(hrpuBreakdown.volumeMicrodoseSets,2,'only actual nonblank saved volume-microdose sets count');
+assert.equal(hrpuBreakdown.volumeMicrodosePushups,9);
+assert.equal(hrpuBreakdown.otherSkillMicrodosePushups,8);
+assert.equal(hrpuBreakdown.pushups,29,'combined HRPU volume sums primary, volume microdose, and other microdose work');
+assert.equal(hrpuBreakdown.plankSeconds,20);
 
 const oldEntry={
  id:'legacy',
@@ -1856,6 +1942,18 @@ storage.set('aftWorkoutDraft.v1',JSON.stringify({savedAt:'2026-08-05T20:00:00.00
 assert.equal(evaluate('loadDraft().item.date'),'2026-08-05','startup retains the original date for a genuinely in-progress draft');
 storage.delete('aftWorkoutDraft.v1');
 
+const partialVolumeDraft={
+ date:'2026-10-28',dayKey:'hrpuVolumeMicrodose',dayLabel:'Optional HRPU Volume Microdose',sessionType:'skill_microdose',
+ templateId:'aft-hrpu-volume-microdose',templateName:'Optional HRPU Volume Microdose',templateVersion:'1.0',templateEffectiveDate:'2026-10-28',
+ advancesPrimaryRotation:false,weeklySkillDoseGroupId:'aft_pushup_plank_microdose',requiredExerciseIds:['handReleasePushups'],
+ exercises:[{exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'4',reps:'5, , 4',completed:false}]
+};
+storage.set('aftWorkoutDraft.v1',JSON.stringify({savedAt:'2026-10-28T15:00:00.000Z',editingId:null,item:partialVolumeDraft}));
+const loadedPartialVolumeDraft=JSON.parse(evaluate('JSON.stringify(loadDraft().item)'));
+assert.equal(loadedPartialVolumeDraft.exercises[0].reps,'5, , 4','all-day draft recovery preserves partial sets and interior blanks exactly');
+assert.equal(loadedPartialVolumeDraft.totalReps,undefined,'the live volume total is derived rather than persisted');
+storage.delete('aftWorkoutDraft.v1');
+
 const retiredRunDraftItem=JSON.parse(evaluate(`JSON.stringify({
  id:'',date:'2000-03-02',dayKey:'runStageA',dayLabel:LEGACY_SESSIONS.runStageA.label,
  sessionType:'primary',advancesPrimaryRotation:true,programId:PROGRAM.id,programName:PROGRAM.name,
@@ -1899,7 +1997,9 @@ const elements={
  progressCards:{innerHTML:''},
  progressGroups:{innerHTML:''},
  weeklyTestProgress:{innerHTML:''},
- recentProgress:{innerHTML:''}
+ recentProgress:{innerHTML:''},
+ historyList:{innerHTML:'',querySelectorAll:()=>[]},
+ historyFilter:{value:'all'}
 };
 context.document={
  getElementById:id=>elements[id]||{value:'',classList:{add(){},remove(){},toggle(){}}},
@@ -1914,9 +2014,10 @@ assert.equal((primarySelectorGroup.match(/<option /g)||[]).length,3,'the primary
 assert.match(primarySelectorGroup,/Strength 3 — Lower \/ Full Body and Push Support/,'the selector uses the v1.5.22 Strength 3 label while retaining its stable key');
 assert.doesNotMatch(primarySelectorGroup,/runStageA|aerobicBase|runStageB/,'retired run and aerobic sessions are absent from active selection');
 assert.doesNotMatch(primarySelectorGroup,/value="day[1-4]"/,'legacy Day 1–Day 4 keys are retired from active selection');
-assert.match(sessionSelectorHtml,/<optgroup label="Optional sessions">[\s\S]*value="recovery"[\s\S]*value="skillMicrodose"/,'Recovery and AFT Skill Microdose remain selectable outside the primary rotation');
+assert.match(sessionSelectorHtml,/<optgroup label="Optional sessions">[\s\S]*value="recovery"[\s\S]*value="skillMicrodose"[\s\S]*value="hrpuVolumeMicrodose"/,'Recovery and both distinct skill microdoses remain selectable outside the primary rotation');
 assert.equal(evaluate(`isPrimaryEntry({dayKey:'recovery',sessionType:'recovery'})`),false,'Recovery never advances the primary rotation');
 assert.equal(evaluate(`isPrimaryEntry({dayKey:'skillMicrodose',sessionType:'skill_microdose',advancesPrimaryRotation:false})`),false,'AFT Skill Microdose never advances the primary rotation');
+assert.equal(evaluate(`isPrimaryEntry({dayKey:'hrpuVolumeMicrodose',sessionType:'skill_microdose',advancesPrimaryRotation:false})`),false,'HRPU Volume Microdose never advances the primary rotation');
 assert.doesNotMatch(sessionSelectorHtml,/day1IllnessRecovery|Day 1 — Illness Recovery/,'the retired alternative has no selector option');
 assert.doesNotMatch(sessionSelectorHtml,/Coach-directed alternatives/,'an empty coach-directed alternatives group is omitted');
 
@@ -3195,7 +3296,7 @@ evaluate(`entries=[
 assert.equal(evaluate(`definitionForSavedEntry(entries.find(entry=>entry.id==='august-7-day-4')).exercises.find(exercise=>exercise.id==='primaryRun').runStage`),2,'the historical August 7 prescription remains Stage 2');
 assert.equal(evaluate(`weeklyMetricsForSelection(filtered(),entries)[0].pushups`),52,'a narrow export still uses the full Monday–Sunday practice total');
 const august7Markdown=evaluate('buildMd()');
-assert.match(august7Markdown,/\| Aug 3, 2026 \| 52 reps \| 1:30 \|/);
+assert.match(august7Markdown,/\| Aug 3, 2026 \| 52 \| 0 \| 0 \| 0 \| 52 \| 1:30 \|/);
 assert.match(august7Markdown,/Walk \/ run intervals[\s\S]*Prescription adherence: Met/);
 assert.match(august7Markdown,/Total elapsed time: 23:00/);
 assert.match(august7Markdown,/Exercise-specific pain: 2\/10 · Bilateral · synthetic test shoulder · did not stop the exercise/);
@@ -3589,7 +3690,7 @@ assert.equal(microdoseMetrics.pushups,12,'microdose push-ups count as weekly pra
 assert.equal(microdoseMetrics.plankSeconds,60,'microdose front-plank time counts as weekly practice volume');
 const microdoseMarkdown=evaluate('buildMd()');
 assert.match(microdoseMarkdown,/\*\*Skill microdose sessions:\*\* 1/);
-assert.match(microdoseMarkdown,/Session category: Skill microdose/);
+assert.match(microdoseMarkdown,/Session category: AFT Skill Microdose/);
 assert.match(microdoseMarkdown,/Template: AFT Skill Microdose · version 1\.0/);
 assert.match(microdoseMarkdown,/Does not advance the primary workout rotation/);
 assert.match(microdoseMarkdown,/standard weekly frequency exceeded/);
@@ -3605,6 +3706,79 @@ const microdoseRoundTrip=evaluate('normalizeEntry(JSON.parse(JSON.stringify(entr
 assert.equal(microdoseRoundTrip.sessionType,'skill_microdose');
 assert.equal(microdoseRoundTrip.templateVersion,'1.0');
 assert.equal(microdoseRoundTrip.weeklyFrequencyOverride,true);
+
+const volumeMicrodoseEntry=JSON.parse(evaluate(`JSON.stringify({
+ id:'volume-microdose-export',date:'2026-10-28',updatedAt:'2026-10-28T20:00:00.000Z',dayKey:'hrpuVolumeMicrodose',
+ dayLabel:SESSIONS.hrpuVolumeMicrodose.label,sessionType:'skill_microdose',advancesPrimaryRotation:false,hardCapRpe:SESSIONS.hrpuVolumeMicrodose.hardCapRpe,
+ duration:'240',sessionRpe:'4',painDuring:'0',notes:'Invented all-day volume fixture.',
+ programId:'aft-hrpu-volume-microdose',programName:'Optional HRPU Volume Microdose',programVersion:'1.0',programEffectiveDate:'2026-10-28',
+ templateId:SESSIONS.hrpuVolumeMicrodose.templateId,templateName:SESSIONS.hrpuVolumeMicrodose.templateName,
+ templateVersion:SESSIONS.hrpuVolumeMicrodose.templateVersion,templateEffectiveDate:SESSIONS.hrpuVolumeMicrodose.templateEffectiveDate,
+ weeklySkillDoseGroupId:SESSIONS.hrpuVolumeMicrodose.weeklySkillDoseGroupId,frequency:SESSIONS.hrpuVolumeMicrodose.frequency,
+ weeklyFrequency:SESSIONS.hrpuVolumeMicrodose.weeklyFrequency,requiredExerciseIds:SESSIONS.hrpuVolumeMicrodose.requiredExerciseIds,
+ weeklySkillDoseWeek:'2026-10-26',weeklyFrequencyOverride:true,weeklyFrequencyOverrideReason:'additional_coach_directed_skill_session',prescriptionSnapshot:snapshotSession(SESSIONS.hrpuVolumeMicrodose),
+ exercises:[{exerciseId:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 5 across the day',type:'body',targetRpe:'3–4',completed:true,sets:'4',reps:'5, 5, 5, 5',rpe:'4',exercisePain:{severity:0,location:'wrist',laterality:'bilateral',causedExerciseToStop:false},notes:'Invented clean sets.'}]
+})`));
+const normalizedVolumeMicrodose=JSON.parse(evaluate(`JSON.stringify(normalizeEntry(${JSON.stringify(volumeMicrodoseEntry)}))`));
+assert.deepEqual(normalizedVolumeMicrodose.prescriptionSnapshot,volumeMicrodoseEntry.prescriptionSnapshot,'normalization preserves the full auxiliary-template snapshot');
+assert.deepEqual(normalizedVolumeMicrodose.requiredExerciseIds,['handReleasePushups']);
+assert.equal(normalizedVolumeMicrodose.advancesPrimaryRotation,false);
+assert.equal(normalizedVolumeMicrodose.weeklyFrequencyOverrideReason,'additional_coach_directed_skill_session','the explicit additional-session override retains its reason');
+assert.equal(normalizedVolumeMicrodose.prescriptionSnapshot.hardCapRpe,5);
+assert.equal(JSON.parse(evaluate(`JSON.stringify(definitionForSavedEntry(${JSON.stringify(normalizedVolumeMicrodose)}))`)).exercises[0].prescription,'4 × 5 across the day');
+const editedVolumeMicrodose=JSON.parse(evaluate(`JSON.stringify(normalizeEntry({...${JSON.stringify(volumeMicrodoseEntry)},notes:'Invented edited note.'}))`));
+assert.deepEqual(editedVolumeMicrodose.prescriptionSnapshot,volumeMicrodoseEntry.prescriptionSnapshot,'editing cannot replace the saved auxiliary-template snapshot');
+evaluate(`entries=[normalizeEntry(${JSON.stringify(volumeMicrodoseEntry)})]`);
+elements.exportFrom.value='2026-10-26';
+elements.exportTo.value='2026-11-01';
+const volumeMicrodoseBackup=JSON.parse(evaluate('JSON.stringify(buildJsonBackup())'));
+assert.deepEqual(volumeMicrodoseBackup.entries[0],normalizedVolumeMicrodose,'JSON backup preserves the complete volume-microdose document');
+assert.equal(evaluate(`persistEntries('Before volume microdose persistence test')`),true);
+assert.deepEqual(JSON.parse(evaluate('JSON.stringify(loadEntries()[0])')),normalizedVolumeMicrodose,'local persistence preserves the complete volume-microdose document');
+const volumeMicrodoseMarkdown=evaluate('buildMd()');
+assert.match(volumeMicrodoseMarkdown,/Session category: Optional HRPU Volume Microdose/);
+assert.match(volumeMicrodoseMarkdown,/Template: Optional HRPU Volume Microdose · version 1\.0/);
+assert.match(volumeMicrodoseMarkdown,/hard cap RPE 5/);
+assert.match(volumeMicrodoseMarkdown,/Additional coach-directed session; standard weekly frequency exceeded/);
+assert.match(volumeMicrodoseMarkdown,/\| Primary HRPU reps \| Volume-microdose sets \| Volume-microdose reps \| Other skill-microdose HRPU reps \| Combined HRPU reps \|/);
+assert.match(volumeMicrodoseMarkdown,/\| 0 \| 4 \| 20 \| 0 \| 20 \|/,'Markdown reports the category-specific and combined weekly totals');
+const volumeMicrodoseCsv=evaluate('buildCsv()');
+assert.match(volumeMicrodoseCsv,/"required_exercise_ids"/);
+assert.match(volumeMicrodoseCsv,/"Optional HRPU Volume Microdose"/);
+assert.match(volumeMicrodoseCsv,/"aft-hrpu-volume-microdose"/);
+assert.match(volumeMicrodoseCsv,/"handReleasePushups"/);
+assert.equal(evaluate(`sessionCategoryLabel(${JSON.stringify(volumeMicrodoseEntry)})`),'Optional HRPU Volume Microdose','history/category labels distinguish the auxiliary template');
+evaluate('renderProgress()');
+assert.match(elements.weeklyTestProgress.innerHTML,/Primary: 0 reps/);
+assert.match(elements.weeklyTestProgress.innerHTML,/Volume: 4 sets · 20 reps/);
+assert.match(elements.weeklyTestProgress.innerHTML,/Combined: 20 reps/);
+
+const snapshotAuthoritativeMicrodose=JSON.parse(evaluate(`JSON.stringify(normalizeEntry({
+ id:'snapshot-authoritative-microdose',date:'2026-10-29',dayKey:'hrpuVolumeMicrodose',dayLabel:'Optional AFT Skill Microdose',
+ sessionType:'primary',templateId:'aft-hrpu-volume-microdose',templateName:'Stale top-level template',templateVersion:'9.9',
+ templateEffectiveDate:'2099-01-01',weeklySkillDoseGroupId:'stale_group',frequency:'stale_frequency',weeklyFrequency:9,
+ requiredExerciseIds:['handReleasePushups'],prescriptionSnapshot:snapshotSession(SESSIONS.skillMicrodose),
+ exercises:[{exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'3',reps:'4, 4, 4',completed:true}]
+}))`));
+assert.equal(evaluate(`isSkillMicrodoseEntry(${JSON.stringify(snapshotAuthoritativeMicrodose)})`),true,'snapshot session type governs historical auxiliary-session classification');
+assert.equal(evaluate(`microdoseTemplateIdentity(${JSON.stringify(snapshotAuthoritativeMicrodose)})`),'aft-skill-microdose','snapshot template identity beats conflicting top-level metadata');
+assert.equal(evaluate(`microdoseTemplateIdentity({dayKey:'hrpuVolumeMicrodose',prescriptionSnapshot:{sessionKey:'skillMicrodose'}})`),'aft-skill-microdose','snapshot session key governs legacy identity when the saved snapshot has no explicit template ID');
+assert.equal(evaluate(`microdoseTemplateName(${JSON.stringify(snapshotAuthoritativeMicrodose)})`),'AFT Skill Microdose','snapshot template name beats conflicting top-level metadata');
+assert.deepEqual(JSON.parse(evaluate(`JSON.stringify(requiredSkillDoseExerciseIds(${JSON.stringify(snapshotAuthoritativeMicrodose)}))`)),['handReleasePushups','plank'],'snapshot required IDs beat an HRPU-only top-level value');
+assert.equal(evaluate(`skillDoseGroupIdentity(${JSON.stringify(snapshotAuthoritativeMicrodose)})`),'aft_pushup_plank_microdose','snapshot weekly group beats conflicting top-level metadata');
+assert.equal(evaluate(`weeklySkillDoseEntryStatus(${JSON.stringify(snapshotAuthoritativeMicrodose)})`),'partial','snapshot-required plank work cannot be silently satisfied by conflicting top-level metadata');
+evaluate(`entries=[${JSON.stringify(snapshotAuthoritativeMicrodose)}]`);
+elements.exportFrom.value='2026-10-29';
+elements.exportTo.value='2026-10-29';
+evaluate('renderHistory()');
+assert.match(elements.historyList.innerHTML,/AFT Skill Microdose · v1\.0/,'history renders the immutable snapshot template identity and version');
+assert.doesNotMatch(elements.historyList.innerHTML,/Stale top-level template|v9\.9/,'history does not relabel a snapshot-backed entry from stale top-level metadata');
+const snapshotAuthoritativeMarkdown=evaluate('buildMd()');
+assert.match(snapshotAuthoritativeMarkdown,/Template: AFT Skill Microdose · version 1\.0/,'Markdown exports snapshot template metadata');
+assert.doesNotMatch(snapshotAuthoritativeMarkdown,/Stale top-level template|version 9\.9/,'Markdown ignores conflicting top-level template metadata');
+const snapshotAuthoritativeCsv=evaluate('buildCsv()');
+assert.match(snapshotAuthoritativeCsv,/"aft-skill-microdose","AFT Skill Microdose","1\.0","2026-08-06","aft_pushup_plank_microdose","once_per_monday_sunday_week","handReleasePushups\|frontPlank"/,'CSV exports snapshot template, group, frequency, and required IDs');
+assert.doesNotMatch(snapshotAuthoritativeCsv,/"Stale top-level template"|"9\.9"|"stale_group"|"stale_frequency"/,'CSV ignores conflicting top-level template metadata');
 
 storage.set('aftWorkoutEntries.v1',JSON.stringify([{id:'before'}]));
 evaluate(`entries=[{
@@ -3642,18 +3816,18 @@ assert.match(styles,/\.primary,\.secondary,\.danger,\.file-button\{[^}]*min-heig
 assert.match(styles,/button:focus-visible,summary:focus-visible,a:focus-visible\{[^}]*outline:/,'calculator buttons and summaries retain visible keyboard focus');
 assert.match(styles,/\.plate-calculator input,\.plate-adjustments button,\.plate-alternatives button\{border-color:#596768\}/,'plate planner controls retain visible non-text boundaries');
 assert.doesNotMatch(styles,/\.sticky-actions\{position:sticky;bottom:calc\(7px/,'mobile workout actions must remain in page flow');
-assert.match(indexHtml,/styles\.css\?v=69/);
-assert.ok(indexHtml.indexOf('program-config.js?v=69')<indexHtml.indexOf('cloud-config.js?v=69'));
-assert.ok(indexHtml.indexOf('cloud-config.js?v=69')<indexHtml.indexOf('cloud-sync.js?v=69'));
-assert.ok(indexHtml.indexOf('cloud-sync.js?v=69')<indexHtml.indexOf('app.js?v=69'));
-assert.doesNotMatch(indexHtml,/\?v=68/,'the app shell contains no stale v68 asset query');
-assert.match(serviceWorker,/aft-workout-tracker-v69/);
-assert.match(serviceWorker,/styles\.css\?v=69/);
-assert.match(serviceWorker,/program-config\.js\?v=69/);
-assert.match(serviceWorker,/cloud-config\.js\?v=69/);
-assert.match(serviceWorker,/cloud-sync\.js\?v=69/);
-assert.match(serviceWorker,/app\.js\?v=69/);
-assert.doesNotMatch(serviceWorker,/\?v=68/,'the service worker contains no stale v68 asset query');
+assert.match(indexHtml,/styles\.css\?v=70/);
+assert.ok(indexHtml.indexOf('program-config.js?v=70')<indexHtml.indexOf('cloud-config.js?v=70'));
+assert.ok(indexHtml.indexOf('cloud-config.js?v=70')<indexHtml.indexOf('cloud-sync.js?v=70'));
+assert.ok(indexHtml.indexOf('cloud-sync.js?v=70')<indexHtml.indexOf('app.js?v=70'));
+assert.doesNotMatch(indexHtml,/\?v=69/,'the app shell contains no stale v69 asset query');
+assert.match(serviceWorker,/aft-workout-tracker-v70/);
+assert.match(serviceWorker,/styles\.css\?v=70/);
+assert.match(serviceWorker,/program-config\.js\?v=70/);
+assert.match(serviceWorker,/cloud-config\.js\?v=70/);
+assert.match(serviceWorker,/cloud-sync\.js\?v=70/);
+assert.match(serviceWorker,/app\.js\?v=70/);
+assert.doesNotMatch(serviceWorker,/\?v=69/,'the service worker contains no stale v69 asset query');
 assert.match(indexHtml,/id="sessionRpe"[^>]+step="0\.5"[^>]+inputmode="decimal"/,'session RPE accepts half-point values');
 assert.match(appSource,/addEventListener\('invalid',revealInvalidWorkoutControl,true\)/,'invalid workout values must produce visible feedback');
 assert.equal((appSource.match(/Component RPE',performance\.rpe,\{min:1,max:10,step:'\.5'\}/g)||[]).length,4,'all circuit component RPE inputs accept half-point values');

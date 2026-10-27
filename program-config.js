@@ -301,6 +301,7 @@ window.AFT_PROGRAM_CONFIG={
    templateVersion:'1.0',
    templateEffectiveDate:'2026-08-06',
    weeklySkillDoseGroupId:'aft_pushup_plank_microdose',
+   requiredExerciseIds:['handReleasePushups','frontPlank'],
    frequency:'once_per_monday_sunday_week',
    label:'Optional AFT Skill Microdose',
    focus:'Low-fatigue hand-release push-up and front-plank technique practice that does not advance the primary rotation.',
@@ -312,6 +313,29 @@ window.AFT_PROGRAM_CONFIG={
     {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'3 × 4',type:'body',sets:3,skippedSessionNotApplicable:true,coachingNotes:'Rest 60–90 seconds. Use technically clean, repeatable repetitions; stop well before failure with approximately 3–4 repetitions in reserve. Do not intentionally exceed the prescription.'},
     {id:'plank',name:'Front plank',prescription:'3 × 20 sec',type:'timed',sets:3,skippedSessionNotApplicable:true,coachingNotes:'Rest 60–90 seconds. Use controlled bracing and stop before severe shaking or form breakdown. Do not intentionally exceed the prescription.'},
     {id:'mobility',name:'Optional gentle mobility',prescription:'Up to 5 minutes · gentle only',type:'timed',optional:true,adherenceNotApplicable:true,coachingNotes:'There is no required mobility prescription.'}
+   ]
+  },
+  hrpuVolumeMicrodose:{
+   key:'hrpuVolumeMicrodose',
+   sessionType:'skill_microdose',
+   optional:true,
+   advancesPrimaryRotation:false,
+   templateId:'aft-hrpu-volume-microdose',
+   templateName:'Optional HRPU Volume Microdose',
+   templateVersion:'1.0',
+   templateEffectiveDate:'2026-10-28',
+   weeklySkillDoseGroupId:'aft_pushup_plank_microdose',
+   requiredExerciseIds:['handReleasePushups'],
+   frequency:'once_per_monday_sunday_week',
+   weeklyFrequency:1,
+   label:'Optional HRPU Volume Microdose',
+   focus:'Distributed, test-standard, submaximal hand-release-push-up volume across an off-strength day.',
+   targetSessionRpe:'3–4',
+   hardCapRpe:5,
+   warmup:'No warm-up set is prescribed. Begin only when ready for a crisp, test-standard set.',
+   coachInstructions:'Do not complete this session before the upcoming two-minute Strength 1 diagnostic. After the diagnostic, use it at most once in a Monday–Sunday week for the first two exposures and only after a normal delayed response. Enter each set when performed, leaving at least 90 minutes and preferably 2–3 hours between sets. Keep every set at RPE 3–4 and never above 5. Friday after an easy or moderate running assignment is preferred; skip rather than reschedule after a hard or long run, incomplete recovery from Thursday pressing or hand-release push-ups, a compressed week, illness, neurologic rundown, or questionable recovery. Stop if repetitions slow or lose test-standard form, an in-set pause is needed, or wrist, elbow, shoulder, chest, or back discomfort exceeds 1/10, increases, or changes technique. Do not add extra sets or repetitions. The app records evidence only and never unlocks progression. Start at 4 × 5 once weekly. After two separate clean exposures with exercise and session RPE no higher than 4–5, no symptoms or next-day soreness above 2/10 lasting beyond 24 hours, and no decline in the next primary hand-release-push-up or pressing session, a later coach-directed update may change the template to 5 × 5. After two further clean exposures, a later coaching update may change one variable only: 5 × 6 or a second weekly exposure, never both in the same step. A failed gate holds or regresses the coach-authored prescription. Progression is coach-directed only.',
+   exercises:[
+    {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'4 × 5 across the day',type:'body',sets:4,prescribedReps:[5,5,5,5],targetRpe:'3–4',hardCapRpe:5,skippedSessionNotApplicable:true,coachingNotes:'Enter each set when performed, leaving at least 90 minutes and preferably 2–3 hours between sets. Keep every set test-standard, crisp, continuous, at RPE 3–4, never above RPE 5, and several repetitions from failure. Do not add a warm-up set, final maximal set, make-up repetitions, or other optional push-up work that day.'}
    ]
   }
  }

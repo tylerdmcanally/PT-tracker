@@ -974,6 +974,147 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
 }
 
 {
+ const session=currentProgram.sessions.hrpuVolumeMicrodose;
+ const prescriptionSnapshot={
+  sessionKey:session.key,
+  sessionType:session.sessionType,
+  label:session.label,
+  focus:session.focus,
+  warmup:session.warmup,
+  targetSessionRpe:session.targetSessionRpe,
+  hardCapRpe:session.hardCapRpe,
+  coachInstructions:session.coachInstructions,
+  advancesPrimaryRotation:session.advancesPrimaryRotation,
+  templateId:session.templateId,
+  templateName:session.templateName,
+  templateVersion:session.templateVersion,
+  templateEffectiveDate:session.templateEffectiveDate,
+  weeklySkillDoseGroupId:session.weeklySkillDoseGroupId,
+  requiredExerciseIds:JSON.parse(JSON.stringify(session.requiredExerciseIds)),
+  frequency:session.frequency,
+  weeklyFrequency:session.weeklyFrequency,
+  optional:session.optional,
+  exercises:JSON.parse(JSON.stringify(session.exercises))
+ };
+ const entry=workout('synthetic-hrpu-volume-microdose-cloud','2026-10-28T18:00:00.000Z',{
+  date:'2026-10-28',
+  dayKey:'hrpuVolumeMicrodose',
+  dayLabel:session.label,
+  sessionType:'skill_microdose',
+  advancesPrimaryRotation:false,
+  programId:session.templateId,
+  programName:session.templateName,
+  programVersion:session.templateVersion,
+  programEffectiveDate:session.templateEffectiveDate,
+  templateId:session.templateId,
+  templateName:session.templateName,
+  templateVersion:session.templateVersion,
+  templateEffectiveDate:session.templateEffectiveDate,
+  weeklySkillDoseGroupId:session.weeklySkillDoseGroupId,
+  weeklySkillDoseWeek:'2026-10-26',
+  requiredExerciseIds:JSON.parse(JSON.stringify(session.requiredExerciseIds)),
+  frequency:session.frequency,
+  weeklyFrequency:session.weeklyFrequency,
+  weeklyFrequencyOverride:false,
+  weeklyFrequencyOverrideReason:'',
+  activeRunStage:'',
+  targetSessionRpe:session.targetSessionRpe,
+  hardCapRpe:session.hardCapRpe,
+  duration:'',
+  sessionRpe:'4',
+  painDuring:'0',
+  notes:'Invented all-day HRPU volume fixture.',
+  prescriptionSnapshot,
+  exercises:[{
+   exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'4',reps:'5, 5, 5, 5',rpe:'4',completed:true,
+   exercisePain:{severity:1,location:'invented location',laterality:'bilateral',note:'Invented mild signal.',causedExerciseToStop:false},
+   notes:'Invented test-standard sets spaced across the day.'
+  }]
+ });
+
+ const upload=model.mergeWorkoutRecords([entry],[],null).uploads[0];
+ assert.deepEqual(upload.payload,entry,'Firebase upload preserves the complete invented HRPU Volume Microdose document');
+ const pulled=model.mergeWorkoutRecords([],[{...upload,changedAt:'2026-10-28T19:00:00.000Z'}],null).entries[0];
+ assert.deepEqual(pulled,entry,'Firebase pull preserves the complete invented HRPU Volume Microdose document');
+ assert.equal(pulled.templateId,'aft-hrpu-volume-microdose');
+ assert.equal(pulled.templateName,'Optional HRPU Volume Microdose');
+ assert.equal(pulled.templateVersion,'1.0');
+ assert.equal(pulled.templateEffectiveDate,'2026-10-28');
+ assert.equal(pulled.sessionType,'skill_microdose');
+ assert.equal(pulled.advancesPrimaryRotation,false);
+ assert.deepEqual(pulled.requiredExerciseIds,['handReleasePushups']);
+ assert.equal(pulled.frequency,'once_per_monday_sunday_week');
+ assert.equal(pulled.weeklyFrequency,1);
+ assert.equal(pulled.hardCapRpe,5);
+ assert.equal(pulled.weeklySkillDoseGroupId,'aft_pushup_plank_microdose');
+ assert.deepEqual(pulled.prescriptionSnapshot.requiredExerciseIds,['handReleasePushups']);
+ assert.equal(pulled.prescriptionSnapshot.weeklyFrequency,1);
+ assert.equal(pulled.prescriptionSnapshot.hardCapRpe,5);
+ assert.equal(pulled.prescriptionSnapshot.exercises[0].prescription,'4 × 5 across the day');
+ assert.deepEqual(pulled.prescriptionSnapshot.exercises[0].prescribedReps,[5,5,5,5]);
+ assert.equal(pulled.exercises[0].reps,'5, 5, 5, 5');
+ assert.equal(pulled.exercises[0].prescribedReps,undefined,'exact targets remain in snapshot metadata without changing the completed-result shape');
+ assert.deepEqual(pulled.exercises[0].exercisePain,entry.exercises[0].exercisePain);
+ assert.equal(pulled.exercises[0].notes,'Invented test-standard sets spaced across the day.');
+}
+
+{
+ const originalSession=currentProgram.sessions.skillMicrodose;
+ const historicalSnapshot={
+  sessionKey:'skillMicrodose',sessionType:'skill_microdose',label:'Optional AFT Skill Microdose',
+  focus:'Invented saved low-fatigue HRPU and plank practice.',warmup:'Invented saved warm-up guidance.',targetSessionRpe:'3–4',
+  advancesPrimaryRotation:false,templateId:'aft-skill-microdose',templateName:'AFT Skill Microdose',templateVersion:'1.0',
+  templateEffectiveDate:'2026-08-06',weeklySkillDoseGroupId:'aft_pushup_plank_microdose',frequency:'once_per_monday_sunday_week',optional:true,
+  exercises:JSON.parse(JSON.stringify(originalSession.exercises))
+ };
+ const snapshotBacked=workout('synthetic-original-skill-microdose-snapshot-cloud','2026-08-06T18:00:00.000Z',{
+  date:'2026-08-06',dayKey:'skillMicrodose',dayLabel:'Optional AFT Skill Microdose',sessionType:'skill_microdose',advancesPrimaryRotation:false,
+  programId:'aft-skill-microdose',programName:'AFT Skill Microdose',programVersion:'1.0',programEffectiveDate:'2026-08-06',
+  templateId:'aft-skill-microdose',templateName:'AFT Skill Microdose',templateVersion:'1.0',templateEffectiveDate:'2026-08-06',
+  weeklySkillDoseGroupId:'aft_pushup_plank_microdose',weeklySkillDoseWeek:'2026-08-03',activeRunStage:'',targetSessionRpe:'3–4',
+  duration:'10',sessionRpe:'3',painDuring:'0',notes:'Invented original snapshot-backed microdose.',prescriptionSnapshot:historicalSnapshot,
+  exercises:[
+   {exerciseId:'handReleasePushups',name:'Hand-release push-ups',type:'body',sets:'3',reps:'4, 4, 4',rpe:'3',completed:true,notes:'Invented original HRPU result.'},
+   {exerciseId:'plank',name:'Front plank',type:'timed',sets:'3',times:'20, 20, 20',rpe:'3',completed:true,notes:'Invented original plank result.'}
+  ]
+ });
+ const snapshotless={
+  id:'synthetic-original-skill-microdose-snapshotless-cloud',date:'2026-08-13',updatedAt:'2026-08-13T18:00:00.000Z',
+  dayKey:'skillMicrodose',dayLabel:'Optional AFT Skill Microdose',sessionType:'skill_microdose',advancesPrimaryRotation:false,
+  programId:'aft-skill-microdose',programName:'AFT Skill Microdose',programVersion:'1.0',programEffectiveDate:'2026-08-06',
+  templateId:'aft-skill-microdose',templateName:'AFT Skill Microdose',templateVersion:'1.0',templateEffectiveDate:'2026-08-06',
+  weeklySkillDoseGroupId:'aft_pushup_plank_microdose',weeklySkillDoseWeek:'2026-08-10',activeRunStage:'',targetSessionRpe:'3–4',
+  duration:'9',sessionRpe:'3',painDuring:'0',notes:'Invented original snapshotless microdose.',
+  exercises:[
+   {exerciseId:'handReleasePushups',name:'Hand-release push-ups',prescription:'3 × 4',type:'body',sets:'3',reps:'4, 4, 4',rpe:'3',completed:true,notes:'Invented snapshotless HRPU result.'},
+   {exerciseId:'plank',name:'Front plank',prescription:'3 × 20 sec',type:'timed',sets:'3',times:'20, 20, 20',rpe:'3',completed:true,notes:'Invented snapshotless plank result.'}
+  ]
+ };
+
+ const originals=[snapshotBacked,snapshotless];
+ const uploads=model.mergeWorkoutRecords(originals,[],null).uploads;
+ originals.forEach(entry=>assert.deepEqual(uploads.find(upload=>upload.entryId===entry.id).payload,entry,'Firebase preserves each invented original AFT Skill Microdose upload'));
+ const remote=uploads.map((upload,index)=>({...upload,changedAt:`2026-08-${index?'13':'06'}T19:00:00.000Z`}));
+ const pulled=model.mergeWorkoutRecords([],remote,null).entries;
+ originals.forEach(entry=>assert.deepEqual(pulled.find(candidate=>candidate.id===entry.id),entry,'Firebase preserves each invented original AFT Skill Microdose round trip'));
+
+ const pulledSnapshot=pulled.find(entry=>entry.id===snapshotBacked.id);
+ const pulledSnapshotless=pulled.find(entry=>entry.id===snapshotless.id);
+ assert.equal(pulledSnapshot.templateId,'aft-skill-microdose');
+ assert.equal(pulledSnapshot.prescriptionSnapshot.requiredExerciseIds,undefined,'historical snapshots are not backfilled with newly explicit required-exercise metadata');
+ assert.deepEqual(pulledSnapshot.prescriptionSnapshot.exercises.map(exercise=>exercise.id),['handReleasePushups','plank','mobility']);
+ assert.equal(pulledSnapshot.prescriptionSnapshot.exercises[0].prescription,'3 × 4');
+ assert.equal(pulledSnapshot.prescriptionSnapshot.exercises[1].prescription,'3 × 20 sec');
+ assert.equal(pulledSnapshotless.prescriptionSnapshot,undefined,'snapshotless original microdose history stays snapshotless');
+ assert.equal(pulledSnapshotless.requiredExerciseIds,undefined,'snapshotless original microdose history is not assigned the new template metadata');
+ assert.equal(pulledSnapshotless.templateId,'aft-skill-microdose');
+ assert.deepEqual(pulledSnapshotless.exercises.map(exercise=>exercise.exerciseId),['handReleasePushups','plank']);
+ assert.equal(pulledSnapshotless.exercises[0].prescription,'3 × 4');
+ assert.equal(pulledSnapshotless.exercises.some(exercise=>exercise.exerciseId==='frontPlank'),false,'legacy plank identity is not relabeled during cloud persistence');
+ assert.equal(pulledSnapshotless.dayKey,'skillMicrodose','original microdose history is not relabeled as the HRPU Volume Microdose');
+}
+
+{
  const oct4V1515Strength1=workout('synthetic-oct4-v1515-strength1','2026-10-04T18:00:00.000Z',{
   date:'2026-10-04',dayKey:'strengthUpperAft',dayLabel:'Strength 1 — Upper Body and AFT Calisthenics',sessionType:'primary',advancesPrimaryRotation:true,
   programId:'aft-foundation-block-1',programName:'AFT Foundation Block 1',programVersion:'1.5.15',programEffectiveDate:'2026-10-02',

@@ -26,6 +26,10 @@ const HRPU_VOLUME_TEMPLATE_ID='aft-hrpu-volume-microdose';
 const PLATE_CALCULATOR_DENOMINATIONS=[45,35,25,10,5,2.5];
 const PLATE_ONLY_VARIATIONS=new Set(['Leg press','Plate-loaded leg press']);
 const PLATE_ONLY_VARIATION_IDS=new Set(['unspecifiedLegPress','plateLoadedLegPress']);
+const LEG_PRESS_VARIATION_IDS=new Set([
+ 'seatedLegPress','unspecifiedLegPress','lyingLegPress','uprightLegPress',
+ 'plateLoadedLegPress','selectorizedLegPress','otherLegPress'
+]);
 
 const EXERCISE_NAME_IDS={
  'Deadlift':'deadlift','Trap-bar deadlift':'deadlift',
@@ -66,7 +70,7 @@ const EXERCISE_ID_ALIASES={
 
 const VARIATION_ID_BY_LABEL={
  'Trap / hex bar':'trapBar','Conventional barbell':'conventionalBarbell','Sumo barbell':'sumoBarbell','Dumbbells':'dumbbells',
- 'Leg press':'unspecifiedLegPress','Lying leg press':'lyingLegPress','Upright leg press':'uprightLegPress',
+ 'Seated leg press':'seatedLegPress','Leg press':'unspecifiedLegPress','Lying leg press':'lyingLegPress','Upright leg press':'uprightLegPress',
  'Plate-loaded leg press':'plateLoadedLegPress','Selectorized leg press':'selectorizedLegPress','Other leg press':'otherLegPress',
  'Dumbbell bench press':'dumbbellBenchPress','Barbell bench press':'barbellBenchPress','Chest-press machine':'machineChestPress',
  'Lat pulldown':'latPulldown','Machine lat pulldown':'machineLatPulldown','Seated lat pulldown':'seatedLatPulldown','Modified standing lat pulldown':'modifiedStandingLatPulldown',
@@ -2291,6 +2295,9 @@ function weightedVariationTransition(previousVariation,nextVariation,state,barWe
  const switchesPulldownSetup=previousVariationId!==nextVariationId
   &&PULLDOWN_VARIATION_IDS.has(previousVariationId)
   &&PULLDOWN_VARIATION_IDS.has(nextVariationId);
+ const switchesLegPressSetup=previousVariationId!==nextVariationId
+  &&LEG_PRESS_VARIATION_IDS.has(previousVariationId)
+  &&LEG_PRESS_VARIATION_IDS.has(nextVariationId);
  const hasLoad=numberOrNull(state?.load)!=null;
  if(previousKind==='bar'&&nextKind==='bar'){
   const total=totalLoadValue(state);
@@ -2310,7 +2317,7 @@ function weightedVariationTransition(previousVariation,nextVariation,state,barWe
    preservedTotal:total
   };
  }
- if(previousKind||nextKind||switchesPulldownSetup){
+ if(previousKind||nextKind||switchesPulldownSetup||switchesLegPressSetup){
   return {load:'',loadMode:'',barWeight:'',cleared:hasLoad,preservedTotal:null};
  }
  return null;

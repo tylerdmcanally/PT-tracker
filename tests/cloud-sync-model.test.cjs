@@ -66,7 +66,7 @@ const syntheticResultsForSnapshot=snapshot=>snapshot.exercises.map(exercise=>({
  ...(exercise.id==='verticalPull'?{variation:'Machine lat pulldown',variationId:'machineLatPulldown',load:'110',reps:'8, 9, 10',rpe:'7'}:{}),
  ...(exercise.id==='squatOrLegPress'?{variation:'Seated leg press',variationId:'seatedLegPress',load:'154',reps:'10, 10, 10',rpe:'7'}:{}),
  completed:true,
- notes:'Invented v1.5.23 full-document persistence result.'
+ notes:'Invented v1.5.24 full-document persistence result.'
 }));
 
 const syntheticStrength3V1514Snapshot={
@@ -848,7 +848,7 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
  const dates=['2099-01-01','2099-01-02','2099-01-03'];
  const entries=sessionKeys.map((sessionKey,index)=>{
   const prescriptionSnapshot=activeSessionSnapshot(sessionKey);
-  return workout(`synthetic-v1523-${sessionKey}`,`${dates[index]}T18:00:00.000Z`,{
+  return workout(`synthetic-v1524-${sessionKey}`,`${dates[index]}T18:00:00.000Z`,{
    date:dates[index],
    dayKey:sessionKey,
    dayLabel:prescriptionSnapshot.label,
@@ -856,28 +856,28 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
    advancesPrimaryRotation:true,
    programId:currentProgram.id,
    programName:currentProgram.name,
-   programVersion:'1.5.23',
-   programEffectiveDate:'2026-10-29',
+   programVersion:'1.5.24',
+   programEffectiveDate:'2026-11-03',
    activeRunStage:'',
    targetSessionRpe:prescriptionSnapshot.targetSessionRpe,
    duration:'50',
    sessionRpe:'6',
    painDuring:'0',
-   notes:'Invented v1.5.23 full-document Firebase fixture; all values are synthetic.',
+   notes:'Invented v1.5.24 full-document Firebase fixture; all values are synthetic.',
    prescriptionSnapshot,
    exercises:syntheticResultsForSnapshot(prescriptionSnapshot)
   });
  });
 
  const uploads=model.mergeWorkoutRecords(entries,[],null).uploads;
- assert.equal(uploads.length,3,'Firebase queues one complete v1.5.23 document for every active strength session');
+ assert.equal(uploads.length,3,'Firebase queues one complete v1.5.24 document for every active strength session');
  entries.forEach(entry=>{
-  assert.deepEqual(uploads.find(upload=>upload.entryId===entry.id).payload,entry,`Firebase upload preserves the complete invented ${entry.dayKey} v1.5.23 document`);
+  assert.deepEqual(uploads.find(upload=>upload.entryId===entry.id).payload,entry,`Firebase upload preserves the complete invented ${entry.dayKey} v1.5.24 document`);
  });
  const remote=uploads.map((upload,index)=>({...upload,changedAt:`${dates[index]}T19:00:00.000Z`}));
  const pulled=model.mergeWorkoutRecords([],remote,null).entries;
  entries.forEach(entry=>{
-  assert.deepEqual(pulled.find(candidate=>candidate.id===entry.id),entry,`Firebase round trips preserve the complete invented ${entry.dayKey} v1.5.23 document`);
+  assert.deepEqual(pulled.find(candidate=>candidate.id===entry.id),entry,`Firebase round trips preserve the complete invented ${entry.dayKey} v1.5.24 document`);
  });
 
  const byKey=Object.fromEntries(pulled.map(entry=>[entry.dayKey,entry]));
@@ -887,22 +887,23 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
   strengthLowerSdc:['romanianDeadlift','squatPattern','handReleasePushups','inclinePress','oneArmRow','singleLegStrength','plank','hammerCurl','overheadTricepsExtension']
  };
  Object.entries(expectedOrders).forEach(([sessionKey,exerciseOrder])=>{
-  assert.deepEqual(byKey[sessionKey].prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,`${sessionKey} preserves its exact active v1.5.23 exercise order through Firebase`);
+  assert.deepEqual(byKey[sessionKey].prescriptionSnapshot.exercises.map(exercise=>exercise.id),exerciseOrder,`${sessionKey} preserves its exact active v1.5.24 exercise order through Firebase`);
   assert.deepEqual(byKey[sessionKey].exercises.map(exercise=>exercise.exerciseId),exerciseOrder,`${sessionKey} preserves its complete invented result order through Firebase`);
  });
 
  const pushupDefinitions=sessionKeys.map(sessionKey=>byKey[sessionKey].prescriptionSnapshot.exercises.find(exercise=>exercise.id==='handReleasePushups'));
- assert.deepEqual(pushupDefinitions[0].prescribedReps,[null,10,10,10,10],'Strength 1 preserves the untargeted diagnostic plus exact back-offs through Firebase');
- assert.deepEqual(pushupDefinitions[0].diagnosticRepSets,[{setNumber:1,durationSeconds:120}]);
+ assert.deepEqual(pushupDefinitions[0].prescribedReps,[20,10,10,10,10],'Strength 1 preserves the active exact first set plus four back-offs through Firebase');
+ assert.equal(pushupDefinitions[0].diagnosticRepSets,undefined,'the active full document contains no consumed diagnostic marker');
  assert.deepEqual(pushupDefinitions[1].prescribedReps,[8,8,8],'Strength 2 preserves the new exact 3 × 8 target through Firebase');
  assert.deepEqual(pushupDefinitions[2].prescribedReps,[8,8],'Strength 3 preserves the new exact 2 × 8 target through Firebase');
  assert.deepEqual(pushupDefinitions.map(exercise=>exercise.sets),[5,3,2]);
- assert.deepEqual(pushupDefinitions.map(exercise=>exercise.targetRpe),['Set 1: diagnostic; sets 2–5 6–7','5–6','5–6']);
- assert.equal(pushupDefinitions.flatMap(exercise=>exercise.prescribedReps).filter(reps=>reps!=null).reduce((sum,reps)=>sum+reps,0),80,'the three round-tripped active snapshots retain 80 fixed repetitions plus one untargeted diagnostic');
+ assert.deepEqual(pushupDefinitions.map(exercise=>exercise.targetRpe),['Set 1 ≤8; sets 2–5 6–7','5–6','5–6']);
+ assert.equal(pushupDefinitions.flatMap(exercise=>exercise.prescribedReps).filter(reps=>reps!=null).reduce((sum,reps)=>sum+reps,0),100,'the three round-tripped active snapshots retain exactly 100 prescribed HRPU repetitions');
  sessionKeys.forEach(sessionKey=>{
   const result=byKey[sessionKey].exercises.find(exercise=>exercise.exerciseId==='handReleasePushups');
   assert.equal(result.prescribedReps,undefined,`${sessionKey} keeps exact targets in snapshot metadata without changing the completed-result shape`);
  });
+ assert.equal(byKey.strengthUpperAft.exercises.find(exercise=>exercise.exerciseId==='handReleasePushups').reps,'20, 10, 10, 10, 10');
 
  const activeStrength1=byKey.strengthUpperAft;
  const activeStrength1PulldownDefinition=activeStrength1.prescriptionSnapshot.exercises.find(exercise=>exercise.id==='verticalPull');
@@ -930,12 +931,62 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
  const activeStrength3=byKey.strengthLowerSdc;
  assert.equal(activeStrength3.dayLabel,'Strength 3 — Lower / Full Body and Push Support');
  assert.equal(activeStrength3.prescriptionSnapshot.targetDuration,'Approximately 45–60 minutes');
- assert.equal(activeStrength3.prescriptionSnapshot.exercises.some(exercise=>exercise.id==='gymConditioningCircuit'),false,'the v1.5.23 active Strength 3 cloud document contains no routine circuit definition');
- assert.equal(activeStrength3.prescriptionSnapshot.exercises.some(exercise=>exercise.id==='sidePlank'),false,'the v1.5.23 active Strength 3 cloud document keeps side plank retired');
+ assert.equal(activeStrength3.prescriptionSnapshot.exercises.some(exercise=>exercise.id==='gymConditioningCircuit'),false,'the v1.5.24 active Strength 3 cloud document contains no routine circuit definition');
+ assert.equal(activeStrength3.prescriptionSnapshot.exercises.some(exercise=>exercise.id==='sidePlank'),false,'the v1.5.24 active Strength 3 cloud document keeps side plank retired');
  assert.equal(activeStrength3.exercises.some(exercise=>['gymConditioningCircuit','sidePlank'].includes(exercise.exerciseId)),false,'Firebase does not synthesize retired Strength 3 results');
- assert.equal(currentProgram.version,'1.5.23');
- assert.equal(currentProgram.effectiveDate,'2026-10-29');
+ assert.equal(currentProgram.version,'1.5.24');
+ assert.equal(currentProgram.effectiveDate,'2026-11-03');
  assert.deepEqual(currentProgram.rotation,sessionKeys);
+}
+
+{
+ const historicalSnapshot=activeSessionSnapshot('strengthUpperAft');
+ const historicalPushups=historicalSnapshot.exercises.find(exercise=>exercise.id==='handReleasePushups');
+ Object.assign(historicalPushups,{
+  prescription:'Set 1: 2:00 test-standard diagnostic; Sets 2–5: 10 reps',
+  sets:5,
+  prescribedReps:[null,10,10,10,10],
+  diagnosticRepSets:[{setNumber:1,durationSeconds:120}],
+  targetRpe:'Set 1: diagnostic; sets 2–5 6–7',
+  coachingNotes:'Next Strength 1 only: use an external two-minute clock for set 1 and record the total valid test-standard repetitions completed before time expires, plus RPE and useful pacing or pause notes. There is no fixed repetition target for set 1. This diagnostic replaces the prior 17-repetition first set; it is not an added set or a recurring maximal test. Recover adequately, then complete sets 2–5 at 10 repetitions with 90–120 seconds rest. Do not add repetitions, another diagnostic, or a skill microdose. Await a later coach-directed first-set prescription after this result.'
+ });
+ const snapshotBacked=workout('synthetic-nov2-v1523-diagnostic-cloud','2026-11-02T18:00:00.000Z',{
+  date:'2026-11-02',dayKey:'strengthUpperAft',dayLabel:historicalSnapshot.label,sessionType:'primary',advancesPrimaryRotation:true,
+  programId:currentProgram.id,programName:currentProgram.name,programVersion:'1.5.23',programEffectiveDate:'2026-10-29',activeRunStage:'',
+  targetSessionRpe:historicalSnapshot.targetSessionRpe,duration:'60',sessionRpe:'7',painDuring:'0',
+  notes:'Invented immutable v1.5.23 diagnostic Firebase fixture.',prescriptionSnapshot:historicalSnapshot,
+  exercises:[{
+   exerciseId:'handReleasePushups',name:'Hand-release push-ups',prescription:historicalPushups.prescription,type:'body',sets:'5',
+   reps:'30, 10, 10, 10, 10',rpe:'7',completed:true,notes:'Invented diagnostic-compatibility result.'
+  }]
+ });
+ const snapshotless=JSON.parse(JSON.stringify(snapshotBacked));
+ snapshotless.id='synthetic-snapshotless-nov2-v1523-diagnostic-cloud';
+ delete snapshotless.prescriptionSnapshot;
+ Object.assign(snapshotless.exercises[0],{
+  prescribedReps:JSON.parse(JSON.stringify(historicalPushups.prescribedReps)),
+  diagnosticRepSets:JSON.parse(JSON.stringify(historicalPushups.diagnosticRepSets)),
+  targetRpe:historicalPushups.targetRpe,
+  coachingNotes:historicalPushups.coachingNotes
+ });
+ const originals=[snapshotBacked,snapshotless];
+ const uploads=model.mergeWorkoutRecords(originals,[],null).uploads;
+ originals.forEach(entry=>assert.deepEqual(uploads.find(upload=>upload.entryId===entry.id).payload,entry,`Firebase upload preserves the complete invented ${entry.id} document`));
+ const remote=uploads.map((upload,index)=>({...upload,changedAt:`2026-11-02T19:0${index}:00.000Z`}));
+ const pulled=model.mergeWorkoutRecords([],remote,null).entries;
+ originals.forEach(entry=>assert.deepEqual(pulled.find(candidate=>candidate.id===entry.id),entry,`Firebase round trips preserve the complete invented ${entry.id} document`));
+ const pulledSnapshot=pulled.find(entry=>entry.id===snapshotBacked.id);
+ const pulledSnapshotless=pulled.find(entry=>entry.id===snapshotless.id);
+ const pulledPushups=pulledSnapshot.prescriptionSnapshot.exercises.find(exercise=>exercise.id==='handReleasePushups');
+ assert.equal(pulledSnapshot.programVersion,'1.5.23');
+ assert.equal(pulledSnapshot.programEffectiveDate,'2026-10-29');
+ assert.deepEqual(pulledPushups.prescribedReps,[null,10,10,10,10]);
+ assert.deepEqual(pulledPushups.diagnosticRepSets,[{setNumber:1,durationSeconds:120}]);
+ assert.equal(pulledSnapshot.exercises[0].reps,'30, 10, 10, 10, 10');
+ assert.equal(pulledSnapshotless.prescriptionSnapshot,undefined,'snapshotless v1.5.23 diagnostic history stays snapshotless through Firebase');
+ assert.deepEqual(pulledSnapshotless.exercises[0].prescribedReps,[null,10,10,10,10],'snapshotless Firebase history never inherits the active 20-repetition target');
+ assert.deepEqual(pulledSnapshotless.exercises[0].diagnosticRepSets,[{setNumber:1,durationSeconds:120}]);
+ assert.equal(pulledSnapshotless.exercises[0].reps,'30, 10, 10, 10, 10');
 }
 
 {
@@ -1051,7 +1102,7 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
  assert.deepEqual(pulled,historical,'Firebase pull preserves the complete invented October 26 v1.5.21 document');
  const pulledById=Object.fromEntries(pulled.prescriptionSnapshot.exercises.map(exercise=>[exercise.id,exercise]));
  assert.deepEqual(pulledById.handReleasePushups.prescribedReps,[17,10,10,10,10]);
- assert.equal(pulledById.handReleasePushups.diagnosticRepSets,undefined,'historical Firebase data does not inherit active diagnostic metadata');
+ assert.equal(pulledById.handReleasePushups.diagnosticRepSets,undefined,'historical Firebase data does not acquire the later one-time diagnostic metadata');
  assert.equal(pulledById.verticalPull.defaultVariation,'Seated lat pulldown');
  assert.equal(pulledById.verticalPull.variations.includes('Machine lat pulldown'),false,'historical Firebase snapshots do not inherit the active machine branch');
  assert.equal(pulled.exercises.find(exercise=>exercise.exerciseId==='verticalPull').variationId,'seatedLatPulldown');
@@ -1134,6 +1185,8 @@ const syntheticStrength1Results=({overheadLoad,overheadReps,rowLoad,rowReps,push
  assert.deepEqual(pulled.prescriptionSnapshot.requiredExerciseIds,['handReleasePushups']);
  assert.equal(pulled.prescriptionSnapshot.weeklyFrequency,1);
  assert.equal(pulled.prescriptionSnapshot.hardCapRpe,5);
+ assert.match(pulled.prescriptionSnapshot.coachInstructions,/required two-minute Strength 1 diagnostic was completed Nov(?:ember)? 2.*do not complete.*Nov(?:ember)? 2–8 diagnostic week.*no earlier than the week (?:beginning|of) Nov(?:ember)? 9.*normal delayed upper-body and systemic response/is);
+ assert.match(pulled.prescriptionSnapshot.coachInstructions,/remains optional and coach-directed.*app records evidence only and never unlocks progression/is);
  assert.equal(pulled.prescriptionSnapshot.exercises[0].prescription,'4 × 5 across the day');
  assert.deepEqual(pulled.prescriptionSnapshot.exercises[0].prescribedReps,[5,5,5,5]);
  assert.equal(pulled.exercises[0].reps,'5, 5, 5, 5');

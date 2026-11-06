@@ -1,8 +1,8 @@
 window.AFT_PROGRAM_CONFIG={
  id:'aft-foundation-block-1',
  name:'AFT Foundation Block 1',
- version:'1.5.24',
- effectiveDate:'2026-11-03',
+ version:'1.5.25',
+ effectiveDate:'2026-11-05',
  currentRunStage:null,
  rotation:['strengthUpperAft','strengthHeavyCarry','strengthLowerSdc'],
  runStages:[
@@ -247,7 +247,7 @@ window.AFT_PROGRAM_CONFIG={
    targetSessionRpe:'6–8',
    warmup:'5–8 minutes of easy cardio, dynamic hip and ankle preparation, then 2–4 progressive deadlift warm-up sets.',
    exercises:[
-    {id:'deadlift',name:'Trap-bar deadlift',prescription:'195 lb total for 3 × 5',type:'weighted',unit:'lb',sets:3,targetLoad:195,targetLoadVariation:'Trap / hex bar',targetRpe:'6–8',variations:['Trap / hex bar','Conventional barbell','Sumo barbell','Dumbbells'],defaultVariation:'Trap / hex bar',barWeights:{'Trap / hex bar':45,'Conventional barbell':45,'Sumo barbell':45},perSideVariations:['Trap / hex bar'],barWeightOptions:[45,55,60],coachingNotes:'Use the trap/hex bar when available. Hold 195 lb for confirmation before any later coach-directed increase. Keep every repetition technically clean and do not grind. Record the actual bar weight and plate weight per side; use another listed variation when equipment requires it. Future progression remains coach-directed and performance-based.'},
+    {id:'deadlift',name:'Trap-bar deadlift',prescription:'205 lb total for 3 × 5',type:'weighted',unit:'lb',sets:3,targetLoad:205,targetLoadVariation:'Trap / hex bar',targetRpe:'6–8',variations:['Trap / hex bar','Conventional barbell','Sumo barbell','Dumbbells'],defaultVariation:'Trap / hex bar',barWeights:{'Trap / hex bar':45,'Conventional barbell':45,'Sumo barbell':45},perSideVariations:['Trap / hex bar'],barWeightOptions:[45,55,60],coachingNotes:'Use the trap/hex bar when available. Hold 205 lb for confirmation before any later coach-directed increase. Keep every repetition technically clean and do not grind. Record the actual bar weight and plate weight per side; use another listed variation when equipment requires it. Future progression remains coach-directed and performance-based.'},
     {id:'handReleasePushups',name:'Hand-release push-ups',prescription:'3 × 8',type:'body',sets:3,prescribedReps:[8,8,8],targetRpe:'5–6',coachingNotes:'Use three equal, test-standard, technically clean sets of 8 with 90–120 seconds rest. Stop rather than pause in-set, grind, or add repetitions. This is the smaller middle weekly exposure after Strength 1\'s continuous-set priority work.'},
     {id:'squatOrLegPress',name:'Leg press',prescription:'154 lb displayed on the same exact seated leg-press machine/setup for 3 × 10',type:'weighted',unit:'lb',sets:3,targetLoad:154,targetLoadVariation:'Seated leg press',variations:['Seated leg press','Leg press','Lying leg press','Upright leg press','Plate-loaded leg press','Selectorized leg press','Other leg press'],defaultVariation:'Seated leg press',targetRpe:'7',coachingNotes:'Use 154 lb displayed only on the same exact seated leg-press machine and setup for three clean sets of 10 at approximately RPE 7. Hold this load for confirmation. Do not transfer 154 lb to the unavailable prior Leg press, Upright leg press, Plate-loaded leg press, Selectorized leg press, Other leg press, or any other machine/setup. Future progression remains coach-directed.'},
     {id:'horizontalPress',name:'Dumbbell bench press',prescription:'40 lb per hand for 3 × 8',type:'weighted',unit:'lb per hand',sets:3,targetLoad:40,targetLoadVariation:'Dumbbell bench press',targetRpe:'7–8',variations:['Dumbbell bench press','Chest-press machine','Barbell bench press'],defaultVariation:'Dumbbell bench press',barWeights:{'Barbell bench press':45},coachingNotes:'Use controlled repetitions and finish with approximately 2–3 technically good repetitions remaining.'},

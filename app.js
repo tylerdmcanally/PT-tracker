@@ -1209,6 +1209,11 @@ function prescriptionAdherenceDetail(definition,result){
    if(reps.length<target.sets)reasons.push(adherenceReason('sets_below_target',{actual:reps.length,expected:target.sets}));
    const lowest=reps.length?Math.min(...reps):0;
    if(reps.some(value=>value<target.minReps))reasons.push(adherenceReason('reps_below_minimum',{actual:lowest,expected:target.minReps}));
+   if(Number.isFinite(Number(target.maxReps))){
+    reps.forEach((value,index)=>{
+     if(value>Number(target.maxReps))reasons.push(adherenceReason('reps_above_target',{componentName:`Set ${index+1}`,actual:value,expected:Number(target.maxReps)}));
+    });
+   }
   }
   if(definition.targetLoad!=null){
    const targetVariation=variationIdFor(definition.targetLoadVariation||'');

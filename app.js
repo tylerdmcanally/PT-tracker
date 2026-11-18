@@ -3809,11 +3809,13 @@ async function saveWorkout(event){
   if(decision!=='save')return;
   break;
  }
+ const entriesBeforeSave=entries.slice();
  const index=entries.findIndex(entry=>entry.id===item.id);
  const wasEditing=index>=0;
  index>=0?entries[index]=item:entries.push(item);
  entries.sort(compareEntries);
  if(!persistEntries(wasEditing?'Before workout update':'Before workout save')){
+  entries=entriesBeforeSave;
   toast('Could not save. Export a backup and check device storage.');
   return;
  }
@@ -5111,17 +5113,83 @@ function knownHistoricalCorrectionMarkers(exercise){
   .filter(marker=>KNOWN_HISTORICAL_CORRECTIONS.has(marker));
 }
 
-function persistEntries(reason,{snapshot=true,trackCloud=true}={}){
+function isQuotaExceededError(error){
+ return error?.name==='QuotaExceededError'
+  ||error?.name==='NS_ERROR_DOM_QUOTA_REACHED'
+  ||error?.code===22
+  ||error?.code===1014;
+}
+
+function writeEntriesWithSnapshotPruning(raw){
  try{
-  const previous=loadEntries();
-  if(snapshot)createSnapshot(reason);
-  localStorage.setItem(KEY,JSON.stringify(entries));
-  if(trackCloud)recordCloudLocalChanges(previous,entries);
-  return true;
+  localStorage.setItem(KEY,raw);
+  return;
+ }catch(error){
+  if(!isQuotaExceededError(error))throw error;
+  let lastError=error;
+  let snapshots=loadSnapshots();
+  let pruned=0;
+  if(!snapshots.length){
+   try{
+    if(localStorage.getItem(SNAPSHOT_KEY)!=null){
+     localStorage.removeItem(SNAPSHOT_KEY);
+     pruned=1;
+    }
+   }catch{}
+  }
+  while(snapshots.length){
+   snapshots.pop();
+   pruned+=1;
+   try{
+    snapshots.length
+     ?localStorage.setItem(SNAPSHOT_KEY,JSON.stringify(snapshots))
+     :localStorage.removeItem(SNAPSHOT_KEY);
+   }catch{
+    pruned+=snapshots.length;
+    try{localStorage.removeItem(SNAPSHOT_KEY)}catch{}
+    snapshots=[];
+   }
+   try{
+    localStorage.setItem(KEY,raw);
+    console.warn(`Saved workout data after pruning ${pruned} local restore ${pruned===1?'point':'points'}.`);
+    return;
+   }catch(retryError){
+    if(!isQuotaExceededError(retryError))throw retryError;
+    lastError=retryError;
+   }
+  }
+  if(pruned){
+   try{
+    localStorage.setItem(KEY,raw);
+    console.warn(`Saved workout data after pruning ${pruned} local restore ${pruned===1?'point':'points'}.`);
+    return;
+   }catch(retryError){
+    lastError=retryError;
+   }
+  }
+  throw lastError;
+ }
+}
+
+function persistEntries(reason,{snapshot=true,trackCloud=true}={}){
+ let previousRaw=null;
+ try{previousRaw=localStorage.getItem(KEY)}catch{}
+ const previous=loadEntries();
+ let raw;
+ try{
+  raw=JSON.stringify(entries);
+  writeEntriesWithSnapshotPruning(raw);
  }catch(error){
   console.error('Unable to save workout data',error);
   return false;
  }
+ if(snapshot)createSnapshot(reason,previousRaw);
+ if(trackCloud){
+  try{recordCloudLocalChanges(previous,entries)}catch(error){
+   console.warn('Workout saved locally, but cloud bookkeeping could not be updated',error);
+  }
+ }
+ return true;
 }
 
 function createSnapshot(reason,raw=localStorage.getItem(KEY)){

@@ -4367,6 +4367,81 @@ assert.equal(restorePoints[0].reason,'Before test write');
 assert.deepEqual(JSON.parse(restorePoints[0].raw),[{id:'before'}]);
 assert.equal(JSON.parse(storage.get('aftWorkoutEntries.v1'))[0].id,'after');
 
+const originalStorageSetItem=context.localStorage.setItem;
+const storedValueBytes=()=>[...storage.values()].reduce((total,value)=>total+Buffer.byteLength(String(value)),0);
+const quotaPreviousEntries=[{
+ id:'quota-before',date:'2026-11-17',dayKey:'strengthLowerSdc',dayLabel:'Strength 3',
+ sessionType:'primary',exercises:[],notes:'q'.repeat(1600)
+}];
+const quotaNextEntries=[...quotaPreviousEntries,{
+ id:'quota-after',date:'2026-11-18',dayKey:'strengthLowerSdc',dayLabel:'Strength 3',
+ sessionType:'primary',exercises:[],notes:'New workout that must win over rolling restore points.'
+}];
+const quotaPreviousRaw=JSON.stringify(quotaPreviousEntries);
+const quotaNextRaw=JSON.stringify(quotaNextEntries);
+const quotaRestorePoints=[
+ {id:'quota-newest',createdAt:'2026-11-17T18:00:00.000Z',reason:'Newest synthetic restore point',raw:quotaPreviousRaw},
+ {id:'quota-middle',createdAt:'2026-11-16T18:00:00.000Z',reason:'Middle synthetic restore point',raw:quotaPreviousRaw},
+ {id:'quota-oldest',createdAt:'2026-11-15T18:00:00.000Z',reason:'Oldest synthetic restore point',raw:quotaPreviousRaw}
+];
+storage.clear();
+storage.set('aftWorkoutEntries.v1',quotaPreviousRaw);
+storage.set('aftWorkoutSnapshots.v1',JSON.stringify(quotaRestorePoints));
+const quotaInitialBytes=storedValueBytes();
+const quotaCanonicalGrowth=Buffer.byteLength(quotaNextRaw)-Buffer.byteLength(quotaPreviousRaw);
+const syntheticQuotaLimit=quotaInitialBytes+Math.max(1,Math.floor(quotaCanonicalGrowth/2));
+context.localStorage.setItem=(key,value)=>{
+ const serialized=String(value);
+ const current=storage.has(key)?Buffer.byteLength(String(storage.get(key))):0;
+ const projected=storedValueBytes()-current+Buffer.byteLength(serialized);
+ if(projected>syntheticQuotaLimit){
+  const error=new Error('Synthetic local-storage quota exceeded');
+  error.name='QuotaExceededError';
+  error.code=22;
+  throw error;
+ }
+ storage.set(key,serialized);
+};
+evaluate(`entries=${JSON.stringify(quotaNextEntries)}`);
+const originalConsoleWarn=context.console.warn;
+context.console.warn=()=>{};
+let quotaPersisted;
+try{
+ quotaPersisted=evaluate(`persistEntries('Before quota recovery test',{trackCloud:false})`);
+}finally{
+ context.console.warn=originalConsoleWarn;
+}
+assert.equal(quotaPersisted,true,'a canonical workout save prunes old restore points and retries when storage quota is exhausted');
+assert.deepEqual(JSON.parse(storage.get('aftWorkoutEntries.v1')),quotaNextEntries,'the current workout is canonical after quota recovery');
+assert.equal(JSON.parse(storage.get('aftWorkoutSnapshots.v1')||'[]').some(snapshot=>snapshot.id==='quota-oldest'),false,'quota recovery removes the oldest restore point before sacrificing the current workout');
+
+const nonQuotaPreviousEntries=[{id:'nonquota-before',date:'2026-11-17',dayKey:'strengthUpperAft',dayLabel:'Strength 1',sessionType:'primary',exercises:[]}];
+const nonQuotaNextEntries=[...nonQuotaPreviousEntries,{id:'nonquota-after',date:'2026-11-18',dayKey:'strengthHeavyCarry',dayLabel:'Strength 2',sessionType:'primary',exercises:[]}];
+const nonQuotaPreviousRaw=JSON.stringify(nonQuotaPreviousEntries);
+const nonQuotaRestorePoints=[{id:'nonquota-restore',createdAt:'2026-11-17T18:00:00.000Z',reason:'Synthetic retained restore point',raw:nonQuotaPreviousRaw}];
+storage.clear();
+storage.set('aftWorkoutEntries.v1',nonQuotaPreviousRaw);
+storage.set('aftWorkoutSnapshots.v1',JSON.stringify(nonQuotaRestorePoints));
+context.localStorage.setItem=(key,value)=>{
+ if(key==='aftWorkoutEntries.v1'){
+  const error=new Error('Synthetic storage security failure');
+  error.name='SecurityError';
+  throw error;
+ }
+ storage.set(key,String(value));
+};
+evaluate(`entries=${JSON.stringify(nonQuotaNextEntries)}`);
+const originalConsoleError=context.console.error;
+context.console.error=()=>{};
+try{
+ assert.equal(evaluate(`persistEntries('Before non-quota failure test',{trackCloud:false})`),false,'a true non-quota storage failure is reported instead of pruning restore points');
+}finally{
+ context.console.error=originalConsoleError;
+ context.localStorage.setItem=originalStorageSetItem;
+}
+assert.equal(storage.get('aftWorkoutEntries.v1'),nonQuotaPreviousRaw,'a true non-quota failure preserves the prior canonical workout data');
+assert.deepEqual(JSON.parse(storage.get('aftWorkoutSnapshots.v1')),nonQuotaRestorePoints,'a non-quota failure does not discard unrelated restore points');
+
 const indexHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const appSource=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
@@ -4392,18 +4467,18 @@ assert.match(styles,/\.primary,\.secondary,\.danger,\.file-button\{[^}]*min-heig
 assert.match(styles,/button:focus-visible,summary:focus-visible,a:focus-visible\{[^}]*outline:/,'calculator buttons and summaries retain visible keyboard focus');
 assert.match(styles,/\.plate-calculator input,\.plate-adjustments button,\.plate-alternatives button\{border-color:#596768\}/,'plate planner controls retain visible non-text boundaries');
 assert.doesNotMatch(styles,/\.sticky-actions\{position:sticky;bottom:calc\(7px/,'mobile workout actions must remain in page flow');
-assert.match(indexHtml,/styles\.css\?v=75/);
-assert.ok(indexHtml.indexOf('program-config.js?v=75')<indexHtml.indexOf('cloud-config.js?v=75'));
-assert.ok(indexHtml.indexOf('cloud-config.js?v=75')<indexHtml.indexOf('cloud-sync.js?v=75'));
-assert.ok(indexHtml.indexOf('cloud-sync.js?v=75')<indexHtml.indexOf('app.js?v=75'));
-assert.doesNotMatch(indexHtml,/\?v=74/,'the app shell contains no stale v74 asset query');
-assert.match(serviceWorker,/aft-workout-tracker-v75/);
-assert.match(serviceWorker,/styles\.css\?v=75/);
-assert.match(serviceWorker,/program-config\.js\?v=75/);
-assert.match(serviceWorker,/cloud-config\.js\?v=75/);
-assert.match(serviceWorker,/cloud-sync\.js\?v=75/);
-assert.match(serviceWorker,/app\.js\?v=75/);
-assert.doesNotMatch(serviceWorker,/\?v=74/,'the service worker contains no stale v74 asset query');
+assert.match(indexHtml,/styles\.css\?v=76/);
+assert.ok(indexHtml.indexOf('program-config.js?v=76')<indexHtml.indexOf('cloud-config.js?v=76'));
+assert.ok(indexHtml.indexOf('cloud-config.js?v=76')<indexHtml.indexOf('cloud-sync.js?v=76'));
+assert.ok(indexHtml.indexOf('cloud-sync.js?v=76')<indexHtml.indexOf('app.js?v=76'));
+assert.doesNotMatch(indexHtml,/\?v=75/,'the app shell contains no stale v75 asset query');
+assert.match(serviceWorker,/aft-workout-tracker-v76/);
+assert.match(serviceWorker,/styles\.css\?v=76/);
+assert.match(serviceWorker,/program-config\.js\?v=76/);
+assert.match(serviceWorker,/cloud-config\.js\?v=76/);
+assert.match(serviceWorker,/cloud-sync\.js\?v=76/);
+assert.match(serviceWorker,/app\.js\?v=76/);
+assert.doesNotMatch(serviceWorker,/\?v=75/,'the service worker contains no stale v75 asset query');
 assert.match(indexHtml,/id="sessionRpe"[^>]+step="0\.5"[^>]+inputmode="decimal"/,'session RPE accepts half-point values');
 assert.match(appSource,/addEventListener\('invalid',revealInvalidWorkoutControl,true\)/,'invalid workout values must produce visible feedback');
 assert.equal((appSource.match(/Component RPE',performance\.rpe,\{min:1,max:10,step:'\.5'\}/g)||[]).length,4,'all circuit component RPE inputs accept half-point values');
